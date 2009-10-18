@@ -17,7 +17,7 @@ DESCRIPTION       = "RPC library using MessagePack, a ainary-based efficient dat
 RUBYFORGE_PROJECT = "msgpack"
 HOMEPATH          = "http://#{RUBYFORGE_PROJECT}.rubyforge.org"
 BIN_FILES         = %w(  )
-VERS              = "0.3.1"
+VERS              = "0.1.0"
 
 #REV = File.read(".svn/entries")[/committed-rev="(d+)"/, 1] rescue nil
 REV = nil
@@ -44,7 +44,7 @@ spec = Gem::Specification.new do |s|
 	s.name              = NAME
 	s.version           = VERS
 	s.platform          = Gem::Platform::RUBY
-	s.has_rdoc          = true
+	#s.has_rdoc          = true
 	s.extra_rdoc_files  = ["README", "ChangeLog", "AUTHORS"]
 	s.rdoc_options     += RDOC_OPTS + ['--exclude', '^(examples|extras)/']
 	s.summary           = DESCRIPTION
@@ -55,11 +55,11 @@ spec = Gem::Specification.new do |s|
 	s.executables       = BIN_FILES
 	s.rubyforge_project = RUBYFORGE_PROJECT
 	s.bindir            = "bin"
-	s.require_path      = "ext"
-	s.autorequire       = ""
+	s.require_path      = "lib"
 	s.test_files        = Dir["test/test_*.rb"]
 
-	#s.add_dependency('activesupport', '>=1.3.1')
+  s.add_dependency "msgpack", ">= 0.3.1"
+  s.add_dependency "rev", ">= 0.3.0"
 	#s.required_ruby_version = '>= 1.8.2'
 
 	s.files = %w(README ChangeLog Rakefile) +
