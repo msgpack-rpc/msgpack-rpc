@@ -54,8 +54,12 @@ class MessagePackRPCTest < Test::Unit::TestCase
 	end
 
 
-	def test_call
+	def next_port
 		port = $port += 1
+	end
+
+	def start_server
+		port = next_port
 
 		svr = MessagePack::RPC::Server.new
 		svr.listen("0.0.0.0", port, MyServer.new(svr))
@@ -65,6 +69,13 @@ class MessagePackRPCTest < Test::Unit::TestCase
 
 		cli = MessagePack::RPC::Client.new("127.0.0.1", port)
 		cli.timeout = 10
+
+		return svr, cli
+	end
+
+
+	def test_call
+		svr, cli = start_server
 
 		result = cli.call(:hello)
 		assert_equal(result, "ok")
@@ -104,18 +115,9 @@ class MessagePackRPCTest < Test::Unit::TestCase
 
 
 	def test_callback
-		port = $port += 1
-
-		svr = MessagePack::RPC::Server.new
-		svr.listen("0.0.0.0", port, MyServer.new(svr))
-		Thread.start do
-			svr.run
-		end
+		svr, cli = start_server
 
 		count = 0
-
-		cli = MessagePack::RPC::Client.new("127.0.0.1", port)
-		cli.timeout = 10
 
 		cli.callback(:hello) do |error, result|
 			assert_equal(result, "ok")
@@ -138,18 +140,9 @@ class MessagePackRPCTest < Test::Unit::TestCase
 
 
 	def test_hidden
-		port = $port += 1
-
-		svr = MessagePack::RPC::Server.new
-		svr.listen("0.0.0.0", port, MyServer.new(svr))
-		Thread.start do
-			svr.run
-		end
+		svr, cli = start_server
 
 		count = 0
-
-		cli = MessagePack::RPC::Client.new("127.0.0.1", port)
-		cli.timeout = 10
 
 		rejected = false
 		begin
@@ -165,16 +158,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 
 
 	def test_exception
-		port = $port += 1
-
-		svr = MessagePack::RPC::Server.new
-		svr.listen("0.0.0.0", port, MyServer.new(svr))
-		Thread.start do
-			svr.run
-		end
-
-		cli = MessagePack::RPC::Client.new("127.0.0.1", port)
-		cli.timeout = 10
+		svr, cli = start_server
 
 		raised = false
 		begin
@@ -191,16 +175,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 
 
 	def test_async
-		port = $port += 1
-
-		svr = MessagePack::RPC::Server.new
-		svr.listen("0.0.0.0", port, MyServer.new(svr))
-		Thread.start do
-			svr.run
-		end
-
-		cli = MessagePack::RPC::Client.new("127.0.0.1", port)
-		cli.timeout = 10
+		svr, cli = start_server
 
 		result = cli.call(:async)
 		assert_equal(result, "async")
@@ -210,16 +185,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 
 
 	def test_async_exception
-		port = $port += 1
-
-		svr = MessagePack::RPC::Server.new
-		svr.listen("0.0.0.0", port, MyServer.new(svr))
-		Thread.start do
-			svr.run
-		end
-
-		cli = MessagePack::RPC::Client.new("127.0.0.1", port)
-		cli.timeout = 10
+		svr, cli = start_server
 
 		raised = false
 		begin
@@ -236,7 +202,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 
 
 	def test_loop
-		port = $port += 1
+		port = next_port
 
 		loop = MessagePack::RPC::Loop.new
 
@@ -270,7 +236,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 
 
 	def test_timeout
-		port = $port += 1
+		port = next_port
 
 		lsock = TCPServer.new("0.0.0.0", port)
 
