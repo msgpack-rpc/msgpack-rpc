@@ -1,5 +1,5 @@
 #
-# MessagePack RPC for Ruby
+# MessagePack-RPC for Ruby
 #
 # Copyright (C) 2009 FURUHASHI Sadayuki
 #
@@ -74,11 +74,12 @@ module RPCSocket
 	end
 
 	def on_message(msg)
-		if msg[0] == REQUEST
+		case msg[0]
+		when REQUEST
 			on_request(msg[1], msg[2], msg[3])
-		elsif msg[0] == RESPONSE
-			on_response(msg[1], msg[3], msg[2])
-		elsif msg[0] == REQUEST
+		when RESPONSE
+			on_response(msg[1], msg[2], msg[3])
+		when NOTIFY
 			on_notify(msg[1], msg[2])
 		else
 			raise RPCError.new("unknown message type #{msg[0]}")
@@ -103,17 +104,17 @@ module RPCSocket
 		@session.on_notify(method, param)
 	end
 
-	def on_response(msgid, res, err)
+	def on_response(msgid, error, result)
 		return unless @session
-		@session.on_response(msgid, res, err)
+		@session.on_response(msgid, error, result)
 	end
 
 	def send_request(msgid, method, param)
 		send_message [REQUEST, msgid, method, param]
 	end
 
-	def send_response(msgid, retval, err)
-		send_message [RESPONSE, msgid, err, retval]
+	def send_response(msgid, result, error)
+		send_message [RESPONSE, msgid, error, result]
 	end
 
 	def send_notify(method, param)
@@ -233,7 +234,7 @@ class ClientSession
 	end
 
 
-	def on_response(msgid, result, error)
+	def on_response(msgid, error, result)
 		if req = @reqtable.delete(msgid)
 			req.call error, result
 		end

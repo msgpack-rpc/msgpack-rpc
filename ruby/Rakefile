@@ -17,7 +17,7 @@ DESCRIPTION       = "RPC library using MessagePack, a ainary-based efficient dat
 RUBYFORGE_PROJECT = "msgpack"
 HOMEPATH          = "http://#{RUBYFORGE_PROJECT}.rubyforge.org"
 BIN_FILES         = %w(  )
-VERS              = "0.1.1"
+VERS              = "0.1.2"
 
 #REV = File.read(".svn/entries")[/committed-rev="(d+)"/, 1] rescue nil
 REV = nil
