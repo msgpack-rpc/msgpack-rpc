@@ -19,6 +19,24 @@ class MessagePackRPCTest < Test::Unit::TestCase
 			raise "raised"
 		end
 
+		def async
+			as = MessagePack::RPC::AsyncResult.new
+			Thread.new do
+				sleep 1
+				as.result "async"
+			end
+			as
+		end
+
+		def async_exception
+			as = MessagePack::RPC::AsyncResult.new
+			Thread.new do
+				sleep 1
+				as.error "async"
+			end
+			as
+		end
+
 		private
 		def hidden
 		end
@@ -44,6 +62,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		end
 
 		cli = MessagePack::RPC::Client.new("127.0.0.1", port)
+		cli.timeout = 10
 
 		result = cli.call(:hello)
 		assert_equal(result, "ok")
@@ -65,6 +84,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		end
 
 		cli = MessagePack::RPC::Client.new("127.0.0.1", port)
+		cli.timeout = 10
 
 		req1 = cli.send(:hello)
 		req2 = cli.send(:sum, 1, 2)
@@ -93,6 +113,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		count = 0
 
 		cli = MessagePack::RPC::Client.new("127.0.0.1", port)
+		cli.timeout = 10
 
 		cli.callback(:hello) do |error, result|
 			assert_equal(result, "ok")
@@ -126,6 +147,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		count = 0
 
 		cli = MessagePack::RPC::Client.new("127.0.0.1", port)
+		cli.timeout = 10
 
 		rejected = false
 		begin
@@ -150,12 +172,57 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		end
 
 		cli = MessagePack::RPC::Client.new("127.0.0.1", port)
+		cli.timeout = 10
 
 		raised = false
 		begin
 			cli.call(:exception)
 		rescue MessagePack::RPC::RemoteError
 			assert_equal($!.message, "raised")
+			raised = true
+		end
+
+		assert_equal(raised, true)
+
+		cli.close
+	end
+
+
+	def test_async
+		port = $port += 1
+
+		svr = MessagePack::RPC::Server.new
+		svr.listen("0.0.0.0", port, MyServer.new)
+		Thread.start do
+			svr.run
+		end
+
+		cli = MessagePack::RPC::Client.new("127.0.0.1", port)
+		cli.timeout = 10
+
+		result = cli.call(:async)
+		assert_equal(result, "async")
+
+		cli.close
+	end
+
+
+	def test_async_exception
+		port = $port += 1
+
+		svr = MessagePack::RPC::Server.new
+		svr.listen("0.0.0.0", port, MyServer.new)
+		Thread.start do
+			svr.run
+		end
+
+		cli = MessagePack::RPC::Client.new("127.0.0.1", port)
+
+		raised = false
+		begin
+			cli.call(:async_exception)
+		rescue MessagePack::RPC::RemoteError
+			assert_equal($!.message, "async")
 			raised = true
 		end
 
@@ -174,7 +241,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		svr.listen("0.0.0.0", port, MyServer.new)
 
 		cli = MessagePack::RPC::Client.new("127.0.0.1", port, loop)
-		cli.timeout = 1
+		cli.timeout = 10
 
 		count = 0
 

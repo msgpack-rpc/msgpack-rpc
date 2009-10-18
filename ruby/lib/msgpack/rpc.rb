@@ -282,6 +282,39 @@ class ClientSession
 end
 
 
+class AsyncResult
+	def initialize
+		@responder = nil
+		@sent = false
+	end
+
+	def result(retval, err = nil)
+		unless @sent
+			if @responder
+				@responder.result(retval, err)
+			else
+				@result = [retval, err]
+			end
+			@sent = true
+		end
+		nil
+	end
+
+	def error(err)
+		result(nil, err)
+		nil
+	end
+
+	def responder=(res)
+		@responder = res
+		if @sent && @result
+			@responder.result(*@result)
+			@result = nil
+		end
+	end
+end
+
+
 class ServerSession
 	def initialize(obj, accept = obj.public_methods)
 		@obj = obj
@@ -302,7 +335,11 @@ class ServerSession
 			res.error($!.to_s)
 			return
 		end
-		res.result(ret)
+		if ret.is_a?(AsyncResult)
+			ret.responder = res
+		else
+			res.result(ret)
+		end
 	end
 
 	def on_notify(method, param)
