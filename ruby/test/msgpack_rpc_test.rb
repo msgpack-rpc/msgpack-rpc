@@ -7,6 +7,10 @@ $port = 65500
 class MessagePackRPCTest < Test::Unit::TestCase
 
 	class MyServer
+		def initialize(svr)
+			@svr = svr
+		end
+
 		def hello
 			"ok"
 		end
@@ -21,8 +25,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 
 		def async
 			as = MessagePack::RPC::AsyncResult.new
-			Thread.new do
-				sleep 1
+			@svr.start_timer(1, false) do
 				as.result "async"
 			end
 			as
@@ -30,8 +33,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 
 		def async_exception
 			as = MessagePack::RPC::AsyncResult.new
-			Thread.new do
-				sleep 1
+			@svr.start_timer(1, false) do
 				as.error "async"
 			end
 			as
@@ -47,7 +49,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		port = $port += 1
 
 		svr = MessagePack::RPC::Server.new
-		svr.listen("0.0.0.0", port, MyServer.new)
+		svr.listen("0.0.0.0", port, MyServer.new(svr))
 		svr.close
 	end
 
@@ -56,7 +58,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		port = $port += 1
 
 		svr = MessagePack::RPC::Server.new
-		svr.listen("0.0.0.0", port, MyServer.new)
+		svr.listen("0.0.0.0", port, MyServer.new(svr))
 		Thread.start do
 			svr.run
 		end
@@ -78,7 +80,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		port = $port += 1
 
 		svr = MessagePack::RPC::Server.new
-		svr.listen("0.0.0.0", port, MyServer.new)
+		svr.listen("0.0.0.0", port, MyServer.new(svr))
 		Thread.start do
 			svr.run
 		end
@@ -105,7 +107,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		port = $port += 1
 
 		svr = MessagePack::RPC::Server.new
-		svr.listen("0.0.0.0", port, MyServer.new)
+		svr.listen("0.0.0.0", port, MyServer.new(svr))
 		Thread.start do
 			svr.run
 		end
@@ -139,7 +141,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		port = $port += 1
 
 		svr = MessagePack::RPC::Server.new
-		svr.listen("0.0.0.0", port, MyServer.new)
+		svr.listen("0.0.0.0", port, MyServer.new(svr))
 		Thread.start do
 			svr.run
 		end
@@ -166,7 +168,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		port = $port += 1
 
 		svr = MessagePack::RPC::Server.new
-		svr.listen("0.0.0.0", port, MyServer.new)
+		svr.listen("0.0.0.0", port, MyServer.new(svr))
 		Thread.start do
 			svr.run
 		end
@@ -192,7 +194,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		port = $port += 1
 
 		svr = MessagePack::RPC::Server.new
-		svr.listen("0.0.0.0", port, MyServer.new)
+		svr.listen("0.0.0.0", port, MyServer.new(svr))
 		Thread.start do
 			svr.run
 		end
@@ -211,12 +213,13 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		port = $port += 1
 
 		svr = MessagePack::RPC::Server.new
-		svr.listen("0.0.0.0", port, MyServer.new)
+		svr.listen("0.0.0.0", port, MyServer.new(svr))
 		Thread.start do
 			svr.run
 		end
 
 		cli = MessagePack::RPC::Client.new("127.0.0.1", port)
+		cli.timeout = 10
 
 		raised = false
 		begin
@@ -238,7 +241,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		loop = MessagePack::RPC::Loop.new
 
 		svr = MessagePack::RPC::Server.new(loop)
-		svr.listen("0.0.0.0", port, MyServer.new)
+		svr.listen("0.0.0.0", port, MyServer.new(svr))
 
 		cli = MessagePack::RPC::Client.new("127.0.0.1", port, loop)
 		cli.timeout = 10
