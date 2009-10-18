@@ -360,6 +360,8 @@ end
 Loop = ::Rev::Loop
 
 module LoopUtil
+	attr_reader :loop
+
 	class Timer < Rev::TimerWatcher
 		def initialize(interval, repeating, &block)
 			@block = block
@@ -398,7 +400,7 @@ class Client
 		@timer = Timer.new(1, true) { @s.step_timeout }
 		loop.attach(@timer)
 	end
-	attr_reader :loop, :host, :port
+	attr_reader :host, :port
 
 	def close
 		@timer.detach
@@ -448,7 +450,6 @@ class Server
 		@loop = loop
 		@socks = []
 	end
-	attr_reader :loop
 
 	def listen(host, port, obj, accept = obj.public_methods)
 		lsock = ::Rev::TCPServer.new(host, port, Server::Socket, obj, accept)
