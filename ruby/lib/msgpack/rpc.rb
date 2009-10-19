@@ -279,6 +279,7 @@ class ClientSession
 	def notify_real(method, param)
 		method = method.to_s unless method.is_a?(Integer)
 		@sock.send_notify method, param
+		nil
 	end
 end
 
@@ -328,24 +329,21 @@ class ServerSession
 
 	def on_request(method, param, res)
 		begin
-			unless @accept.include?(method)
-				raise NoMethodError, "method `#{method}' is not accepted"
-			end
-			ret = @obj.send(method, *param)
+			result = forward_method(method, param)
 		rescue
 			res.error($!.to_s)
 			return
 		end
-		if ret.is_a?(AsyncResult)
-			ret.responder = res
+		if result.is_a?(AsyncResult)
+			result.responder = res
 		else
-			res.result(ret)
+			res.result(result)
 		end
 	end
 
 	def on_notify(method, param)
-		# FIXME notify support
-		raise RPCError.new("unexpected notify message")
+		forward_method(method, param)
+	rescue
 	end
 
 	def on_response(msgid, error, result)
@@ -355,6 +353,14 @@ class ServerSession
 	def on_close(sock)
 		# do nothing
 		@sock = nil
+	end
+
+	private
+	def forward_method(method, param)
+		unless @accept.include?(method)
+			raise NoMethodError, "method `#{method}' is not accepted"
+		end
+		@obj.send(method, *param)
 	end
 end
 

@@ -139,6 +139,14 @@ class MessagePackRPCTest < Test::Unit::TestCase
 	end
 
 
+	def test_notify
+		svr, cli = start_server
+
+		cli.notify(:hello)
+		cli.notify(:sum, 1, 2)
+	end
+
+
 	def test_hidden
 		svr, cli = start_server
 
