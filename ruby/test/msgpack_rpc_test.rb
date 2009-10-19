@@ -45,18 +45,19 @@ class MessagePackRPCTest < Test::Unit::TestCase
 	end
 
 
-	def test_listen
+	def next_port
 		port = $port += 1
+	end
+
+
+	def test_listen
+		port = next_port
 
 		svr = MessagePack::RPC::Server.new
 		svr.listen("0.0.0.0", port, MyServer.new(svr))
 		svr.close
 	end
 
-
-	def next_port
-		port = $port += 1
-	end
 
 	def start_server
 		port = next_port
@@ -65,6 +66,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		svr.listen("0.0.0.0", port, MyServer.new(svr))
 		Thread.start do
 			svr.run
+			svr.close
 		end
 
 		cli = MessagePack::RPC::Client.new("127.0.0.1", port)
@@ -84,20 +86,12 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		assert_equal(result, 3)
 
 		cli.close
+		svr.stop
 	end
 
 
 	def test_send
-		port = $port += 1
-
-		svr = MessagePack::RPC::Server.new
-		svr.listen("0.0.0.0", port, MyServer.new(svr))
-		Thread.start do
-			svr.run
-		end
-
-		cli = MessagePack::RPC::Client.new("127.0.0.1", port)
-		cli.timeout = 10
+		svr, cli = start_server
 
 		req1 = cli.send(:hello)
 		req2 = cli.send(:sum, 1, 2)
@@ -111,6 +105,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		assert_nil(req2.error)
 
 		cli.close
+		svr.stop
 	end
 
 
@@ -136,6 +131,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		end
 
 		cli.close
+		svr.stop
 	end
 
 
@@ -144,6 +140,8 @@ class MessagePackRPCTest < Test::Unit::TestCase
 
 		cli.notify(:hello)
 		cli.notify(:sum, 1, 2)
+
+		cli.close
 	end
 
 
@@ -162,6 +160,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		assert_equal(rejected, true)
 
 		cli.close
+		svr.stop
 	end
 
 
@@ -179,6 +178,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		assert_equal(raised, true)
 
 		cli.close
+		svr.stop
 	end
 
 
@@ -189,6 +189,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		assert_equal(result, "async")
 
 		cli.close
+		svr.stop
 	end
 
 
@@ -206,6 +207,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		assert_equal(raised, true)
 
 		cli.close
+		svr.stop
 	end
 
 
@@ -263,6 +265,5 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		cli.close
 		lsock.close
 	end
-
 end
 

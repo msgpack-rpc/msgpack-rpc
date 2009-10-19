@@ -389,8 +389,9 @@ module LoopUtil
 
 	def stop
 		@loop.stop
-		# attach dummy timer
-		@loop.attach Rev::TimerWatcher.new(0, false)
+		# attach/detach dummy timer
+		@loop.attach(Rev::TimerWatcher.new(0, false)).detach
+		nil
 	end
 end
 
@@ -413,6 +414,7 @@ class Client
 		@timer.detach
 		@rsock.detach
 		@s.close
+		nil
 	end
 
 	def send(method, *args)
@@ -470,6 +472,7 @@ class Server
 			lsock.close
 			true
 		}
+		nil
 	end
 
 	include LoopUtil
