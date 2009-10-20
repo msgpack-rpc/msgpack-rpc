@@ -165,18 +165,13 @@ class ClientSession
 
 	class BasicRequest
 		def initialize(session, loop)
-			@error  = nil
-			@result = nil
 			@session = session
 			@timeout = session.timeout
 			@loop = loop
 		end
 		attr_reader :loop
-		attr_accessor :result, :error
 
 		def call(err, res)
-			@error  = err
-			@result = res
 			@session = nil
 		end
 
@@ -197,6 +192,32 @@ class ClientSession
 		end
 	end
 
+	class AsyncRequest < BasicRequest
+		def initialize(session, loop)
+			super(session, loop)
+			@error  = nil
+			@result = nil
+		end
+		attr_accessor :result, :error
+
+		def call(err, res)
+			@error  = err
+			@result = res
+			@session = nil
+		end
+	end
+
+	class CallbackRequest < BasicRequest
+		def initialize(session, loop, block)
+			super(session, loop)
+			@block = block
+		end
+
+		def call(err, res)
+			@block.call(err, res)
+		end
+	end
+
 
 	def initialize(loop)
 		@sock = nil
@@ -212,11 +233,11 @@ class ClientSession
 	end
 
 	def send(method, *args)
-		send_real(method, args, BasicRequest.new(self,@loop))
+		send_real(method, args, AsyncRequest.new(self,@loop))
 	end
 
 	def callback(method, *args, &block)
-		send_real(method, args, block)
+		send_real(method, args, CallbackRequest.new(self,@loop,block))
 	end
 
 	def call(method, *args)
@@ -320,7 +341,7 @@ end
 class ServerSession
 	def initialize(obj, accept = obj.public_methods)
 		@obj = obj
-		@accept = accept.map {|m| m.to_s }
+		@accept = accept.map {|m| m.is_a?(Integer) ? m : m.to_s}
 	end
 
 	def add_socket(sock)
@@ -389,8 +410,8 @@ module LoopUtil
 
 	def stop
 		@loop.stop
-		# attach/detach dummy timer
-		@loop.attach(Rev::TimerWatcher.new(0, false)).detach
+		# attach dummy timer
+		@loop.attach Rev::TimerWatcher.new(0, false)
 		nil
 	end
 end
