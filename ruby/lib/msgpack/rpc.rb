@@ -432,8 +432,8 @@ class Client
 	attr_reader :host, :port
 
 	def close
-		@timer.detach
-		@rsock.detach
+		@timer.detach if @timer.attached?
+		@rsock.detach if @rsock.attached?
 		@s.close
 		nil
 	end
@@ -489,7 +489,7 @@ class Server
 
 	def close
 		@socks.reject! {|lsock|
-			lsock.detach
+			lsock.detach if lsock.attached?
 			lsock.close
 			true
 		}

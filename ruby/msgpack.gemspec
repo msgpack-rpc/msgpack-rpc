@@ -2,7 +2,7 @@ Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
 	desc = "RPC library using MessagePack, a ainary-based efficient data interchange format."
   s.name = "msgpack-rpc"
-  s.version = "0.1.3"
+  s.version = "0.1.4"
   s.summary = desc
 	s.description = desc
   s.author = "FURUHASHI Sadayuki"
