@@ -211,6 +211,24 @@ class MessagePackRPCTest < Test::Unit::TestCase
 	end
 
 
+	def test_pool
+		svr, cli = start_server
+
+		sp = MessagePack::RPC::SessionPool.new
+		s = sp.get_session('127.0.0.1', cli.port)
+
+		result = s.call(:hello)
+		assert_equal(result, "ok")
+
+		result = s.call(:sum, 1, 2)
+		assert_equal(result, 3)
+
+		sp.close
+		cli.close
+		svr.stop
+	end
+
+
 	def test_loop
 		port = next_port
 

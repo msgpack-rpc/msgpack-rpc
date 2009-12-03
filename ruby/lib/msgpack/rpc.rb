@@ -67,70 +67,17 @@ RESPONSE = 1
 NOTIFY   = 2
 
 
-module RPCSocket
-	def session=(s)
-		@session = s
-		s.add_socket(self)
-	end
-
-	def on_message(msg)
-		case msg[0]
-		when REQUEST
-			on_request(msg[1], msg[2], msg[3])
-		when RESPONSE
-			on_response(msg[1], msg[2], msg[3])
-		when NOTIFY
-			on_notify(msg[1], msg[2])
-		else
-			raise RPCError.new("unknown message type #{msg[0]}")
-		end
-	end
-
-	def on_close
-		return unless @session
-		@session.on_close(self)
-		@session = nil
-	rescue
-		nil
-	end
-
-	def on_request(msgid, method, param)
-		return unless @session
-		@session.on_request(method, param, Responder.new(self,msgid))
-	end
-
-	def on_notify(method, param)
-		return unless @session
-		@session.on_notify(method, param)
-	end
-
-	def on_response(msgid, error, result)
-		return unless @session
-		@session.on_response(msgid, error, result)
-	end
-
-	def send_request(msgid, method, param)
-		send_message [REQUEST, msgid, method, param]
-	end
-
-	def send_response(msgid, result, error)
-		send_message [RESPONSE, msgid, error, result]
-	end
-
-	def send_notify(method, param)
-		send_message [NOTIFY, method, param]
-	end
-end
-
-
-class RevSocket < ::Rev::TCPSocket
-	include RPCSocket
-
+class RPCSocket < Rev::TCPSocket
 	def initialize(*args)
 		@buffer = ''
 		@nread = 0
 		@mpac = MessagePack::Unpacker.new
 		super
+	end
+
+	def bind_session(s)
+		@s = s
+		s.add_socket(self)
 	end
 
 	def on_read(data)
@@ -155,28 +102,77 @@ class RevSocket < ::Rev::TCPSocket
 		end
 	end
 
+	def on_message(msg)
+		case msg[0]
+		when REQUEST
+			on_request(msg[1], msg[2], msg[3])
+		when RESPONSE
+			on_response(msg[1], msg[2], msg[3])
+		when NOTIFY
+			on_notify(msg[1], msg[2])
+		else
+			raise RPCError.new("unknown message type #{msg[0]}")
+		end
+	end
+
+	def on_close
+		return unless @s
+		@s.on_close(self)
+		@s = nil
+	rescue
+		nil
+	end
+
+	def on_request(msgid, method, param)
+		return unless @s
+		@s.on_request(method, param, Responder.new(self,msgid))
+	end
+
+	def on_notify(method, param)
+		return unless @s
+		@s.on_notify(method, param)
+	end
+
+	def on_response(msgid, error, result)
+		return unless @s
+		@s.on_response(msgid, error, result)
+	end
+
+	def send_request(msgid, method, param)
+		send_message [REQUEST, msgid, method, param]
+	end
+
+	def send_response(msgid, result, error)
+		send_message [RESPONSE, msgid, error, result]
+	end
+
+	def send_notify(method, param)
+		send_message [NOTIFY, method, param]
+	end
+
+	private
 	def send_message(msg)
 		write msg.to_msgpack
 	end
 end
 
 
-class ClientSession
+class BasicSession
 
 	class BasicRequest
-		def initialize(session, loop)
-			@session = session
-			@timeout = session.timeout
+		def initialize(s, loop)
+			@s = s
+			@timeout = s.timeout
 			@loop = loop
 		end
 		attr_reader :loop
 
 		def call(err, res)
-			@session = nil
+			@s = nil
 		end
 
 		def join
-			while @session
+			while @s
 				@loop.run_once
 			end
 			self
@@ -193,8 +189,8 @@ class ClientSession
 	end
 
 	class AsyncRequest < BasicRequest
-		def initialize(session, loop)
-			super(session, loop)
+		def initialize(s, loop)
+			super(s, loop)
 			@error  = nil
 			@result = nil
 		end
@@ -203,13 +199,13 @@ class ClientSession
 		def call(err, res)
 			@error  = err
 			@result = res
-			@session = nil
+			@s = nil
 		end
 	end
 
 	class CallbackRequest < BasicRequest
-		def initialize(session, loop, block)
-			super(session, loop)
+		def initialize(s, loop, block)
+			super(s, loop)
 			@block = block
 		end
 
@@ -219,28 +215,31 @@ class ClientSession
 	end
 
 
-	def initialize(loop)
-		@sock = nil
-		@reqtable = {}
-		@seqid = 0
+	def initialize(addr, dispatcher, loop)
+		@addr = addr
+		@dispatcher = dispatcher
 		@loop = loop
-		@timeout = 60    # FIXME default timeout time
+		reset
 	end
 	attr_accessor :timeout
 
 	def add_socket(sock)
-		@sock = sock
+		@sockpool.push(sock)
 	end
 
+
 	def send(method, *args)
-		send_real(method, args, AsyncRequest.new(self,@loop))
+		msgid = send_request(method, args)
+		@reqtable[msgid] = AsyncRequest.new(self, @loop)
 	end
 
 	def callback(method, *args, &block)
-		send_real(method, args, CallbackRequest.new(self,@loop,block))
+		msgid = send_request(method, args)
+		@reqtable[msgid] = CallbackRequest.new(self, @loop, block)
 	end
 
 	def call(method, *args)
+		# FIXME if @reqtable.empty? optimize
 		req = send(method, *args)
 		req.join
 		if req.error
@@ -251,56 +250,89 @@ class ClientSession
 	end
 
 	def notify(method, *args)
-		notify_real(method, args)
-	end
-
-
-	def on_response(msgid, error, result)
-		if req = @reqtable.delete(msgid)
-			req.call error, result
-		end
-	end
-
-	def on_notify(method, param)
-		raise RPCError.new("unexpected notify message")
-	end
-
-	def on_request(method, param, res)
-		raise RPCError.new("unexpected request message")
-	end
-
-	def on_close(sock)
-		@sock = nil
+		send_notify(method, args)
 	end
 
 	def close
-		@sock.close if @sock
+		@sockpool.reject! {|sock|
+			sock.detach if sock.attached?
+			sock.close
+			true
+		}
+		reset
+		self
 	end
-
 
 	def step_timeout
 		reqs = []
 		@reqtable.reject! {|msgid, req|
 			if req.step_timeout
-				reqs.push req
+				reqs.push(req)
 			end
 		}
 		reqs.each {|req| req.call :TimeoutError, nil }
+		!@reqtable.empty?
 	end
 
+
+	def on_response(msgid, error, result)
+		if req = @reqtable.delete(msgid)
+			req.call(error, result)
+		end
+	end
+
+	def on_request(method, param, res)
+		@dispatcher.dispatch_request(method, param, res)
+	end
+
+	def on_notify(method, param)
+		@dispatcher.dispatch_notify(method, param)
+	end
+
+	def on_close(sock)
+		@sockpool.delete(sock)
+	end
+
+
 	private
-	def send_real(method, param, req)
+	def reset
+		@sockpool = []
+		@reqtable = {}
+		@seqid = 0
+		@timeout = 60    # FIXME default timeout time
+	end
+
+	def send_request(method, param)
 		method = method.to_s unless method.is_a?(Integer)
 		msgid = @seqid
 		@seqid += 1; if @seqid >= 1<<31 then @seqid = 0 end
-		@sock.send_request msgid, method, param
-		@reqtable[msgid] = req
+		sock = get_connection
+		sock.send_request msgid, method, param
+		msgid
 	end
 
-	def notify_real(method, param)
+	def send_notify(method, param)
 		method = method.to_s unless method.is_a?(Integer)
-		@sock.send_notify method, param
+		sock = get_connection
+		sock.send_notify method, param
 		nil
+	end
+
+	def get_connection
+		unless @addr
+			raise RPCError.new("unexpected send request on server session")
+		end
+		if @sockpool.empty?
+			port, host = ::Socket.unpack_sockaddr_in(@addr)
+			s = RPCSocket.connect(host, port)  # async connect
+			s.bind_session self
+			@loop.attach(s)
+			@sockpool.push(s)
+			s
+		else
+			# FIXME pesudo connection load balance
+			@sockpool.first
+		end
 	end
 end
 
@@ -338,17 +370,23 @@ class AsyncResult
 end
 
 
-class ServerSession
+class NullDispatcher
+	def dispatch_request(method, param, res)
+		raise RPCError.new("unexpected request message")
+	end
+
+	def dispatch_notify(method, param)
+		raise RPCError.new("unexpected notify message")
+	end
+end
+
+class ObjectDispatcher
 	def initialize(obj, accept = obj.public_methods)
 		@obj = obj
 		@accept = accept.map {|m| m.is_a?(Integer) ? m : m.to_s}
 	end
 
-	def add_socket(sock)
-		# do nothing
-	end
-
-	def on_request(method, param, res)
+	def dispatch_request(method, param, res)
 		begin
 			result = forward_method(method, param)
 		rescue
@@ -362,18 +400,9 @@ class ServerSession
 		end
 	end
 
-	def on_notify(method, param)
+	def dispatch_notify(method, param)
 		forward_method(method, param)
 	rescue
-	end
-
-	def on_response(msgid, error, result)
-		raise RPCError.new("unexpected response message")
-	end
-
-	def on_close(sock)
-		# do nothing
-		@sock = nil
 	end
 
 	private
@@ -385,7 +414,9 @@ class ServerSession
 	end
 end
 
-Loop = ::Rev::Loop
+
+Loop = Rev::Loop
+
 
 module LoopUtil
 	attr_reader :loop
@@ -404,11 +435,42 @@ module LoopUtil
 		@loop.attach Timer.new(interval, repeating, &block)
 	end
 
+	class TaskQueue < Rev::AsyncWatcher
+		def initialize
+			@queue = []
+			super
+		end
+
+		def push(task)
+			@queue.push(task)
+			signal
+		end
+
+		def on_signal
+			while task = @queue.pop
+				begin
+					task.call
+				rescue
+				end
+			end
+		end
+	end
+
+	def submit(task = nil, &block)
+		task ||= block
+		unless @queue
+			@queue = TaskQueue.new
+			@loop.attach(@queue)
+		end
+		@queue.push(task)
+	end
+
 	def run
 		@loop.run
 	end
 
 	def stop
+		@queue.detach if @queue && @queue.attached?
 		@loop.stop
 		# attach dummy timer
 		@loop.attach Rev::TimerWatcher.new(0, false)
@@ -417,86 +479,129 @@ module LoopUtil
 end
 
 
-class Client
+class Session
+	def initialize(addr, dispatcher, loop)
+		@base = BasicSession.new(addr, dispatcher, loop)
+	end
+
+	def close
+		@base.close
+	end
+
+	def send(method, *args)
+		@base.send(method, *args)
+	end
+
+	def callback(method, *args, &block)
+		@base.callback(method, *args, &block)
+	end
+
+	def call(method, *args)
+		@base.call(method, *args)
+	end
+
+	def notify(method, *args)
+		@base.notify(method, *args)
+	end
+
+	def timeout
+		@base.timeout
+	end
+
+	def timeout=(time)
+		@base.timeout = time
+	end
+end
+
+
+class Client < Session
 	def initialize(host, port, loop = Loop.new)
 		@loop = loop
 		@host = host
 		@port = port
-		@rsock = RevSocket.connect(host, port)
-		@s = ClientSession.new(loop)
-		@rsock.session = @s
-		loop.attach(@rsock)
-		@timer = Timer.new(1, true) { @s.step_timeout }
+
+		addr = ::Socket.pack_sockaddr_in(port, host)
+		super(addr, NullDispatcher.new, loop)
+
+		@timer = Timer.new(1, true) {
+			@base.step_timeout
+		}
 		loop.attach(@timer)
 	end
 	attr_reader :host, :port
 
 	def close
 		@timer.detach if @timer.attached?
-		@rsock.detach if @rsock.attached?
-		@s.close
-		nil
-	end
-
-	def send(method, *args)
-		@s.send(method, *args)
-	end
-
-	def callback(method, *args, &block)
-		@s.callback(method, *args, &block)
-	end
-
-	def call(method, *args)
-		@s.call(method, *args)
-	end
-
-	def notify(method, *args)
-		@s.notify(method, *args)
-	end
-
-	def timeout
-		@s.timeout
-	end
-
-	def timeout=(time)
-		@s.timeout = time
+		super
 	end
 
 	include LoopUtil
 end
 
 
-class Server
-	class Socket < RevSocket
-		def initialize(*args)
-			accept = args.pop
-			obj = args.pop
-			self.session = ServerSession.new(obj, accept)
-			super(*args)
-		end
-	end
-
+class SessionPool
 	def initialize(loop = Loop.new)
 		@loop = loop
-		@socks = []
+		@spool = {}
+		@stimer = Timer.new(1, true, &method(:step_timeout))
+		loop.attach(@stimer)
 	end
 
-	def listen(host, port, obj, accept = obj.public_methods)
-		lsock = ::Rev::TCPServer.new(host, port, Server::Socket, obj, accept)
-		@socks.push lsock
-		@loop.attach(lsock)
+	def get_session(host, port)
+		addr = ::Socket.pack_sockaddr_in(port, host)
+		@spool[addr] ||= Session.new(addr, nil, @loop)
 	end
 
 	def close
-		@socks.reject! {|lsock|
-			lsock.detach if lsock.attached?
-			lsock.close
+		@spool.reject! {|addr, s|
+			s.close
 			true
 		}
+		@stimer.detach if @stimer.attached?
 		nil
 	end
 
 	include LoopUtil
+
+	private
+	def step_timeout
+		@spool.each_pair {|addr, s|
+			s.instance_variable_get(:@base).step_timeout
+		}
+	end
+end
+
+
+class Server < SessionPool
+	class Socket < RPCSocket
+		def initialize(*args)
+			loop = args.pop
+			dispatcher = args.pop
+			super(*args)
+			bind_session BasicSession.new(nil, dispatcher, loop)
+		end
+	end
+
+	def initialize(loop = Loop.new)
+		super(loop)
+		@lsocks = []
+	end
+
+	def listen(host, port, obj, accept = obj.public_methods)
+		dispatcher = ObjectDispatcher.new(obj, accept)
+		lsock = Rev::TCPServer.new(host, port, Server::Socket, dispatcher, @loop)
+		@lsocks.push(lsock)
+		@loop.attach(lsock)
+	end
+
+	def close
+		@lsocks.reject! {|lsock|
+			lsock.detach if lsock.attached?
+			lsock.close
+			true
+		}
+		super
+	end
 end
 
 
