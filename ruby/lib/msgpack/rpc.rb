@@ -45,7 +45,6 @@ class TimeoutError < Error
 	end
 end
 
-
 class Responder
 	def initialize(socket, msgid)
 		@socket = socket
@@ -53,7 +52,7 @@ class Responder
 	end
 
 	def result(retval, err = nil)
-		@socket.send_response(@msgid, retval, err)
+		@socket.write RPCSocket.pack_response(@msgid, retval, err)
 	end
 
 	def error(err)
@@ -62,22 +61,128 @@ class Responder
 end
 
 
+class Address
+	# +--+----+
+	# | 2|  4 |
+	# +--+----+
+	# port network byte order
+	#    IPv4 address
+	#
+	# +--+----------------+
+	# | 2|       16       |
+	# +--+----------------+
+	# port network byte order
+	#    IPv6 address
+	#
+
+	def initialize(host, port)
+		raw = Socket.pack_sockaddr_in(port, host)
+		if raw[0] == 0 || raw[1] == 0
+			# Linux
+			family = raw.unpack('S')[0]
+		else
+			# BSD
+			family = raw[1]
+		end
+		if family == Socket::AF_INET
+			@serial = raw[2,6]
+		elsif family == Socket::AF_INET6
+			@serial = raw[2,2] + raw[8,16]
+		end
+	end
+
+	def host
+		unpack[0]
+	end
+
+	def port
+		unpack[1]
+	end
+
+	def connectable?
+		port != 0
+	end
+
+	def sockaddr
+		Address.parse_sockaddr(@serial)
+	end
+
+	def unpack
+		Address.parse(@serial)
+	end
+
+	def self.parse_sockaddr(raw)
+		if raw.length == 6
+			addr = Socket.pack_sockaddr_in(0, '0.0.0.0')
+			addr[2,6] = raw[0,6]
+		else
+			addr = Socket.pack_sockaddr_in(0, '::')
+			addr[2,2]  = raw[0,2]
+			addr[8,16] = raw[2,16]
+		end
+		addr
+	end
+
+	def self.parse(raw)
+		Socket.unpack_sockaddr_in(parse_sockaddr(raw)).reverse
+	end
+
+	def self.load(raw)
+		Address.new *parse(raw)
+	end
+
+	def dump
+		@serial
+	end
+
+	def to_msgpack(out = '')
+		@serial.to_msgpack(out)
+	end
+
+	def to_s
+		unpack.join(':')
+	end
+
+	def inspect
+		"#<#{self.class} #{to_s} @serial=#{@serial.inspect}>"
+	end
+
+
+	def eql?(o)
+		o.class == Address && dump.eql?(o.dump)
+	end
+
+	def hash
+		dump.hash
+	end
+
+	def ==(o)
+		eql?(o)
+	end
+end
+
+
 REQUEST  = 0
 RESPONSE = 1
 NOTIFY   = 2
+INIT     = 3
 
 
 class RPCSocket < Rev::TCPSocket
-	def initialize(*args)
+	def initialize(sock, session)
 		@buffer = ''
 		@nread = 0
 		@mpac = MessagePack::Unpacker.new
-		super
+		@s = session
+		super(sock)
 	end
 
 	def bind_session(s)
 		@s = s
-		s.add_socket(self)
+	end
+
+	def bound?
+		!@s.nil?
 	end
 
 	def on_read(data)
@@ -110,9 +215,21 @@ class RPCSocket < Rev::TCPSocket
 			on_response(msg[1], msg[2], msg[3])
 		when NOTIFY
 			on_notify(msg[1], msg[2])
+		when INIT
+			# ignore
 		else
 			raise RPCError.new("unknown message type #{msg[0]}")
 		end
+	end
+
+	def on_connect
+		return unless @s
+		@s.on_connect(self)
+	end
+
+	def on_connect_failed
+		return unless @s
+		@s.on_connect_failed(self)
 	end
 
 	def on_close
@@ -138,26 +255,29 @@ class RPCSocket < Rev::TCPSocket
 		@s.on_response(msgid, error, result)
 	end
 
-	def send_request(msgid, method, param)
-		send_message [REQUEST, msgid, method, param]
-	end
-
-	def send_response(msgid, result, error)
-		send_message [RESPONSE, msgid, error, result]
-	end
-
-	def send_notify(method, param)
-		send_message [NOTIFY, method, param]
-	end
-
-	private
 	def send_message(msg)
 		write msg.to_msgpack
+	end
+
+	def self.pack_request(msgid, method, param)
+		[REQUEST, msgid, method, param].to_msgpack
+	end
+
+	def self.pack_response(msgid, result, error)
+		[RESPONSE, msgid, error, result].to_msgpack
+	end
+
+	def self.pack_notify(method, param)
+		[NOTIFY, method, param].to_msgpack
+	end
+
+	def self.pack_init(msg)
+		[INIT, msg].to_msgpack
 	end
 end
 
 
-class BasicSession
+class Session
 
 	class BasicRequest
 		def initialize(s, loop)
@@ -215,16 +335,35 @@ class BasicSession
 	end
 
 
-	def initialize(addr, dispatcher, loop)
-		@addr = addr
-		@dispatcher = dispatcher
+	def initialize(initmsg, target_addr, dispatcher, loop)
+		@initmsg = initmsg
+		@target_addr = target_addr
+		@dispatcher = dispatcher || NullDispatcher.new
 		@loop = loop
+		@timeout = 10    # FIXME default timeout time
+		@reconnect = 5   # FIXME default reconnect limit
 		reset
 	end
-	attr_accessor :timeout
+	attr_accessor :timeout, :reconnect
 
-	def add_socket(sock)
+	def address
+		@target_addr
+	end
+
+	def on_connect(sock)
 		@sockpool.push(sock)
+		sock.write @pending
+		@pending = ""
+		@connecting = 0
+	end
+
+	def on_connect_failed(sock)
+		if @connecting < @reconnect
+			try_connect
+			@connecting += 1
+		else
+			@connecting = 0
+		end
 	end
 
 
@@ -282,11 +421,11 @@ class BasicSession
 	end
 
 	def on_request(method, param, res)
-		@dispatcher.dispatch_request(method, param, res)
+		@dispatcher.dispatch_request(self, method, param, res)
 	end
 
 	def on_notify(method, param)
-		@dispatcher.dispatch_notify(method, param)
+		@dispatcher.dispatch_notify(self, method, param)
 	end
 
 	def on_close(sock)
@@ -299,40 +438,48 @@ class BasicSession
 		@sockpool = []
 		@reqtable = {}
 		@seqid = 0
-		@timeout = 60    # FIXME default timeout time
+		@pending = ""
+		@connecting = 0
 	end
 
 	def send_request(method, param)
 		method = method.to_s unless method.is_a?(Integer)
 		msgid = @seqid
 		@seqid += 1; if @seqid >= 1<<31 then @seqid = 0 end
-		sock = get_connection
-		sock.send_request msgid, method, param
+		send_data RPCSocket.pack_request(msgid, method, param)
 		msgid
 	end
 
 	def send_notify(method, param)
 		method = method.to_s unless method.is_a?(Integer)
-		sock = get_connection
-		sock.send_notify method, param
+		send_data RPCSocket.pack_notify(method, param)
 		nil
 	end
 
-	def get_connection
-		unless @addr
+	def send_data(msg)
+		unless @target_addr
 			raise RPCError.new("unexpected send request on server session")
 		end
 		if @sockpool.empty?
-			port, host = ::Socket.unpack_sockaddr_in(@addr)
-			s = RPCSocket.connect(host, port)  # async connect
-			s.bind_session self
-			@loop.attach(s)
-			@sockpool.push(s)
-			s
+			if @connecting == 0
+				try_connect
+				@connecting = 1
+			end
+			@pending << msg
 		else
 			# FIXME pesudo connection load balance
-			@sockpool.first
+			sock = @sockpool.first
+			sock.write msg
 		end
+	end
+
+	def try_connect
+		port, host = ::Socket.unpack_sockaddr_in(@target_addr.sockaddr)
+		sock = RPCSocket.connect(host, port, self)  # async connect
+		if @initmsg
+			sock.write @initmsg
+		end
+		@loop.attach(sock)
 	end
 end
 
@@ -371,11 +518,11 @@ end
 
 
 class NullDispatcher
-	def dispatch_request(method, param, res)
+	def dispatch_request(session, method, param, res)
 		raise RPCError.new("unexpected request message")
 	end
 
-	def dispatch_notify(method, param)
+	def dispatch_notify(session, method, param)
 		raise RPCError.new("unexpected notify message")
 	end
 end
@@ -386,9 +533,9 @@ class ObjectDispatcher
 		@accept = accept.map {|m| m.is_a?(Integer) ? m : m.to_s}
 	end
 
-	def dispatch_request(method, param, res)
+	def dispatch_request(session, method, param, res)
 		begin
-			result = forward_method(method, param)
+			result = forward_method(session, method, param)
 		rescue
 			res.error($!.to_s)
 			return
@@ -400,17 +547,17 @@ class ObjectDispatcher
 		end
 	end
 
-	def dispatch_notify(method, param)
-		forward_method(method, param)
+	def dispatch_notify(session, method, param)
+		forward_method(session, method, param)
 	rescue
 	end
 
 	private
-	def forward_method(method, param)
+	def forward_method(session, method, param)
 		unless @accept.include?(method)
 			raise NoMethodError, "method `#{method}' is not accepted"
 		end
-		@obj.send(method, *param)
+		@obj.send(method, *param) { session }
 	end
 end
 
@@ -447,7 +594,7 @@ module LoopUtil
 		end
 
 		def on_signal
-			while task = @queue.pop
+			while task = @queue.shift
 				begin
 					task.call
 				rescue
@@ -479,56 +626,30 @@ module LoopUtil
 end
 
 
-class Session
-	def initialize(addr, dispatcher, loop)
-		@base = BasicSession.new(addr, dispatcher, loop)
-	end
-
-	def close
-		@base.close
-	end
-
-	def send(method, *args)
-		@base.send(method, *args)
-	end
-
-	def callback(method, *args, &block)
-		@base.callback(method, *args, &block)
-	end
-
-	def call(method, *args)
-		@base.call(method, *args)
-	end
-
-	def notify(method, *args)
-		@base.notify(method, *args)
-	end
-
-	def timeout
-		@base.timeout
-	end
-
-	def timeout=(time)
-		@base.timeout = time
-	end
-end
-
-
 class Client < Session
 	def initialize(host, port, loop = Loop.new)
 		@loop = loop
 		@host = host
 		@port = port
 
-		addr = ::Socket.pack_sockaddr_in(port, host)
-		super(addr, NullDispatcher.new, loop)
+		target_addr = Address.new(host, port)
+		super(nil, target_addr, NullDispatcher.new, loop)
 
 		@timer = Timer.new(1, true) {
-			@base.step_timeout
+			step_timeout
 		}
 		loop.attach(@timer)
 	end
 	attr_reader :host, :port
+
+	def self.open(host, port, loop = Loop.new, &block)
+		cli = new(host, port, loop)
+		begin
+			block.call(cli)
+		ensure
+			cli.close
+		end
+	end
 
 	def close
 		@timer.detach if @timer.attached?
@@ -548,12 +669,12 @@ class SessionPool
 	end
 
 	def get_session(host, port)
-		addr = ::Socket.pack_sockaddr_in(port, host)
-		@spool[addr] ||= Session.new(addr, nil, @loop)
+		target_addr = Address.new(host, port)
+		@spool[target_addr] ||= create_session(target_addr)
 	end
 
 	def close
-		@spool.reject! {|addr, s|
+		@spool.reject! {|target_addr, s|
 			s.close
 			true
 		}
@@ -563,10 +684,15 @@ class SessionPool
 
 	include LoopUtil
 
+	protected
+	def create_session(target_addr)
+		Session.new(nil, target_addr, nil, @loop)
+	end
+
 	private
 	def step_timeout
-		@spool.each_pair {|addr, s|
-			s.instance_variable_get(:@base).step_timeout
+		@spool.each_pair {|target_addr, s|
+			s.step_timeout
 		}
 	end
 end
@@ -574,11 +700,9 @@ end
 
 class Server < SessionPool
 	class Socket < RPCSocket
-		def initialize(*args)
-			loop = args.pop
-			dispatcher = args.pop
-			super(*args)
-			bind_session BasicSession.new(nil, dispatcher, loop)
+		def initialize(sock, dispatcher, loop)
+			s = Session.new(nil, nil, dispatcher, loop)
+			super(sock, s)
 		end
 	end
 
