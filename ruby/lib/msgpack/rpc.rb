@@ -40,8 +40,14 @@ class RemoteError < RPCError
 end
 
 class TimeoutError < Error
-	def initialize
-		super("request timed out")
+	def initialize(msg = "request timed out")
+		super
+	end
+end
+
+class ConnectError < TimeoutError
+	def initialize(msg = "connect failed")
+		super
 	end
 end
 
@@ -75,19 +81,28 @@ class Address
 	#    IPv6 address
 	#
 
+	test = Socket.pack_sockaddr_in(0,'0.0.0.0')
+	if test[0] == "\0"[0] || test[1] == "\0"[0]
+		# Linux
+		IMPL_LINUX = true
+	else
+		# BSD
+		IMPL_LINUX = false
+	end
+
 	def initialize(host, port)
 		raw = Socket.pack_sockaddr_in(port, host)
-		if raw[0] == 0 || raw[1] == 0
-			# Linux
+		if IMPL_LINUX
 			family = raw.unpack('S')[0]
 		else
-			# BSD
-			family = raw[1]
+			family = raw.unpack('CC')[1]
 		end
 		if family == Socket::AF_INET
 			@serial = raw[2,6]
 		elsif family == Socket::AF_INET6
 			@serial = raw[2,2] + raw[8,16]
+		else
+			raise "Unknown address family: #{family}"
 		end
 	end
 
@@ -141,6 +156,10 @@ class Address
 
 	def to_s
 		unpack.join(':')
+	end
+
+	def to_a
+		unpack
 	end
 
 	def inspect
@@ -216,7 +235,7 @@ class RPCSocket < Rev::TCPSocket
 		when NOTIFY
 			on_notify(msg[1], msg[2])
 		when INIT
-			# ignore
+			on_init(msg[1])
 		else
 			raise RPCError.new("unknown message type #{msg[0]}")
 		end
@@ -253,6 +272,10 @@ class RPCSocket < Rev::TCPSocket
 	def on_response(msgid, error, result)
 		return unless @s
 		@s.on_response(msgid, error, result)
+	end
+
+	def on_init(msg)
+		# ignore
 	end
 
 	def send_message(msg)
@@ -363,6 +386,13 @@ class Session
 			@connecting += 1
 		else
 			@connecting = 0
+			@reqtable.reject! {|msgid, req|
+				begin
+					req.call ConnectError.new, nil
+				rescue
+				end
+				true
+			}
 		end
 	end
 
@@ -382,7 +412,7 @@ class Session
 		req = send(method, *args)
 		req.join
 		if req.error
-			raise TimeoutError.new if req.error == :TimeoutError
+			raise req.error if req.error.is_a?(Error)
 			raise RemoteError.new(req.error, req.result)
 		end
 		req.result
@@ -409,7 +439,12 @@ class Session
 				reqs.push(req)
 			end
 		}
-		reqs.each {|req| req.call :TimeoutError, nil }
+		reqs.each {|req|
+			begin
+				req.call TimeoutError.new, nil
+			rescue
+			end
+		}
 		!@reqtable.empty?
 	end
 
