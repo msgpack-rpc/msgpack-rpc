@@ -764,6 +764,72 @@ class Server < SessionPool
 end
 
 
+class Cluster < SessionPool
+	class Socket < RPCSocket
+		def initialize(sock, binder)
+			@binder = binder
+			super(sock, nil)
+		end
+
+		def on_message(msg)
+			if bound?
+				super
+			else
+				@binder.call(self, msg)
+			end
+		end
+	end
+
+	def initialize(host, port, loop = Loop.new)
+		super(loop)
+		@host = host
+		@port = port
+		@dispatcher = nil
+		self_addr = Address.new(host, port)
+		@initmsg = RPCSocket.pack_init(self_addr)
+	end
+	attr_reader :host, :port
+
+	def serve(obj, accept = obj.public_methods)
+		@dispatcher = ObjectDispatcher.new(obj, accept)
+		@lsock = Rev::TCPServer.new(host, port, Cluster::Socket, method(:lazy_bind))
+		@loop.attach(@lsock)
+		self
+	end
+
+	def close
+		if @lsock
+			@lsock.detach if @lsock.attached?
+			@lsock.close
+		end
+		super
+	end
+
+	include LoopUtil
+
+	protected
+	def create_session(target_addr)
+		Session.new(@initmsg, target_addr, @dispatcher, @loop)
+	end
+
+	private
+	def lazy_bind(sock, msg)
+		if msg[0] == INIT
+			# cluster
+			target_addr = Address.load(msg[1])
+			s = Session.new(@initmsg, target_addr, @dispatcher, @loop)
+			sock.bind_session(s)
+			@spool[target_addr] = s
+		else
+			# subsys
+			s = Session.new(nil, nil, @dispatcher, @loop)
+			sock.bind_session(s)
+			sock.on_message(msg)
+		end
+	end
+end
+
+
 end  # module RPC
 end  # module MessagePack
 
