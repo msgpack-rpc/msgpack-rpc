@@ -340,10 +340,10 @@ class TransportOption < StreamOption
 			#when :rx_udp
 			#	@rxproto = PROTO_UDP
 			when :deflate
-				@rxopt.deflate = true
 				@txopt.deflate = true
-			when :tx_deflate
 				@rxopt.deflate = true
+			when :tx_deflate
+				@txopt.deflate = true
 			when :rx_deflate
 				@rxopt.deflate = true
 			#when PROTO_TCP
