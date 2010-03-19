@@ -162,6 +162,10 @@ class Address
 		unpack
 	end
 
+	def <=>(o)
+		dump <=> o.dump
+	end
+
 	def inspect
 		"#<#{self.class} #{to_s} @serial=#{@serial.inspect}>"
 	end
