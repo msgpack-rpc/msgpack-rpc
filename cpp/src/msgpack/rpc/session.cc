@@ -20,10 +20,10 @@
 #include "future_impl.h"
 #include "request_impl.h"
 #include "message_sendable.h"
-#include "transport.h"
-
-#include "tcp.h"
 #include "cclog/cclog.h"
+
+#include "transport/base.h"
+#include "transport/tcp.h"
 
 namespace msgpack {
 namespace rpc {
@@ -41,12 +41,12 @@ session_impl::session_impl(const address& to_address,
 	m_timeout(5)  // FIXME
 {
 	// FIXME
-	m_dtran = shared_transport(new tcp_transport(this, m_dtopt));
+	m_dtran = shared_transport(new transport::tcp(this, m_dtopt));
 }
 
 session_impl::~session_impl() { }
 
-inline transport* session_impl::get_transport(option opt)
+inline transport::base* session_impl::get_transport(option opt)
 {
 	// FIXME
 	return m_dtran.get();
@@ -55,7 +55,7 @@ inline transport* session_impl::get_transport(option opt)
 
 future session_impl::send_request_impl(msgid_t msgid, vrefbuffer* vbuf, auto_zone life, option opt)
 {
-	transport* tran = get_transport(opt);
+	transport::base* tran = get_transport(opt);
 	shared_future f(new future_impl(shared_from_this(), m_loop));
 
 	tran->send_data(vbuf, life);
@@ -66,7 +66,7 @@ future session_impl::send_request_impl(msgid_t msgid, vrefbuffer* vbuf, auto_zon
 
 future session_impl::send_request_impl(msgid_t msgid, sbuffer* sbuf, option opt)
 {
-	transport* tran = get_transport(opt);
+	transport::base* tran = get_transport(opt);
 	shared_future f(new future_impl(shared_from_this(), m_loop));
 
 	tran->send_data(sbuf);

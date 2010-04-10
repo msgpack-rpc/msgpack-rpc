@@ -13,7 +13,7 @@ libmsgpack_rpc_la_SOURCES = \
 		server.cc \
 		session.cc \
 		session_pool.cc \
-		tcp.cc
+		transport/tcp.cc
 
 libmsgpack_rpc_include_HEADERS = \
 		address.h \
@@ -21,25 +21,26 @@ libmsgpack_rpc_include_HEADERS = \
 		client.h \
 		dispatcher.h \
 		future.h \
-		future_impl.h \
 		impl_fwd.h \
 		loop.h \
 		loop_util.h \
 		message.h \
-		message_sendable.h \
 		option.h \
-		reqtable.h \
 		request.h \
-		request_impl.h \
 		server.h \
 		session.h \
-		session_impl.h \
 		session_pool.h \
-		tcp.h \
-		transport.h \
 		types.h
 
-noinst_HEADERS =
+noinst_HEADERS = \
+		future_impl.h \
+		request_impl.h \
+		session_impl.h \
+		reqtable.h \
+		message_sendable.h \
+		transport/base.h \
+		transport/listener.h \
+		transport/tcp.h
 
 PREP_SOURCE = \
 		caller.hmpl

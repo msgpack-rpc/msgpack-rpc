@@ -1,5 +1,5 @@
 //
-// msgpack::rpc::tcp - MessagePack-RPC for C++
+// msgpack::rpc::transport::tcp - MessagePack-RPC for C++
 //
 // Copyright (C) 2009-2010 FURUHASHI Sadayuki
 //
@@ -15,10 +15,11 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-#ifndef MSGPACK_RPC_TCP_H__
-#define MSGPACK_RPC_TCP_H__
+#ifndef MSGPACK_RPC_TRANSPORT_TCP_H__
+#define MSGPACK_RPC_TRANSPORT_TCP_H__
 
-#include "transport.h"
+#include "transport/base.h"
+#include "transport/listener.h"
 #include "session_impl.h"
 #include <mp/functional.h>
 #include <mp/sync.h>
@@ -28,12 +29,13 @@
 
 namespace msgpack {
 namespace rpc {
+namespace transport {
 
 
-class tcp_transport : public transport, public mp::enable_shared_from_this<tcp_transport> {
+class tcp : public transport::base, public mp::enable_shared_from_this<tcp> {
 public:
-	tcp_transport(session_impl* s, const transport_option& topt);
-	~tcp_transport();
+	tcp(session_impl* s, const transport_option& topt);
+	~tcp();
 
 	// message_sendable interface
 	void send_data(msgpack::vrefbuffer* vbuf, auto_zone z);
@@ -48,7 +50,7 @@ private:
 	class active_socket;
 	class passive_socket;
 
-	typedef mp::shared_ptr<tcp_transport> shared_tcp_transport;
+	typedef mp::shared_ptr<tcp> shared_tcp_transport;
 
 	typedef std::vector<socket*> sockpool_t;
 
@@ -74,12 +76,12 @@ protected:
 	unsigned int m_reconnect_limit;
 
 private:
-	tcp_transport();
-	tcp_transport(const tcp_transport&);
+	tcp();
+	tcp(const tcp&);
 };
 
 
-class tcp_transport::listener : public transport_listener {
+class tcp::listener : public transport::listener {
 public:
 	listener(
 			int socket_family, int socket_type, int protocol,
@@ -104,8 +106,9 @@ private:
 };
 
 
+}  // namespace transport
 }  // namespace rpc
 }  // namespace msgpack
 
-#endif /* msgpack/rpc/tcp.h */
+#endif /* msgpack/rpc/transport/tcp.h */
 

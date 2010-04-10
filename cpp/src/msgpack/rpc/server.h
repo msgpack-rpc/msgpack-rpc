@@ -20,7 +20,6 @@
 
 #include "session_pool.h"
 #include "dispatcher.h"
-#include "transport.h"
 #include <mp/utilize.h>
 #include <string>
 
@@ -44,7 +43,7 @@ public:
 
 private:
 	dispatcher* m_dp;
-	std::auto_ptr<transport_listener> m_listener;
+	std::auto_ptr<transport::listener> m_listener;
 
 	MP_UTILIZE;
 

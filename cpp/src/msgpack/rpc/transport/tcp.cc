@@ -1,5 +1,5 @@
 //
-// msgpack::rpc::tcp - MessagePack-RPC for C++
+// msgpack::rpc::transport::tcp - MessagePack-RPC for C++
 //
 // Copyright (C) 2009-2010 FURUHASHI Sadayuki
 //
@@ -15,14 +15,15 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-#include "tcp.h"
+#include "transport/tcp.h"
 #include "cclog/cclog.h"
 
 namespace msgpack {
 namespace rpc {
+namespace transport {
 
 
-class tcp_transport::socket : public mp::wavy::handler, public message_sendable {
+class tcp::socket : public mp::wavy::handler, public message_sendable {
 public:
 	socket(int fd, loop lo, shared_session s);
 	virtual ~socket();
@@ -49,7 +50,7 @@ private:
 };
 
 
-class tcp_transport::active_socket : public socket {
+class tcp::active_socket : public socket {
 public:
 	active_socket(int fd, shared_tcp_transport tran, shared_session s);
 	~active_socket();  // on_close
@@ -68,7 +69,7 @@ private:
 };
 
 
-class tcp_transport::passive_socket : public socket {
+class tcp::passive_socket : public socket {
 public:
 	passive_socket(int fd, shared_session s);
 
@@ -95,14 +96,14 @@ private:
 using namespace mp::placeholders;
 
 
-MP_UTIL_DEF(tcp_transport) {
+MP_UTIL_DEF(tcp) {
 	void try_connect(sync_ref& lk_ref);
 	void connect_callback(int fd, int err, shared_session session_life);
 };
 
 
-tcp_transport::tcp_transport(session_impl* s, const transport_option& topt) :
-	transport(s, topt),
+tcp::tcp(session_impl* s, const transport_option& topt) :
+	base(s, topt),
 	m_connect_timeout(5.0),  // FIXME default connect timeout
 	m_reconnect_limit(3)     // FIXME default connect reconnect limit
 {
@@ -110,13 +111,13 @@ tcp_transport::tcp_transport(session_impl* s, const transport_option& topt) :
 	// FIXME deflate
 }
 
-tcp_transport::~tcp_transport()
+tcp::~tcp()
 {
 	// FIXME
 }
 
 
-void MP_UTIL_IMPL(tcp_transport)::try_connect(sync_ref& lk_ref)
+void MP_UTIL_IMPL(tcp)::try_connect(sync_ref& lk_ref)
 {
 	address addr = get_address();
 	if(!addr.connectable()) {
@@ -133,11 +134,11 @@ void MP_UTIL_IMPL(tcp_transport)::try_connect(sync_ref& lk_ref)
 			(sockaddr*)addrbuf, addr.addrlen(),
 			m_connect_timeout,
 			mp::bind(
-				&MP_UTIL_IMPL(tcp_transport)::connect_callback, &MP_UTIL,
+				&MP_UTIL_IMPL(tcp)::connect_callback, &MP_UTIL,
 				_1, _2, get_session().shared_from_this()));
 }
 
-void MP_UTIL_IMPL(tcp_transport)::connect_callback(
+void MP_UTIL_IMPL(tcp)::connect_callback(
 		int fd, int err, shared_session session_life)
 {
 	sync_ref ref(m_sync);
@@ -149,7 +150,7 @@ void MP_UTIL_IMPL(tcp_transport)::connect_callback(
 
 			mp::shared_ptr<active_socket> as =
 				get_loop()->add_handler<active_socket>(
-						fd, mp::enable_shared_from_this<tcp_transport>::shared_from_this(), session_life);
+						fd, mp::enable_shared_from_this<tcp>::shared_from_this(), session_life);
 
 			ref->sockpool.push_back(as.get());
 
@@ -182,7 +183,7 @@ void MP_UTIL_IMPL(tcp_transport)::connect_callback(
 	}
 }
 
-void tcp_transport::on_close(socket* sock)
+void tcp::on_close(socket* sock)
 {
 	sync_ref ref(m_sync);
 	sockpool_t::iterator found = std::find(
@@ -192,7 +193,7 @@ void tcp_transport::on_close(socket* sock)
 	}
 }
 
-void tcp_transport::send_data(msgpack::vrefbuffer* vbuf, auto_zone z)
+void tcp::send_data(msgpack::vrefbuffer* vbuf, auto_zone z)
 {
 	sync_ref ref(m_sync);
 	if(ref->sockpool.empty()) {
@@ -210,7 +211,7 @@ void tcp_transport::send_data(msgpack::vrefbuffer* vbuf, auto_zone z)
 	}
 }
 
-void tcp_transport::send_data(msgpack::sbuffer* sbuf)
+void tcp::send_data(msgpack::sbuffer* sbuf)
 {
 	sync_ref ref(m_sync);
 	if(ref->sockpool.empty()) {
@@ -229,13 +230,13 @@ void tcp_transport::send_data(msgpack::sbuffer* sbuf)
 	}
 }
 
-shared_message_sendable tcp_transport::shared_from_this()
+shared_message_sendable tcp::shared_from_this()
 {
 	return mp::static_pointer_cast<message_sendable>(
-			mp::enable_shared_from_this<tcp_transport>::shared_from_this());
+			mp::enable_shared_from_this<tcp>::shared_from_this());
 }
 
-shared_message_sendable tcp_transport::socket::shared_from_this()
+shared_message_sendable tcp::socket::shared_from_this()
 {
 	return mp::static_pointer_cast<message_sendable>(
 			mp::wavy::handler::shared_self<socket>());
@@ -250,35 +251,35 @@ shared_message_sendable tcp_transport::socket::shared_from_this()
 #define MSGPACK_RPC_TCP_SOCKET_RESERVE_SIZE (8*1024)
 #endif
 
-tcp_transport::socket::socket(int fd, loop lo, shared_session s) :
+tcp::socket::socket(int fd, loop lo, shared_session s) :
 	mp::wavy::handler(fd),
 	m_pac(MSGPACK_RPC_TCP_SOCKET_BUFFER_SIZE),
 	m_loop(lo),
 	m_session(s)
 { }
 
-tcp_transport::socket::~socket() { }
+tcp::socket::~socket() { }
 
-void tcp_transport::socket::send_data(msgpack::vrefbuffer* vbuf, auto_zone z)
+void tcp::socket::send_data(msgpack::vrefbuffer* vbuf, auto_zone z)
 {
 	m_loop->writev(fd(), vbuf->vector(), vbuf->vector_size(), z);
 }
 
-void tcp_transport::socket::send_data(msgpack::sbuffer* sbuf)
+void tcp::socket::send_data(msgpack::sbuffer* sbuf)
 {
 	m_loop->write(fd(), sbuf->data(), sbuf->size(), &::free, sbuf->data());
 	sbuf->release();
 }
 
 
-void tcp_transport::socket::on_message(object msg, auto_zone z, mp::wavy::event& e)
+void tcp::socket::on_message(object msg, auto_zone z, mp::wavy::event& e)
 {
 	if(!m_session) { return; }
 	e.more();   // FIXME m_pacにデータが残っているときだけmore()。そうでなければnext()
 	m_session->on_message(this, msg, z);
 }
 
-void tcp_transport::socket::on_read(mp::wavy::event& e)
+void tcp::socket::on_read(mp::wavy::event& e)
 try {
 	while(true) {
 		if(m_pac.execute()) {
@@ -314,46 +315,46 @@ try {
 }
 
 
-tcp_transport::active_socket::active_socket(int fd, shared_tcp_transport tran, shared_session s) :
+tcp::active_socket::active_socket(int fd, shared_tcp_transport tran, shared_session s) :
 	socket(fd, s->get_loop(), s),
 	m_tran(tran)
 {
 	// FIXME deflate
 }
 
-tcp_transport::active_socket::~active_socket()
+tcp::active_socket::~active_socket()
 {
 	// FIXME
 	m_tran->on_close(this);
 }
 
 
-tcp_transport::passive_socket::passive_socket(int fd, shared_session s) :
+tcp::passive_socket::passive_socket(int fd, shared_session s) :
 	socket(fd, s->get_loop(), s)
 {
 	// FIXME deflate
 }
 
-tcp_transport::passive_socket::passive_socket(int fd, loop lo) :
+tcp::passive_socket::passive_socket(int fd, loop lo) :
 	socket(fd, lo, shared_session())
 { }
 
-void tcp_transport::passive_socket::rebind(shared_session s)
+void tcp::passive_socket::rebind(shared_session s)
 {
 	m_session = s;
 }
 
-tcp_transport::passive_socket::~passive_socket()
+tcp::passive_socket::~passive_socket()
 {
 	// FIXME
 }
 
 
-MP_UTIL_DEF(tcp_transport::listener) {
+MP_UTIL_DEF(tcp::listener) {
 	void accept_callback(int fd, int err);
 };
 
-tcp_transport::listener::listener(
+tcp::listener::listener(
 		int socket_family, int socket_type, int protocol,
 		const sockaddr* addr, socklen_t addrlen,
 		loop lo,
@@ -368,12 +369,12 @@ tcp_transport::listener::listener(
 			mp::bind(&MP_UTIL_IMPL(listener)::accept_callback, &MP_UTIL, _1, _2));
 }
 
-tcp_transport::listener::~listener()
+tcp::listener::~listener()
 {
 	close();
 }
 
-void tcp_transport::listener::close()
+void tcp::listener::close()
 {
 	if(m_lsock >= 0) {
 		::close(m_lsock);
@@ -381,7 +382,7 @@ void tcp_transport::listener::close()
 	}
 }
 
-void MP_UTIL_IMPL(tcp_transport::listener)::accept_callback(int fd, int err)
+void MP_UTIL_IMPL(tcp::listener)::accept_callback(int fd, int err)
 {
 	// FIXME
 	if(fd < 0) {
@@ -400,6 +401,7 @@ void MP_UTIL_IMPL(tcp_transport::listener)::accept_callback(int fd, int err)
 }
 
 
+}  // namespace transport
 }  // namespace rpc
 }  // namespace msgpack
 

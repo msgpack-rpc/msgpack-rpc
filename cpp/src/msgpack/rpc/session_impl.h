@@ -110,7 +110,7 @@ private:
 	unsigned int m_timeout;
 
 private:
-	transport* get_transport(option opt);
+	transport::base* get_transport(option opt);
 
 private:
 	session_impl();

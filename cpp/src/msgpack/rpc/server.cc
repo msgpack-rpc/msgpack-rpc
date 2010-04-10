@@ -16,7 +16,9 @@
 //    limitations under the License.
 //
 #include "server.h"
-#include "tcp.h"
+#include "transport/listener.h"
+
+#include "transport/tcp.h"
 
 namespace msgpack {
 namespace rpc {
@@ -61,7 +63,7 @@ void server::listen(address addr)
 	char addrbuf[addr.addrlen()];
 	addr.getaddr((struct sockaddr*)addrbuf);
 
-	m_listener.reset( new tcp_transport::listener(
+	m_listener.reset( new transport::tcp::listener(
 			AF_INET, SOCK_STREAM, 0,
 			(struct sockaddr*)addrbuf, addr.addrlen(),
 			m_loop,

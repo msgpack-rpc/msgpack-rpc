@@ -1,5 +1,5 @@
 //
-// msgpack::rpc::impl - Cluster Communication Framework
+// msgpack::rpc::transport::listener - MessagePack-RPC for C++
 //
 // Copyright (C) 2009-2010 FURUHASHI Sadayuki
 //
@@ -15,37 +15,24 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-#ifndef MSGPACK_RPC_IMPL_H__
-#define MSGPACK_RPC_IMPL_H__
-
-#include <mp/memory.h>
+#ifndef MSGPACK_RPC_TRANSPORT_LISTENER_H__
+#define MSGPACK_RPC_TRANSPORT_LISTENER_H__
 
 namespace msgpack {
 namespace rpc {
-
-
-class future;
-class future_impl;
-typedef mp::shared_ptr<future_impl> shared_future;
-
 namespace transport {
-	class base;
-	class listener;
-}
-typedef mp::shared_ptr<transport::base> shared_transport;
-
-class session;
-class session_impl;
-typedef mp::shared_ptr<session_impl> shared_session;
-typedef mp::weak_ptr<session_impl> weak_session;
-
-class request;
-class request_impl;
-typedef mp::shared_ptr<request_impl> shared_request;
 
 
+class listener {
+public:
+	listener() { }
+	virtual ~listener() { }
+};
+
+
+}  // namespace transport
 }  // namespace rpc
 }  // namespace msgpack
 
-#endif /* msgpack/rpc/impl.h */
+#endif /* msgpack/rpc/transport/listener.h */
 

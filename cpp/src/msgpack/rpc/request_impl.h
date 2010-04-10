@@ -18,6 +18,7 @@
 #ifndef MSGPACK_RPC_REQUEST_IMPL_H__
 #define MSGPACK_RPC_REQUEST_IMPL_H__
 
+#include "message_sendable.h"
 #include "request.h"
 
 namespace msgpack {

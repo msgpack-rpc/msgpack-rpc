@@ -18,7 +18,6 @@
 #ifndef MSGPACK_RPC_REQUEST_H__
 #define MSGPACK_RPC_REQUEST_H__
 
-#include "message_sendable.h"
 #include "session.h"
 #include "impl_fwd.h"
 

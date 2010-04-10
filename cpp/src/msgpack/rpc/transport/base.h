@@ -1,5 +1,5 @@
 //
-// msgpack::rpc::transport - MessagePack-RPC for C++
+// msgpack::rpc::transport::base - MessagePack-RPC for C++
 //
 // Copyright (C) 2009-2010 FURUHASHI Sadayuki
 //
@@ -15,8 +15,8 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-#ifndef MSGPACK_RPC_TRANSPORT_H__
-#define MSGPACK_RPC_TRANSPORT_H__
+#ifndef MSGPACK_RPC_TRANSPORT_BASE_H__
+#define MSGPACK_RPC_TRANSPORT_BASE_H__
 
 #include "message_sendable.h"
 #include "loop.h"
@@ -26,14 +26,15 @@
 
 namespace msgpack {
 namespace rpc {
+namespace transport {
 
 
-class transport : public message_sendable {
+class base : public message_sendable {
 public:
-	transport(session_impl* s, const transport_option& topt) :
+	base(session_impl* s, const transport_option& topt) :
 		m_session(s), m_option(topt) { }
 
-	virtual ~transport() { }
+	virtual ~base() { }
 
 	//// message_sendable interface
 	//void send_data(msgpack::vrefbuffer* vbuf, auto_zone z);
@@ -62,15 +63,9 @@ private:
 };
 
 
-class transport_listener {
-public:
-	transport_listener() { }
-	virtual ~transport_listener() { }
-};
-
-
+}  // namespace transport
 }  // namespace rpc
 }  // namespace msgpack
 
-#endif /* msgpack/rpc/transport.h */
+#endif /* msgpack/rpc/transport/base.h */
 
