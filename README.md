@@ -1,5 +1,6 @@
 MessagePack-RPC
 ===============
+http://github.com/msgpack/msgpack-rpc
 
 ## Overview
 
@@ -9,14 +10,19 @@ MessagePack enables very fast streaming serialization/deserialization, and commu
 
   - Asynchronous, synchronous and callback interfaces are supported.
   - Scalable event-driven architecture.
-  - Deflate compression is supported.
 
 
 ## Status
 
-Currently, MessagePack-RPC supports only Ruby. MessagePack-RPC for Ruby is available by RubyGems:
+### Ruby
+
+MessagePack-RPC for Ruby is available by RubyGems:
 
     $ gem install msgpack-rpc
+
+### C++
+
+See [cpp](http://github.com/msgpack/msgpack-rpc/tree/master/cpp/) directory.
 
 
 ## License

@@ -1,0 +1,101 @@
+//
+// msgpack::rpc::caller - MessagePack-RPC for C++
+//
+// Copyright (C) 2009-2010 FURUHASHI Sadayuki
+//
+//    Licensed under the Apache License, Version 2.0 (the "License");
+//    you may not use this file except in compliance with the License.
+//    You may obtain a copy of the License at
+//
+//        http://www.apache.org/licenses/LICENSE-2.0
+//
+//    Unless required by applicable law or agreed to in writing, software
+//    distributed under the License is distributed on an "AS IS" BASIS,
+//    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//    See the License for the specific language governing permissions and
+//    limitations under the License.
+//
+#ifndef MSGPACK_RPC_CALLER_H__
+#define MSGPACK_RPC_CALLER_H__
+
+#include "types.h"
+#include "future.h"
+#include "option.h"
+#include <string>
+
+namespace msgpack {
+namespace rpc {
+
+
+class session;
+
+
+template <typename IMPL>
+class caller {
+public:
+	caller(option opt = option()) : m_option(opt) { }
+	~caller() { }
+
+	future call(const std::string& name);
+
+%varlen_each do |gen|
+	template <[%gen.template%]>
+	future call(const std::string& name, auto_zone life,
+			[%gen.args_const_ref%])
+	{
+		type::tuple<[%gen.types_const_ref%]> param([%gen.params%]);
+		return static_cast<IMPL*>(this)->send_request(
+				name, param, life, m_option);
+	}
+
+%end
+
+%varlen_each do |gen|
+	template <[%gen.template%]>
+	future call(const std::string& name,
+			[%gen.args_const_ref%])
+	{
+		type::tuple<[%gen.types_const_ref%]> param([%gen.params%]);
+		return static_cast<IMPL*>(this)->send_request(
+				name, param, auto_zone(), m_option);
+	}
+
+%end
+
+protected:
+	option m_option;
+};
+
+
+class caller_with : public caller<caller_with> {
+public:
+	caller_with(session* s, option opt) :
+		caller<caller_with>(opt), m_session(s) { }
+
+	~caller_with() { }
+
+	caller_with& with(option opt)
+	{
+		m_option = opt;
+		return *this;
+	}
+
+	template <typename Method, typename Parameter>
+	future send_request(Method method,
+			const Parameter& param, auto_zone msglife,
+			option opt);
+
+private:
+	session* m_session;
+
+private:
+	caller_with();
+};
+
+
+}  // namespace rpc
+}  // namespace msgpack
+
+#endif /* msgpack/rpc/caller.h */
+
+%# vim: filetype=mplex

@@ -1,0 +1,138 @@
+AC_INIT(src/msgpack/rpc/session.h)
+AC_CONFIG_AUX_DIR(ac)
+AC_CANONICAL_TARGET
+
+AM_INIT_AUTOMAKE(msgpack-rpc, 0.1.0)
+AC_CONFIG_HEADER(config.h)
+
+AC_SUBST(CFLAGS)
+CFLAGS="-O4 -Wall $CFLAGS"
+
+AC_SUBST(CXXFLAGS)
+CXXFLAGS="-O4 -Wall $CXXFLAGS"
+
+
+#AC_CHECK_PROG(RUBY, ruby, ruby)
+#if test "x$RUBY" = x; then
+#	AC_MSG_ERROR([cannot find ruby. Ruby is needed to build.])
+#fi
+
+AC_PROG_CC
+AC_PROG_CXX
+
+AC_PROG_LIBTOOL
+AM_PROG_AS
+AM_PROG_CC_C_O
+
+
+AC_CACHE_CHECK([for __sync_* atomic operations], kumofs_cv_atomic_ops, [
+	AC_TRY_LINK([
+		int atomic_sub(int i) { return __sync_sub_and_fetch(&i, 1); }
+		int atomic_add(int i) { return __sync_add_and_fetch(&i, 1); }
+		int atomic_cas(int i) { return __sync_bool_compare_and_swap(&i, 0, 1); }
+	], [], kumofs_cv_atomic_ops="yes")
+	])
+if test "$kumofs_cv_atomic_ops" != "yes"; then
+	AC_MSG_ERROR([__sync_* atomic operations are not supported.
+
+Note that gcc < 4.1 is not supported.
+
+If you are using gcc >= 4.1 and the default target CPU architecture is "i386", try to
+add CFLAGS="--march=i686" and CXXFLAGS="-march=i686" options to ./configure as follows:
+
+  $ ./configure CFLAGS="-march=i686" CXXFLAGS="-march=i686"
+])
+fi
+
+
+AC_ARG_WITH([msgpack],
+	AS_HELP_STRING([--with-msgpack=DIR],
+				   [specify the root directory for msgpack library]),
+	[msgpack_path="$withval"], [])
+if test "$msgpack_path" != ""; then
+	CXXFLAGS="$CXXFLAGS -I$msgpack_path/include"
+	CFLAGS="$CFLAGS -I$msgpack_path/include"
+	LDFLAGS="$LDFLAGS -L$msgpack_path/lib"
+fi
+
+
+AC_ARG_WITH([mpio],
+	AS_HELP_STRING([--with-mpio=DIR],
+				   [specify the root directory for mpio library]),
+	[mpio_path="$withval"], [])
+if test "$mpio_path" != ""; then
+	CXXFLAGS="$CXXFLAGS -I$mpio_path/include"
+	CFLAGS="$CFLAGS -I$mpio_path/include"
+	LDFLAGS="$LDFLAGS -L$mpio_path/lib"
+fi
+
+
+AC_CHECK_LIB(stdc++, main)
+
+AC_CHECK_LIB(pthread,pthread_create,,
+	AC_MSG_ERROR([Can't find pthread library]))
+
+AC_CHECK_LIB(z,deflate,,
+	AC_MSG_ERROR([Can't find zlib library]))
+
+AC_CHECK_LIB(msgpack,main,,
+	AC_MSG_ERROR([Can't find msgpack library.
+--with-msgpack=DIR option may be needed.]))
+
+AC_CHECK_LIB(msgpackc,main,,
+	AC_MSG_ERROR([Can't find msgpackc library.
+--with-msgpack=DIR option may be needed.]))
+
+AC_CHECK_LIB(mpio,main,,
+	AC_MSG_ERROR([Can't find mpio library.
+--with-mpio=DIR option may be needed.]))
+
+
+case "$target_os" in
+solaris*)
+	AC_CHECK_LIB(socket,accept,,
+		AC_MSG_ERROR([Can't find libsocket.]))
+	AC_CHECK_LIB(nsl,inet_ntop,,
+		AC_MSG_ERROR([Can't find libnsl.]))
+	AC_CHECK_LIB(sendfile,sendfile,,
+		AC_MSG_ERROR([Can't find libsendfile.]))
+	CXXFLAGS="$CXXFLAGS -D_REENTRANT"
+	CFLAGS="$CFLAGS -D_REENTRANT"
+	;;
+esac
+
+
+AC_MSG_CHECKING([if debug option is enabled])
+AC_ARG_ENABLE(debug,
+	AS_HELP_STRING([--disable-debug],
+				   [disable assert macros and omit -g option.]) )
+if test "$enable_debug" != "no"; then
+	CXXFLAGS="$CXXFLAGS -g"
+	CFLAGS="$CFLAGS -g"
+else
+	CXXFLAGS="$CXXFLAGS -DNDEBUG"
+	CFLAGS="$CFLAGS -DNDEBUG"
+fi
+AC_MSG_RESULT($enable_debug)
+
+
+AC_MSG_CHECKING([if trace message is enabled])
+AC_ARG_ENABLE(trace,
+	AS_HELP_STRING([--enable-trace], [enable trace messages.]) )
+if test "$enable_trace" = "yes"; then
+	CXXFLAGS="$CXXFLAGS -DCCLOG_LEVEL=0"
+	CFLAGS="$CFLAGS -DCCLOG_LEVEL=0"
+else
+	CXXFLAGS="$CXXFLAGS -DCCLOG_LEVEL=2"
+	CFLAGS="$CFLAGS -DCCLOG_LEVEL=2"
+fi
+AC_MSG_RESULT($enable_trace)
+
+
+AC_OUTPUT([Makefile
+		   src/Makefile
+		   src/cclog/Makefile
+		   src/msgpack/rpc/Makefile
+		   test/Makefile])
+		   #src/mp/Makefile
+		   #src/mpsrc/Makefile

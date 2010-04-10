@@ -629,7 +629,7 @@ class TCPTransport < BasicTransport
 		@pending = ""
 		@sockpool = []
 		@connecting = 0
-		@reconnect = 5   # FIXME default reconnect limit
+		@reconnect_limit = 5   # FIXME default reconnect_limit
 
 		@initmsg = ""
 		if session.self_address
@@ -687,12 +687,13 @@ class TCPTransport < BasicTransport
 	end
 
 	def on_connect_failed(sock)
-		if @connecting < @reconnect
+		if @connecting < @reconnect_limit
 			try_connect
 			@connecting += 1
 		else
 			@connecting = 0
 			@pending = ""
+			@deflate.reset if @deflate
 			@session.on_connect_failed
 		end
 	end
@@ -872,7 +873,6 @@ class TCPTransport::Listener
 end
 
 
-=begin
 class UDPTransport < BasicTransport
 	def initialize(session, topt)
 		super(session, topt)
@@ -1101,7 +1101,6 @@ class UDPTransport::Listener
 		@psock.close
 	end
 end
-=end
 
 
 class AsyncResult
