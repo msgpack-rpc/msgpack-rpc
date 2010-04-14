@@ -42,6 +42,9 @@ public:
 	template <typename Result>
 	void result(Result res, auto_zone z);
 
+	template <typename Result>
+	void result(Result res, shared_zone z);
+
 	void result_nil();
 
 	template <typename Error>
@@ -50,18 +53,21 @@ public:
 	template <typename Error>
 	void error(Error err, auto_zone z);
 
+	template <typename Error>
+	void error(Error err, shared_zone z);
+
 private:
 	template <typename Result, typename Error>
 	void call(Result& res, Error& err);
 
 	template <typename Result, typename Error>
-	void call(Result& res, Error& err, auto_zone z);
+	void call(Result& res, Error& err, shared_zone z);
 
 private:
 	bool is_active() const;
 	uint32_t get_msgid() const;
 	void send_data(sbuffer* sbuf);
-	void send_data(vrefbuffer* vbuf, auto_zone life);
+	void send_data(vrefbuffer* vbuf, shared_zone life);
 
 private:
 	shared_request m_pimpl;
@@ -81,11 +87,11 @@ inline void request::call(Result& res, Error& err)
 }
 
 template <typename Result, typename Error>
-inline void request::call(Result& res, Error& err, auto_zone z)
+inline void request::call(Result& res, Error& err, shared_zone z)
 {
 	if(!is_active()) { return; }
 
-	msgpack::vrefbuffer* vbuf = z->allocate<msgpack::vrefbuffer>();
+	msgpack::vrefbuffer* vbuf = z->template allocate<msgpack::vrefbuffer>();
 	msg_response<Result&, Error> msgres(res, err, get_msgid());
 	msgpack::pack(*vbuf, msgres);
 
@@ -101,6 +107,14 @@ void request::result(Result res)
 
 template <typename Result>
 void request::result(Result res, auto_zone z)
+{
+	msgpack::type::nil err;
+	shared_zone sz(z.release());
+	call(res, err, sz);
+}
+
+template <typename Result>
+void request::result(Result res, shared_zone z)
 {
 	msgpack::type::nil err;
 	call(res, err, z);
@@ -122,6 +136,14 @@ void request::error(Error err)
 
 template <typename Error>
 void request::error(Error err, auto_zone z)
+{
+	msgpack::type::nil res;
+	shared_zone sz(z.release());
+	call(res, err, sz);
+}
+
+template <typename Error>
+void request::error(Error err, shared_zone z)
 {
 	msgpack::type::nil res;
 	call(res, err, z);

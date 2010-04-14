@@ -56,10 +56,10 @@ public:
 protected:
 	template <typename Method, typename Parameter>
 	future send_request(Method method,
-			const Parameter& param, auto_zone msglife,
+			const Parameter& param, shared_zone msglife,
 			option opt = option());
 
-	future send_request_impl(msgid_t msgid, vrefbuffer* vbuf, auto_zone life, option opt);
+	future send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone life, option opt);
 
 	future send_request_impl(msgid_t msgid, sbuffer* sbuf, option opt);
 
@@ -82,7 +82,7 @@ private:
 
 template <typename Method, typename Parameter>
 inline future caller_with::send_request(Method method,
-		const Parameter& param, auto_zone msglife,
+		const Parameter& param, shared_zone msglife,
 		option opt)
 {
 	return m_session->send_request(method, param, msglife, opt);
@@ -91,14 +91,14 @@ inline future caller_with::send_request(Method method,
 
 template <typename Method, typename Parameter>
 future session::send_request(Method method,
-		const Parameter& param, auto_zone msglife,
+		const Parameter& param, shared_zone msglife,
 		option opt)
 {
 	// FIXME __sync_add_and_fetch
 	msgid_t msgid = __sync_add_and_fetch(&m_msgid_rr, 1);
 	msg_request<Method, Parameter> msgreq(method, param, msgid);
 
-	if(msglife.get()) {
+	if(msglife) {
 		msgpack::vrefbuffer* vbuf = msglife->allocate<msgpack::vrefbuffer>();
 		msgpack::pack(vbuf, msgreq);
 		return send_request_impl(msgid, vbuf, msglife, opt);

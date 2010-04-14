@@ -70,7 +70,7 @@ public:
 	}
 
 public:
-	future send_request_impl(msgid_t msgid, vrefbuffer* vbuf, auto_zone life, option opt);
+	future send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone life, option opt);
 
 	future send_request_impl(msgid_t msgid, sbuffer* sbuf, option opt);
 

@@ -53,12 +53,12 @@ inline transport::base* session_impl::get_transport(option opt)
 }
 
 
-future session_impl::send_request_impl(msgid_t msgid, vrefbuffer* vbuf, auto_zone life, option opt)
+future session_impl::send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone z, option opt)
 {
 	transport::base* tran = get_transport(opt);
 	shared_future f(new future_impl(shared_from_this(), m_loop));
 
-	tran->send_data(vbuf, life);
+	tran->send_data(vbuf, z);
 
 	m_reqtable.insert(msgid, f);
 	return future(f);
@@ -181,8 +181,8 @@ void session::set_timeout(unsigned int sec)
 unsigned int session::get_timeout() const
 	{ return m_pimpl->get_timeout(); }
 
-future session::send_request_impl(msgid_t msgid, vrefbuffer* vbuf, auto_zone life, option opt)
-	{ return m_pimpl->send_request_impl(msgid, vbuf, life, opt); }
+future session::send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone z, option opt)
+	{ return m_pimpl->send_request_impl(msgid, vbuf, z, opt); }
 
 future session::send_request_impl(msgid_t msgid, sbuffer* sbuf, option opt)
 	{ return m_pimpl->send_request_impl(msgid, sbuf, opt); }

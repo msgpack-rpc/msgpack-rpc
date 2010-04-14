@@ -45,10 +45,10 @@ public:
 		return !!m_ms;
 	}
 
-	void send_data(vrefbuffer* vbuf, auto_zone life)
+	void send_data(vrefbuffer* vbuf, shared_zone z)
 	{
 		if(!is_active()) { return; }
-		m_ms->send_data(vbuf, life);
+		m_ms->send_data(vbuf, z);
 		m_ms.reset();
 	}
 

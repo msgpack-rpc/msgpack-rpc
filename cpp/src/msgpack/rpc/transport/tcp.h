@@ -38,7 +38,7 @@ public:
 	~tcp();
 
 	// message_sendable interface
-	void send_data(msgpack::vrefbuffer* vbuf, auto_zone z);
+	void send_data(msgpack::vrefbuffer* vbuf, shared_zone z);
 	void send_data(msgpack::sbuffer* sbuf);
 	shared_message_sendable shared_from_this();
 

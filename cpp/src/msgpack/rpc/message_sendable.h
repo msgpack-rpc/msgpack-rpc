@@ -32,7 +32,7 @@ public:
 	message_sendable() { }
 	virtual ~message_sendable() { }
 	virtual void send_data(sbuffer* sbuf) = 0;
-	virtual void send_data(vrefbuffer* vbuf, auto_zone life) = 0;
+	virtual void send_data(vrefbuffer* vbuf, shared_zone life) = 0;
 	virtual shared_message_sendable shared_from_this() = 0;
 };
 

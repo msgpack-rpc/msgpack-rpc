@@ -51,7 +51,7 @@ void request::send_data(sbuffer* sbuf)
 	m_pimpl->send_data(sbuf);
 }
 
-void request::send_data(vrefbuffer* vbuf, auto_zone life)
+void request::send_data(vrefbuffer* vbuf, shared_zone life)
 {
 	m_pimpl->send_data(vbuf, life);
 }

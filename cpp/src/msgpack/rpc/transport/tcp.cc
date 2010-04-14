@@ -30,7 +30,7 @@ public:
 
 public:
 	// message_sendable interface
-	void send_data(msgpack::vrefbuffer* vbuf, auto_zone z);
+	void send_data(msgpack::vrefbuffer* vbuf, shared_zone z);
 	void send_data(msgpack::sbuffer* sbuf);
 	shared_message_sendable shared_from_this();
 
@@ -193,7 +193,7 @@ void tcp::on_close(socket* sock)
 	}
 }
 
-void tcp::send_data(msgpack::vrefbuffer* vbuf, auto_zone z)
+void tcp::send_data(msgpack::vrefbuffer* vbuf, shared_zone z)
 {
 	sync_ref ref(m_sync);
 	if(ref->sockpool.empty()) {
@@ -260,7 +260,7 @@ tcp::socket::socket(int fd, loop lo, shared_session s) :
 
 tcp::socket::~socket() { }
 
-void tcp::socket::send_data(msgpack::vrefbuffer* vbuf, auto_zone z)
+void tcp::socket::send_data(msgpack::vrefbuffer* vbuf, shared_zone z)
 {
 	m_loop->writev(fd(), vbuf->vector(), vbuf->vector_size(), z);
 }

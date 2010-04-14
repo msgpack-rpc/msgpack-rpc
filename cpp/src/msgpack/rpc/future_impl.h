@@ -65,9 +65,17 @@ public:
 
 	void attach_callback(callback_t func);
 
-	bool step_timeout();
-
 	void set_result(object result, object error, auto_zone z);
+
+	bool step_timeout()
+	{
+		if(m_timeout == 0) {
+			return true;
+		} else {
+			m_timeout--;
+			return false;
+		}
+	}
 
 private:
 	shared_session m_session;
@@ -87,17 +95,6 @@ private:
 	future_impl();
 	future_impl(const future_impl&);
 };
-
-
-inline bool future_impl::step_timeout()
-{
-	if(m_timeout == 0) {
-		return true;
-	} else {
-		m_timeout--;
-		return false;
-	}
-}
 
 
 }  // namespace rpc
