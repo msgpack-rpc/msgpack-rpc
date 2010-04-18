@@ -55,7 +55,7 @@ public:
 	zone& get_zone();
 	auto_zone release_zone();
 
-	void attach_callback(
+	future& attach_callback(
 			mp::function<void (future)> func);
 
 private:

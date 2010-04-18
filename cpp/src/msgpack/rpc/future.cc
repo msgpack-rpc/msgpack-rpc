@@ -125,10 +125,11 @@ future& future::recv()
 	return *this;
 }
 
-void future::attach_callback(
+future& future::attach_callback(
 		mp::function<void (future)> func)
 {
 	m_pimpl->attach_callback(func);
+	return *this;
 }
 
 
