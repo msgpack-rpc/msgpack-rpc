@@ -16,6 +16,7 @@
 //    limitations under the License.
 //
 #include "future_impl.h"
+#include <sstream>
 #include <cclog/cclog.h>
 
 namespace msgpack {
@@ -51,8 +52,14 @@ object future_impl::get_impl()
 {
 	join();
 	if(!m_error.is_nil()) {
-		// FIXME throw msgpack::rpc::remote_error
-		throw std::runtime_error("remote error");
+		if(m_error.type == msgpack::type::RAW && m_error.via.raw.ptr == TIMEOUT_ERROR) {
+			throw timeout_error();
+		} else {
+			std::ostringstream os;
+			os << "remote error: ";
+			os << m_error;
+			throw remote_error(os.str());
+		}
 	}
 	return m_result;
 }
@@ -60,7 +67,7 @@ object future_impl::get_impl()
 object future::get_impl()
 {
 	if(!m_pimpl) {
-		// FIXME
+		// FIXME null future reference
 		throw std::runtime_error("null future reference");
 	}
 	return m_pimpl->get_impl();
@@ -72,9 +79,9 @@ static void callback_real(
 try {
 	callback(f);
 } catch (std::exception& e) {
-	LOG_ERROR("response callback error: ",e.what());
+	LOG_WARN("response callback error: ",e.what());
 } catch (...) {
-	LOG_ERROR("response callback error: unknown error");
+	LOG_WARN("response callback error: unknown error");
 }
 
 void future_impl::attach_callback(callback_t func)

@@ -7,7 +7,12 @@
 
 void add_callback(rpc::future f, rpc::loop lo)
 {
-	std::cout << "callback: add(1,2) = " << f.get<int>() << std::endl;
+	try {
+		std::cout << "callback: add(1,2) = " << f.get<int>() << std::endl;
+	} catch (msgpack::rpc::remote_error& e) {
+		std::cout << e.what() << std::endl;
+		exit(1);
+	}
 	lo->end();
 }
 

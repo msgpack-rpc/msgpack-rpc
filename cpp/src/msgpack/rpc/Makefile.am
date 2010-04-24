@@ -20,6 +20,7 @@ libmsgpack_rpc_include_HEADERS = \
 		caller.h \
 		client.h \
 		dispatcher.h \
+		exception.h \
 		future.h \
 		impl_fwd.h \
 		loop.h \

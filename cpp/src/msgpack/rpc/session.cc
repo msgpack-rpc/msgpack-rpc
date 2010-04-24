@@ -29,6 +29,9 @@ namespace msgpack {
 namespace rpc {
 
 
+const char* TIMEOUT_ERROR = "request timed out";
+
+
 session_impl::session_impl(const address& to_address,
 		const transport_option& topt,
 		const address& self_address,
@@ -108,9 +111,10 @@ void session_impl::step_timeout()
 		msgpack::object result;
 		result.type = msgpack::type::NIL;
 		msgpack::object error;
-		error.type  = msgpack::type::POSITIVE_INTEGER;
-		error.via.u64 = 100;  // XXX
-		f->set_result(result, error, auto_zone());  // FIXME timeout error
+		error.type  = msgpack::type::RAW;
+		error.via.raw.ptr = TIMEOUT_ERROR;
+		error.via.raw.size = strlen(TIMEOUT_ERROR);
+		f->set_result(result, error, auto_zone());
 	}
 }
 

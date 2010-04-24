@@ -14,8 +14,9 @@ public:
 	typedef rpc::auto_zone auto_zone;
 
 	void dispatch(request req, auto_zone z)
-	{
+	try {
 		std::string method = req.method().as<std::string>();
+
 		if(method == "add") {
 			add(req, z);
 			return;
@@ -25,6 +26,9 @@ public:
 		} else {
 			throw rpc::type_error();
 		}
+
+	} catch (std::exception& e) {
+		req.error(std::string(e.what()));
 	}
 
 	void add(request req, auto_zone z)

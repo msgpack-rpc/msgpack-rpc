@@ -21,6 +21,7 @@
 #include "types.h"
 #include "loop.h"
 #include "impl_fwd.h"
+#include "exception.h"
 #include <mp/functional.h>
 
 namespace msgpack {
