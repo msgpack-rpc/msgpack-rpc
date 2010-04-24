@@ -12,7 +12,8 @@ check_HEADERS = \
 check_PROGRAMS = \
 		sync_call \
 		async_call \
-		callback
+		callback \
+		notify
 
 sync_call_SOURCES = sync_call.cc
 sync_call_LDFLAGS = $(ldflags)
@@ -22,6 +23,9 @@ async_call_LDFLAGS = $(ldflags)
 
 callback_SOURCES = callback.cc
 callback_LDFLAGS = $(ldflags)
+
+notify_SOURCES = notify.cc
+notify_LDFLAGS = $(ldflags)
 
 TESTS = $(check_PROGRAMS)
 

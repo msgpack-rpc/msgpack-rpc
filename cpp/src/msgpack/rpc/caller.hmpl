@@ -36,44 +36,45 @@ public:
 	caller(option opt = option()) : m_option(opt) { }
 	~caller() { }
 
-	future call(const std::string& name);
-
+%def gen_call(ret, name, send_method, lifetype = nil)
 %varlen_each do |gen|
 	template <[%gen.template%]>
-	future call(const std::string& name, auto_zone msglife,
+	[%ret%] [%name%](const std::string& name,
+			[%lifetype%] msglife,  %>if lifetype
 			[%gen.args_const_ref%])
 	{
 		type::tuple<[%gen.types_const_ref%]> param([%gen.params%]);
-		shared_zone slife(msglife.release());
-		return static_cast<IMPL*>(this)->send_request(
+		shared_zone  slife(msglife.release());   %>if lifetype == "auto_zone"
+		shared_zone& slife = msglife;            %>if lifetype == "shared_zone"
+		shared_zone  slife;                      %>unless lifetype
+		return static_cast<IMPL*>(this)->[%send_method%](
 				name, param, slife, m_option);
 	}
 
 %end
-
-%varlen_each do |gen|
-	template <[%gen.template%]>
-	future call(const std::string& name, shared_zone msglife,
-			[%gen.args_const_ref%])
-	{
-		type::tuple<[%gen.types_const_ref%]> param([%gen.params%]);
-		return static_cast<IMPL*>(this)->send_request(
-				name, param, msglife, m_option);
-	}
-
 %end
 
-%varlen_each do |gen|
-	template <[%gen.template%]>
-	future call(const std::string& name,
-			[%gen.args_const_ref%])
+	future call(const std::string& name)
 	{
-		type::tuple<[%gen.types_const_ref%]> param([%gen.params%]);
+		type::tuple<> param;
 		return static_cast<IMPL*>(this)->send_request(
 				name, param, shared_zone(), m_option);
 	}
 
-%end
+%gen_call("future", "call", "send_request", "auto_zone")
+%gen_call("future", "call", "send_request", "shared_zone")
+%gen_call("future", "call", "send_request")
+
+	void notify(const std::string& name)
+	{
+		type::tuple<> param;
+		return static_cast<IMPL*>(this)->send_notify(
+				name, param, shared_zone(), m_option);
+	}
+
+%gen_call("void", "notify", "send_notify", "auto_zone")
+%gen_call("void", "notify", "send_notify", "shared_zone")
+%gen_call("void", "notify", "send_notify")
 
 protected:
 	option m_option;
@@ -95,6 +96,11 @@ public:
 
 	template <typename Method, typename Parameter>
 	future send_request(Method method,
+			const Parameter& param, shared_zone msglife,
+			option opt);
+
+	template <typename Method, typename Parameter>
+	future send_notify(Method method,
 			const Parameter& param, shared_zone msglife,
 			option opt);
 

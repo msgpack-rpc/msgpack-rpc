@@ -76,6 +76,10 @@ public:
 
 	future send_request_impl(msgid_t msgid, sbuffer* sbuf, option opt);
 
+	void send_notify_impl(vrefbuffer* vbuf, shared_zone life, option opt);
+
+	void send_notify_impl(sbuffer* sbuf, option opt);
+
 public:
 	void on_message(
 			message_sendable* ms,

@@ -76,6 +76,18 @@ future session_impl::send_request_impl(msgid_t msgid, sbuffer* sbuf, option opt)
 	return future(f);
 }
 
+void session_impl::send_notify_impl(vrefbuffer* vbuf, shared_zone z, option opt)
+{
+	transport::base* tran = get_transport(opt);
+	tran->send_data(vbuf, z);
+}
+
+void session_impl::send_notify_impl(sbuffer* sbuf, option opt)
+{
+	transport::base* tran = get_transport(opt);
+	tran->send_data(sbuf);
+}
+
 msgid_t session_impl::next_msgid()
 {
 	// FIXME __sync_add_and_fetch
@@ -193,6 +205,12 @@ future session::send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone z
 
 future session::send_request_impl(msgid_t msgid, sbuffer* sbuf, option opt)
 	{ return m_pimpl->send_request_impl(msgid, sbuf, opt); }
+
+void session::send_notify_impl(vrefbuffer* vbuf, shared_zone z, option opt)
+	{ return m_pimpl->send_notify_impl(vbuf, z, opt); }
+
+void session::send_notify_impl(sbuffer* sbuf, option opt)
+	{ return m_pimpl->send_notify_impl(sbuf, opt); }
 
 msgid_t session::next_msgid()
 	{ return m_pimpl->next_msgid(); }

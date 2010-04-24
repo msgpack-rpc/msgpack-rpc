@@ -60,7 +60,14 @@ protected:
 
 	future send_request_impl(msgid_t msgid, sbuffer* sbuf, option opt);
 
-	// FIXME notify
+	template <typename Method, typename Parameter>
+	void send_notify(Method method,
+			const Parameter& param, shared_zone msglife,
+			option opt = option());
+
+	void send_notify_impl(vrefbuffer* vbuf, shared_zone life, option opt);
+
+	void send_notify_impl(sbuffer* sbuf, option opt);
 
 	friend class caller<session>;
 
@@ -75,15 +82,6 @@ private:
 private:
 	session();
 };
-
-
-template <typename Method, typename Parameter>
-inline future caller_with::send_request(Method method,
-		const Parameter& param, shared_zone msglife,
-		option opt)
-{
-	return m_session->send_request(method, param, msglife, opt);
-}
 
 
 template <typename Method, typename Parameter>
@@ -104,6 +102,42 @@ future session::send_request(Method method,
 		msgpack::pack(sbuf, msgreq);
 		return send_request_impl(msgid, &sbuf, opt);
 	}
+}
+
+template <typename Method, typename Parameter>
+void session::send_notify(Method method,
+		const Parameter& param, shared_zone msglife,
+		option opt)
+{
+	msg_notify<Method, Parameter> msgreq(method, param);
+
+	if(msglife) {
+		msgpack::vrefbuffer* vbuf = msglife->allocate<msgpack::vrefbuffer>();
+		msgpack::pack(vbuf, msgreq);
+		return send_notify_impl(vbuf, msglife, opt);
+
+	} else {
+		msgpack::sbuffer sbuf;
+		msgpack::pack(sbuf, msgreq);
+		return send_notify_impl(&sbuf, opt);
+	}
+}
+
+
+template <typename Method, typename Parameter>
+inline future caller_with::send_request(Method method,
+		const Parameter& param, shared_zone msglife,
+		option opt)
+{
+	return m_session->send_request(method, param, msglife, opt);
+}
+
+template <typename Method, typename Parameter>
+inline future caller_with::send_notify(Method method,
+		const Parameter& param, shared_zone msglife,
+		option opt)
+{
+	return m_session->send_notify(method, param, msglife, opt);
 }
 
 
