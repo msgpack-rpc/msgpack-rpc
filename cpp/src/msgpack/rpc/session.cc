@@ -38,6 +38,7 @@ session_impl::session_impl(const address& to_address,
 	m_dtopt(topt),
 	m_dp(dp),
 	m_loop(lo),
+	m_msgid_rr(0),  // FIXME rand()?
 	m_timeout(5)  // FIXME
 {
 	// FIXME
@@ -73,6 +74,12 @@ future session_impl::send_request_impl(msgid_t msgid, sbuffer* sbuf, option opt)
 
 	m_reqtable.insert(msgid, f);
 	return future(f);
+}
+
+msgid_t session_impl::next_msgid()
+{
+	// FIXME __sync_add_and_fetch
+	return __sync_add_and_fetch(&m_msgid_rr, 1);
 }
 
 
@@ -187,6 +194,8 @@ future session::send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone z
 future session::send_request_impl(msgid_t msgid, sbuffer* sbuf, option opt)
 	{ return m_pimpl->send_request_impl(msgid, sbuf, opt); }
 
+msgid_t session::next_msgid()
+	{ return m_pimpl->next_msgid(); }
 
 }  // namespace rpc
 }  // namespace msgpack

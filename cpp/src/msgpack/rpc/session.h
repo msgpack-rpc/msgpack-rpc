@@ -31,10 +31,7 @@ namespace rpc {
 
 class session : public caller<session> {
 public:
-	session(shared_session pimpl) :
-		m_pimpl(pimpl), m_msgid_rr(0) { }
-	// FIXME m_msgid_rr: rand()?
-
+	session(shared_session pimpl) : m_pimpl(pimpl) { }
 	~session() { }
 
 	const address& get_address() const;
@@ -73,7 +70,7 @@ protected:
 	inline loop& get_loop_ref();
 
 private:
-	msgid_t m_msgid_rr;
+	msgid_t next_msgid();
 
 private:
 	session();
@@ -94,8 +91,7 @@ future session::send_request(Method method,
 		const Parameter& param, shared_zone msglife,
 		option opt)
 {
-	// FIXME __sync_add_and_fetch
-	msgid_t msgid = __sync_add_and_fetch(&m_msgid_rr, 1);
+	msgid_t msgid = next_msgid();
 	msg_request<Method, Parameter> msgreq(method, param, msgid);
 
 	if(msglife) {

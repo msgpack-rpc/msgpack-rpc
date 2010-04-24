@@ -69,6 +69,8 @@ public:
 		return m_timeout;
 	}
 
+	msgid_t next_msgid();
+
 public:
 	future send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone life, option opt);
 
@@ -105,6 +107,7 @@ private:
 
 	loop m_loop;
 
+	msgid_t m_msgid_rr;
 	reqtable m_reqtable;
 
 	unsigned int m_timeout;
