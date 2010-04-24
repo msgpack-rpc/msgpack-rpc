@@ -1,3 +1,4 @@
+if WANT_CCLOG
 
 lib_LTLIBRARIES = libcclog.la
 
@@ -20,3 +21,4 @@ libcclog_la_include_HEADERS = \
 EXTRA_DIST = \
 		cclog.hmpl
 
+endif

@@ -111,17 +111,37 @@ fi
 AC_MSG_RESULT($enable_debug)
 
 
+want_cclog=no
+
+AC_MSG_CHECKING([if cclog is enabled])
+AC_ARG_ENABLE(cclog,
+	AS_HELP_STRING([--enable-cclog],
+				   [build cclog library.]) )
+if test "$enable_cclog" = "yes"; then
+	want_cclog=yes
+fi
+AC_MSG_RESULT($enable_cclog)
+
+
 AC_MSG_CHECKING([if trace message is enabled])
 AC_ARG_ENABLE(trace,
 	AS_HELP_STRING([--enable-trace], [enable trace messages.]) )
 if test "$enable_trace" = "yes"; then
+	want_cclog=yes
 	CXXFLAGS="$CXXFLAGS -DCCLOG_LEVEL=0"
 	CFLAGS="$CFLAGS -DCCLOG_LEVEL=0"
 else
-	CXXFLAGS="$CXXFLAGS -DCCLOG_LEVEL=2"
-	CFLAGS="$CFLAGS -DCCLOG_LEVEL=2"
+	if test "$want_cclog" = "yes"; then
+		CXXFLAGS="$CXXFLAGS -DCCLOG_LEVEL=2"
+		CFLAGS="$CFLAGS -DCCLOG_LEVEL=2"
+	else
+		CXXFLAGS="$CXXFLAGS -DCCLOG_LEVEL=10"
+		CFLAGS="$CFLAGS -DCCLOG_LEVEL=10"
+	fi
 fi
 AC_MSG_RESULT($enable_trace)
+
+AM_CONDITIONAL(WANT_CCLOG, test "$want_cclog" = "yes")
 
 
 AC_OUTPUT([Makefile
