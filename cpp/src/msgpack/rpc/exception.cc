@@ -15,39 +15,21 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-#ifndef MSGPACK_RPC_EXCEPTION_H__
-#define MSGPACK_RPC_EXCEPTION_H__
-
-#include "types.h"
-#include <stdexcept>
+#include "exception.h"
+#include <string.h>
 
 namespace msgpack {
 namespace rpc {
 
 
-struct remote_error : std::runtime_error {
-	remote_error(const std::string& msg) :
-		std::runtime_error(msg) {}
-};
+static const char* TIMEOUT_ERROR_PTR = "request timed out";
 
 
-struct timeout_error : remote_error {
-	timeout_error() :
-		remote_error("request timed out") {}
-};
-
-
-extern const object TIMEOUT_ERROR;
-
-
-//struct connect_error : timeout_error {
-//	connect_error() :
-//		timeout_error("connect failed");
-//};
+const msgpack::object TIMEOUT_ERROR( msgpack::type::raw_ref(
+			TIMEOUT_ERROR_PTR, strlen(TIMEOUT_ERROR_PTR)
+			) );
 
 
 }  // namespace rpc
 }  // namespace msgpack
-
-#endif /* msgpack/rpc/exception.h */
 

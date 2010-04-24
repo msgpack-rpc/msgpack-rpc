@@ -7,6 +7,7 @@ libmsgpack_rpc_la_CPPFLAGS = -I../..
 libmsgpack_rpc_la_SOURCES = \
 		address.cc \
 		client.cc \
+		exception.cc \
 		future.cc \
 		reqtable.cc \
 		request.cc \

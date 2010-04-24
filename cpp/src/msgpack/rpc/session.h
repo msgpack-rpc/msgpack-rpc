@@ -21,6 +21,7 @@
 #include "types.h"
 #include "address.h"
 #include "message.h"
+#include "exception.h"
 #include "loop.h"
 #include "caller.h"
 #include "impl_fwd.h"

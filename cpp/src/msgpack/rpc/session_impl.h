@@ -131,9 +131,6 @@ inline loop& session::get_loop_ref()
 }
 
 
-extern const char* TIMEOUT_ERROR;
-
-
 }  // namespace rpc
 }  // namespace msgpack
 

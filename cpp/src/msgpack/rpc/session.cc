@@ -1,5 +1,5 @@
 //
-// msgpack::rpc::session- MessagePack-RPC for C++
+// msgpack::rpc::session - MessagePack-RPC for C++
 //
 // Copyright (C) 2009-2010 FURUHASHI Sadayuki
 //
@@ -27,9 +27,6 @@
 
 namespace msgpack {
 namespace rpc {
-
-
-const char* TIMEOUT_ERROR = "request timed out";
 
 
 session_impl::session_impl(const address& to_address,
@@ -107,14 +104,7 @@ void session_impl::step_timeout()
 	for(std::vector<shared_future>::iterator it(timedout.begin()),
 			it_end(timedout.end()); it != it_end; ++it) {
 		shared_future& f = *it;
-
-		msgpack::object result;
-		result.type = msgpack::type::NIL;
-		msgpack::object error;
-		error.type  = msgpack::type::RAW;
-		error.via.raw.ptr = TIMEOUT_ERROR;
-		error.via.raw.size = strlen(TIMEOUT_ERROR);
-		f->set_result(result, error, auto_zone());
+		f->set_result(object(), TIMEOUT_ERROR, auto_zone());
 	}
 }
 

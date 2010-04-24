@@ -52,7 +52,7 @@ object future_impl::get_impl()
 {
 	join();
 	if(!m_error.is_nil()) {
-		if(m_error.type == msgpack::type::RAW && m_error.via.raw.ptr == TIMEOUT_ERROR) {
+		if(m_error.type == msgpack::type::RAW && m_error.via.raw.ptr == TIMEOUT_ERROR.via.raw.ptr) {
 			throw timeout_error();
 		} else {
 			std::ostringstream os;
