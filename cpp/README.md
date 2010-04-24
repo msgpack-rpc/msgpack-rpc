@@ -9,7 +9,6 @@ Following programs are requred to build:
   - gcc >= 4.1 with C++ support
   - [msgpack](http://msgpack.sourceforge.net/) >= 0.3.1
   - [mpio](http://github.com/frsyuki/mpio) >= 0.1.0
-  - ruby >= 1.8  (ruby is used as a preprocessor)
 
 
 ## Installation

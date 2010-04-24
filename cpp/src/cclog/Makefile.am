@@ -17,20 +17,6 @@ libcclog_la_include_HEADERS = \
 		cclog_syslog.h \
 		cclog_tty.h
 
-PREP_SOURCE = \
+EXTRA_DIST = \
 		cclog.hmpl
-
-PREP_TARGET = $(PREP_SOURCE:mpl=)
-EXTRA_DIST = $(PREP_SOURCE)
-
-%.h: %.hmpl
-	$(MPLEX) $< -o $@
-
-%.cc: %.ccmpl
-	$(MPLEX) $< -o $@
-
-prep: $(PREP_TARGET)
-
-prepc:
-	rm -f $(PREP_TARGET)
 

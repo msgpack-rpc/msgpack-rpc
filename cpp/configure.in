@@ -12,11 +12,6 @@ AC_SUBST(CXXFLAGS)
 CXXFLAGS="-O4 -Wall $CXXFLAGS"
 
 
-#AC_CHECK_PROG(RUBY, ruby, ruby)
-#if test "x$RUBY" = x; then
-#	AC_MSG_ERROR([cannot find ruby. Ruby is needed to build.])
-#fi
-
 AC_PROG_CC
 AC_PROG_CXX
 

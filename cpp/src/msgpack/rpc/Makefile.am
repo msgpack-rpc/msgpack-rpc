@@ -42,20 +42,6 @@ noinst_HEADERS = \
 		transport/listener.h \
 		transport/tcp.h
 
-PREP_SOURCE = \
+EXTRA_DIST = \
 		caller.hmpl
-
-PREP_TARGET = $(PREP_SOURCE:mpl=)
-EXTRA_DIST = $(PREP_SOURCE)
-
-%.h: %.hmpl
-	$(MPLEX) $< -o $@
-
-%.cc: %.ccmpl
-	$(MPLEX) $< -o $@
-
-prep: $(PREP_TARGET)
-
-prepc:
-	rm -f $(PREP_TARGET)
 
