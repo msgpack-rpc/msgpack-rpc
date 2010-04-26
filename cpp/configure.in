@@ -74,10 +74,6 @@ AC_CHECK_LIB(msgpack,main,,
 	AC_MSG_ERROR([Can't find msgpack library.
 --with-msgpack=DIR option may be needed.]))
 
-AC_CHECK_LIB(msgpackc,main,,
-	AC_MSG_ERROR([Can't find msgpackc library.
---with-msgpack=DIR option may be needed.]))
-
 AC_CHECK_LIB(mpio,main,,
 	AC_MSG_ERROR([Can't find mpio library.
 --with-mpio=DIR option may be needed.]))

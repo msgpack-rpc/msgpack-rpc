@@ -7,8 +7,8 @@ MessagePack-RPC for C++
 Following programs are requred to build:
 
   - gcc >= 4.1 with C++ support
-  - [msgpack](http://msgpack.sourceforge.net/) >= 0.3.1
-  - [mpio](http://github.com/frsyuki/mpio) >= 0.1.0
+  - [msgpack](http://msgpack.sourceforge.net/) >= 0.5.0
+  - [mpio](http://github.com/frsyuki/mpio) >= 0.3.3
 
 
 ## Installation
@@ -18,6 +18,15 @@ TODO
 
 ## Usage
 
+TODO
+
+[Test cases](http://github.com/msgpack/msgpack-rpc/tree/master/cpp/test/) will give you a sample usage.
+
+  - [echo server](http://github.com/msgpack/msgpack-rpc/blob/master/cpp/test/echo_server.h)
+  - [synchronous method call](http://github.com/msgpack/msgpack-rpc/blob/master/cpp/test/sync_call.cc)
+  - [asynchronous method call](http://github.com/msgpack/msgpack-rpc/blob/master/cpp/test/async_call.cc)
+  - [callback-style method call](http://github.com/msgpack/msgpack-rpc/blob/master/cpp/test/callback.cc)
+  - [notify](http://github.com/msgpack/msgpack-rpc/blob/master/cpp/test/notify.cc)
 
 ## License
 
