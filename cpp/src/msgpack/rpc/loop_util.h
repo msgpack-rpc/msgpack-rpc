@@ -32,8 +32,7 @@ public:
 
 	~loop_util() { }
 
-	loop get_loop()
-		{ return m_loop; }
+	loop get_loop() { return m_loop; }
 
 	void start(size_t num)  { m_loop->start(num); }
 	void run(size_t num)    { m_loop->run(num);   }

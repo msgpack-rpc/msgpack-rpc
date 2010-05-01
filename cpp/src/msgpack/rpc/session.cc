@@ -163,8 +163,9 @@ void session_impl::on_request(
 	LOG_TRACE("request method=",method," msgid=",msgid);
 	shared_request sreq(new request_impl(
 			ms->shared_from_this(), msgid,
-			session(shared_from_this()), method, param));
-	m_dp->dispatch(request(sreq), z);
+			session(shared_from_this()),
+			method, param, z));
+	m_dp->dispatch(request(sreq));
 }
 
 void session_impl::on_notify(
@@ -174,8 +175,9 @@ void session_impl::on_notify(
 	LOG_TRACE("notify method=",method);
 	shared_request sreq(new request_impl(
 			shared_message_sendable(), 0,
-			session(shared_from_this()), method, param));
-	m_dp->dispatch(request(sreq), z);
+			session(shared_from_this()),
+			method, param, z));
+	m_dp->dispatch(request(sreq));
 }
 
 

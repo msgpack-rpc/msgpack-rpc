@@ -56,6 +56,11 @@ void request::send_data(vrefbuffer* vbuf, shared_zone life)
 	m_pimpl->send_data(vbuf, life);
 }
 
+auto_zone& request::zone()
+{
+	return m_pimpl->zone();
+}
+
 
 }  // namespace rpc
 }  // namespace msgpack

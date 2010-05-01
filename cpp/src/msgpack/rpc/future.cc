@@ -101,7 +101,7 @@ void future_impl::set_result(object result, object error, auto_zone z)
 	mp::pthread_scoped_lock lk(m_mutex);
 	m_result = result;
 	m_error = error;
-	m_z = z;
+	m_zone = z;
 	m_session.reset();
 
 	m_cond.broadcast();
@@ -137,6 +137,11 @@ future& future::attach_callback(
 {
 	m_pimpl->attach_callback(func);
 	return *this;
+}
+
+auto_zone& future::zone()
+{
+	return m_pimpl->zone();
 }
 
 

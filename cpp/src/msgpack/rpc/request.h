@@ -35,6 +35,7 @@ public:
 	session from();
 	object method();
 	object params();
+	auto_zone& zone();
 
 	template <typename Result>
 	void result(Result res);

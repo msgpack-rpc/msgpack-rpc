@@ -28,15 +28,17 @@ namespace rpc {
 class request_impl {
 public:
 	request_impl(shared_message_sendable ms, msgid_t msgid,
-			session from, object method, object params) :
-		m_ms(ms), m_msgid(msgid),
-		m_from(from), m_method(method), m_params(params) { }
+			session from, object method, object params, auto_zone z) :
+		m_ms(ms), m_msgid(msgid), m_from(from),
+		m_method(method), m_params(params), m_zone(z) { }
 
 	~request_impl() { }
 
 	session from()  { return m_from;   }  // FIXME weak?
 	object method() { return m_method; }
 	object params() { return m_params; }
+	auto_zone& zone() { return m_zone; }
+
 	msgid_t msgid() const { return m_msgid; }
 
 public:
@@ -64,8 +66,10 @@ private:
 	msgid_t m_msgid;
 
 	session m_from;
+
 	object m_method;
 	object m_params;
+	auto_zone m_zone;
 
 private:
 	request_impl();

@@ -27,7 +27,7 @@ namespace rpc {
 
 class dispatcher {
 public:
-	virtual void dispatch(request req, auto_zone z) = 0;
+	virtual void dispatch(request req) = 0;
 };
 
 

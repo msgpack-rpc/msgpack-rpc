@@ -40,6 +40,9 @@ public:
 	template <typename T>
 	T get();
 
+	template <typename T>
+	T get(auto_zone* z);
+
 	future& join();
 	future& wait();
 	future& recv();
@@ -53,8 +56,7 @@ public:
 	template <typename T>
 	T error_as() const;
 
-	zone& get_zone();
-	auto_zone release_zone();
+	auto_zone& zone();
 
 	future& attach_callback(
 			mp::function<void (future)> func);
@@ -72,6 +74,14 @@ template <typename T>
 T future::get()
 {
 	return get_impl().as<T>();
+}
+
+template <typename T>
+T future::get(auto_zone* z)
+{
+	msgpack::object obj = get_impl();
+	*z = zone();
+	return obj.as<T>();
 }
 
 template <typename T>

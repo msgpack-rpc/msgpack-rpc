@@ -53,15 +53,7 @@ public:
 		return m_error;
 	}
 
-	zone& get_zone()
-	{
-		return *m_z;
-	}
-
-	auto_zone release_zone()
-	{
-		return m_z;
-	}
+	auto_zone& zone() { return m_zone; }
 
 	void attach_callback(callback_t func);
 
@@ -86,7 +78,7 @@ private:
 
 	object m_result;
 	object m_error;
-	auto_zone m_z;
+	auto_zone m_zone;
 
 	mp::pthread_mutex m_mutex;
 	mp::pthread_cond m_cond;

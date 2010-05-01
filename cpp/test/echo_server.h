@@ -11,17 +11,16 @@ namespace rpc {
 class myecho : public rpc::dispatcher {
 public:
 	typedef rpc::request request;
-	typedef rpc::auto_zone auto_zone;
 
-	void dispatch(request req, auto_zone z)
+	void dispatch(request req)
 	try {
 		std::string method = req.method().as<std::string>();
 
 		if(method == "add") {
-			add(req, z);
+			add(req);
 			return;
 		} else if(method == "echo") {
-			echo(req, z);
+			echo(req);
 			return;
 		} else {
 			throw rpc::type_error();
@@ -31,14 +30,14 @@ public:
 		req.error(std::string(e.what()));
 	}
 
-	void add(request req, auto_zone z)
+	void add(request req)
 	{
 		msgpack::type::tuple<int, int> params;
 		req.params().convert(&params);
 		req.result(params.get<0>() + params.get<1>());
 	}
 
-	void echo(request req, auto_zone z)
+	void echo(request req)
 	{
 		req.result(req.params());
 	}
