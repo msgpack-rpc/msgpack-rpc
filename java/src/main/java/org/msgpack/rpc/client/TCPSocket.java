@@ -24,9 +24,9 @@ public class TCPSocket {
 		this.address = address;
 		this.loop = loop;
 		this.transport = transport;
-        this.connectFuture = null;
-        this.channel = null;
-        loop.setPipelineFactory(new RPCClientPipelineFactory(this));
+		this.connectFuture = null;
+		this.channel = null;
+		loop.setPipelineFactory(new RPCClientPipelineFactory(this));
 	}
 	
 	public synchronized void tryConnect() throws Exception {

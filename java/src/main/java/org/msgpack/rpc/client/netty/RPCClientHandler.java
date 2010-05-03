@@ -23,21 +23,21 @@ public class RPCClientHandler extends SimpleChannelHandler {
     @Override
     public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent ev) {
     	try {
-			sock.onConnected();
-		} catch (Exception e) {
-			e.printStackTrace();
-			sock.onConnectFailed();
+    		sock.onConnected();
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    		sock.onConnectFailed();
 		}
     }
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent ev) {
         try {
-			sock.onMessageReceived(ev.getMessage());
-		} catch (Exception e) {
-			e.printStackTrace();
-			sock.onFailed();
-		}
+        	sock.onMessageReceived(ev.getMessage());
+        } catch (Exception e) {
+        	e.printStackTrace();
+        	sock.onFailed();
+        }
 	}
 
     @Override
