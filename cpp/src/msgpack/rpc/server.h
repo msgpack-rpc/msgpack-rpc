@@ -41,6 +41,8 @@ public:
 
 	void close();
 
+	class base;
+
 private:
 	dispatcher* m_dp;
 	std::auto_ptr<transport::listener> m_listener;
@@ -52,6 +54,15 @@ protected:
 
 private:
 	server(const server&);
+};
+
+
+class server::base : public dispatcher {
+public:
+	base(loop lo = loop()) : instance(lo) { instance.serve(this); }
+	~base() { }
+
+	rpc::server instance;
 };
 
 

@@ -38,11 +38,28 @@ public:
 
 	void close();
 
+	class base;
+
 private:
 	MP_UTILIZE;
 
 private:
 	client();
+};
+
+
+class client::base {
+public:
+	base(const address& addr, loop lo = loop()) :
+		instance(addr, lo) { }
+
+	base(const std::string& host, uint16_t port, loop lo = loop()) :
+		instance(host, port, lo) { }
+
+	rpc::client instance;
+
+private:
+	base();
 };
 
 
