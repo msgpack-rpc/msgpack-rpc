@@ -21,16 +21,6 @@ public class RPCClientHandler extends SimpleChannelHandler {
     }
 
     @Override
-    public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent ev) throws Exception {
-         super.handleUpstream(ctx, ev);
-    }
-
-    @Override
-    public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent ev) throws Exception {
-    	ctx.sendUpstream(ev);
-    }
-
-    @Override
     public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent ev) {
     	try {
 			sock.onConnected();
