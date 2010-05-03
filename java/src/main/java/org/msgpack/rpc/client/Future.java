@@ -3,12 +3,14 @@ package org.msgpack.rpc.client;
 import java.io.IOException;
 
 public class Future {
-    protected Object error;
-    protected Object result;
-
+	protected Object error;
+	protected Object result;
+    protected boolean isJoined;
+	
     public Future() {
         this.error = null;
         this.result = null;
+        this.isJoined = false;
     }
 
     public synchronized void join() {
@@ -19,6 +21,7 @@ public class Future {
     		e.printStackTrace();
     		error = e;
     	}
+    	isJoined = true;
     }
     
     public void setResult(Object result) {
@@ -37,7 +40,15 @@ public class Future {
         this.notifyAll();
     }
 
-    public synchronized Object getResult() {
+    public synchronized Object getResult() throws Exception {
+    	if (!isJoined)
+    		throw new IOException("Calling getResult() without join()");
         return result;
+    }
+    
+    public synchronized Object getError() throws Exception {
+       	if (!isJoined)
+    		throw new IOException("Calling getResult() without join()");
+    	return error;
     }
 }
