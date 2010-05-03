@@ -26,13 +26,17 @@ public class Session {
 	public Address getAddress() {
 		return addr;
 	}
-	
-	public Object call(String method, Object[] args) throws Exception {
+
+	public Object call(String method, Object... args) throws Exception {
 		Future f = sendRequest(method, args);
 		f.join();
 		return f.getResult();
 	}
-	
+
+	public Future send(String method, Object... args) throws Exception {
+		return sendRequest(method, args);
+	}
+
 	public synchronized void close() {
 		if (transport != null)
 			transport.close();
@@ -45,14 +49,14 @@ public class Session {
 		return transport;
 	}
 
-	protected synchronized Future sendRequest(String method, Object[] args) {
+	protected Future sendRequest(String method, Object[] args) {
 		int msgid;
+		Future future = new Future();
 		synchronized(this) {
 			msgid = Session.msgidCounter++;
 			if (msgid > 1 << 30) Session.msgidCounter = 0;
+			reqTable.put(msgid, future);
 		}
-		Future future = new Future();
-		reqTable.put(msgid, future);
 		try {
 	        ArrayList<Object> response = new ArrayList<Object>();
 	        response.add(Constants.TYPE_REQUEST);
