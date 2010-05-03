@@ -21,7 +21,6 @@
 #include "types.h"
 #include "loop.h"
 #include "impl_fwd.h"
-#include "exception.h"
 #include <mp/functional.h>
 
 namespace msgpack {
@@ -53,6 +52,7 @@ public:
 	T error_as() const;
 
 	auto_zone& zone();
+	const auto_zone& zone() const;
 
 	future& attach_callback(
 			mp::function<void (future)> func);

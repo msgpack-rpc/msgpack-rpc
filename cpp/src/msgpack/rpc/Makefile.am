@@ -35,6 +35,7 @@ libmsgpack_rpc_include_HEADERS = \
 		types.h
 
 noinst_HEADERS = \
+		exception_impl.h \
 		future_impl.h \
 		request_impl.h \
 		session_impl.h \

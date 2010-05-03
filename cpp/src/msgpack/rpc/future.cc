@@ -16,7 +16,7 @@
 //    limitations under the License.
 //
 #include "future_impl.h"
-#include <sstream>
+#include "exception_impl.h"
 #include <cclog/cclog.h>
 
 namespace msgpack {
@@ -52,14 +52,7 @@ object future_impl::get_impl()
 {
 	join();
 	if(!m_error.is_nil()) {
-		if(m_error.type == msgpack::type::RAW && m_error.via.raw.ptr == TIMEOUT_ERROR.via.raw.ptr) {
-			throw timeout_error();
-		} else {
-			std::ostringstream os;
-			os << "remote error: ";
-			os << m_error;
-			throw remote_error(os.str());
-		}
+		throw_exception(this);
 	}
 	return m_result;
 }
@@ -140,6 +133,11 @@ future& future::attach_callback(
 }
 
 auto_zone& future::zone()
+{
+	return m_pimpl->zone();
+}
+
+const auto_zone& future::zone() const
 {
 	return m_pimpl->zone();
 }

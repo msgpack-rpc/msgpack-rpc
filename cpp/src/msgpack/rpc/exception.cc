@@ -15,7 +15,9 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-#include "exception.h"
+#include "exception_impl.h"
+#include "message.h"
+#include <sstream>
 #include <string.h>
 
 namespace msgpack {
@@ -23,11 +25,45 @@ namespace rpc {
 
 
 static const char* TIMEOUT_ERROR_PTR = "request timed out";
+static const char* CONNECT_ERROR_PTR = "connect failed";
 
 
 const msgpack::object TIMEOUT_ERROR( msgpack::type::raw_ref(
 			TIMEOUT_ERROR_PTR, strlen(TIMEOUT_ERROR_PTR)
 			) );
+
+const msgpack::object CONNECT_ERROR( msgpack::type::raw_ref(
+			CONNECT_ERROR_PTR, strlen(CONNECT_ERROR_PTR)
+			) );
+
+
+void throw_exception(future_impl* f)
+{
+	object err = f->error();
+
+	if(err.type == msgpack::type::RAW &&
+			err.via.raw.ptr == TIMEOUT_ERROR_PTR) {
+		throw timeout_error();
+
+	} else if(err.type == msgpack::type::RAW &&
+			err.via.raw.ptr == CONNECT_ERROR_PTR) {
+		throw connect_error();
+
+	} else if(err.type == msgpack::type::POSITIVE_INTEGER &&
+			err.via.u64 == NO_METHOD_ERROR) {
+		throw no_method_error();
+
+	} else if(err.type == msgpack::type::POSITIVE_INTEGER &&
+			err.via.u64 == ARGUMENT_ERROR) {
+		throw argument_error();
+
+	} else {
+		std::ostringstream os;
+		os << "remote error: ";
+		os << err;
+		throw remote_error(os.str(), future(f->shared_from_this()));
+	}
+}
 
 
 }  // namespace rpc

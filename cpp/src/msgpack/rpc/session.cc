@@ -19,6 +19,7 @@
 #include "session_impl.h"
 #include "future_impl.h"
 #include "request_impl.h"
+#include "exception_impl.h"
 #include "message_sendable.h"
 #include "cclog/cclog.h"
 
@@ -135,10 +136,6 @@ void session_impl::on_message(
 			msg.convert(&req);
 			on_notify(ms, req.method, req.param, z);
 		}
-		break;
-
-	case SESSION:
-		// ignore
 		break;
 
 	default:

@@ -19,31 +19,78 @@
 #define MSGPACK_RPC_EXCEPTION_H__
 
 #include "types.h"
+#include "future.h"
 #include <stdexcept>
 
 namespace msgpack {
 namespace rpc {
 
 
-struct remote_error : std::runtime_error {
-	remote_error(const std::string& msg) :
+struct rpc_error : public std::runtime_error {
+	rpc_error(const std::string& msg) :
 		std::runtime_error(msg) {}
 };
 
 
-struct timeout_error : remote_error {
+struct timeout_error : rpc_error {
 	timeout_error() :
-		remote_error("request timed out") {}
+		rpc_error("request timed out") {}
+
+	timeout_error(const std::string& msg) :
+		rpc_error(msg) {}
+};
+
+struct connect_error : timeout_error {
+	connect_error() :
+		timeout_error("connect failed") {}
+
+	connect_error(const std::string& msg) :
+		timeout_error(msg) {}
 };
 
 
-extern const object TIMEOUT_ERROR;
+struct call_error : rpc_error {
+	call_error(const std::string& msg) :
+		rpc_error(msg) {}
+};
+
+struct no_method_error : call_error {
+	no_method_error() :
+		call_error("method not found") {}
+
+	no_method_error(const std::string& msg) :
+		call_error(msg) {}
+};
+
+struct argument_error : call_error {
+	argument_error() :
+		call_error("argument mismatch") {}
+
+	argument_error(const std::string& msg) :
+		call_error(msg) {}
+};
 
 
-//struct connect_error : timeout_error {
-//	connect_error() :
-//		timeout_error("connect failed");
-//};
+struct remote_error : rpc_error {
+	remote_error(object err, future f) :
+		rpc_error("remote error"), m_future(f) {}
+
+	remote_error(const std::string& msg, future f) :
+		rpc_error(msg), m_future(f) {}
+
+	~remote_error() throw() try { } catch(...) { }
+
+	object error() const { return m_future.error(); }
+
+	template <typename T>
+	T error_as() const { return m_future.error_as<T>(); }
+
+	auto_zone& zone() { return m_future.zone(); }
+	const auto_zone& zone() const { return m_future.zone(); }
+
+private:
+	future m_future;
+};
 
 
 }  // namespace rpc
