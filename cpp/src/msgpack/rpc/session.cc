@@ -36,57 +36,44 @@ session_impl::session_impl(const address& to_address,
 		dispatcher* dp, loop lo) :
 	m_addr(to_address),
 	m_self_addr(self_address),
-	m_dtopt(topt),
+	m_tran(new transport::tcp(this, topt)),
 	m_dp(dp),
 	m_loop(lo),
 	m_msgid_rr(0),  // FIXME rand()?
 	m_timeout(5)  // FIXME
-{
-	// FIXME
-	m_dtran = shared_transport(new transport::tcp(this, m_dtopt));
-}
+{ }
 
 session_impl::~session_impl() { }
 
-inline transport::base* session_impl::get_transport(option opt)
-{
-	// FIXME
-	return m_dtran.get();
-}
 
-
-future session_impl::send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone z, option opt)
+future session_impl::send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone z)
 {
-	transport::base* tran = get_transport(opt);
 	shared_future f(new future_impl(shared_from_this(), m_loop));
 
-	tran->send_data(vbuf, z);
+	m_tran->send_data(vbuf, z);
 
 	m_reqtable.insert(msgid, f);
 	return future(f);
 }
 
-future session_impl::send_request_impl(msgid_t msgid, sbuffer* sbuf, option opt)
+future session_impl::send_request_impl(msgid_t msgid, sbuffer* sbuf)
 {
-	transport::base* tran = get_transport(opt);
 	shared_future f(new future_impl(shared_from_this(), m_loop));
 
-	tran->send_data(sbuf);
+	m_tran->send_data(sbuf);
 
 	m_reqtable.insert(msgid, f);
 	return future(f);
 }
 
-void session_impl::send_notify_impl(vrefbuffer* vbuf, shared_zone z, option opt)
+void session_impl::send_notify_impl(vrefbuffer* vbuf, shared_zone z)
 {
-	transport::base* tran = get_transport(opt);
-	tran->send_data(vbuf, z);
+	m_tran->send_data(vbuf, z);
 }
 
-void session_impl::send_notify_impl(sbuffer* sbuf, option opt)
+void session_impl::send_notify_impl(sbuffer* sbuf)
 {
-	transport::base* tran = get_transport(opt);
-	tran->send_data(sbuf);
+	m_tran->send_data(sbuf);
 }
 
 msgid_t session_impl::next_msgid()
@@ -204,20 +191,21 @@ void session::set_timeout(unsigned int sec)
 unsigned int session::get_timeout() const
 	{ return m_pimpl->get_timeout(); }
 
-future session::send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone z, option opt)
-	{ return m_pimpl->send_request_impl(msgid, vbuf, z, opt); }
+future session::send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone z)
+	{ return m_pimpl->send_request_impl(msgid, vbuf, z); }
 
-future session::send_request_impl(msgid_t msgid, sbuffer* sbuf, option opt)
-	{ return m_pimpl->send_request_impl(msgid, sbuf, opt); }
+future session::send_request_impl(msgid_t msgid, sbuffer* sbuf)
+	{ return m_pimpl->send_request_impl(msgid, sbuf); }
 
-void session::send_notify_impl(vrefbuffer* vbuf, shared_zone z, option opt)
-	{ return m_pimpl->send_notify_impl(vbuf, z, opt); }
+void session::send_notify_impl(vrefbuffer* vbuf, shared_zone z)
+	{ return m_pimpl->send_notify_impl(vbuf, z); }
 
-void session::send_notify_impl(sbuffer* sbuf, option opt)
-	{ return m_pimpl->send_notify_impl(sbuf, opt); }
+void session::send_notify_impl(sbuffer* sbuf)
+	{ return m_pimpl->send_notify_impl(sbuf); }
 
 msgid_t session::next_msgid()
 	{ return m_pimpl->next_msgid(); }
+
 
 }  // namespace rpc
 }  // namespace msgpack

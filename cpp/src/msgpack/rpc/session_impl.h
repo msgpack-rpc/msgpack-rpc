@@ -72,13 +72,13 @@ public:
 	msgid_t next_msgid();
 
 public:
-	future send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone life, option opt);
+	future send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone life);
 
-	future send_request_impl(msgid_t msgid, sbuffer* sbuf, option opt);
+	future send_request_impl(msgid_t msgid, sbuffer* sbuf);
 
-	void send_notify_impl(vrefbuffer* vbuf, shared_zone life, option opt);
+	void send_notify_impl(vrefbuffer* vbuf, shared_zone life);
 
-	void send_notify_impl(sbuffer* sbuf, option opt);
+	void send_notify_impl(sbuffer* sbuf);
 
 public:
 	void on_message(
@@ -105,9 +105,7 @@ private:
 	address m_addr;
 	address m_self_addr;
 
-	transport_option m_dtopt;
-	shared_transport m_dtran;
-	// FIXME std::vector<shared_transport>
+	shared_transport m_tran;
 
 	dispatcher* m_dp;
 
@@ -117,9 +115,6 @@ private:
 	reqtable m_reqtable;
 
 	unsigned int m_timeout;
-
-private:
-	transport::base* get_transport(option opt);
 
 private:
 	session_impl();

@@ -33,7 +33,7 @@ class session;
 template <typename IMPL>
 class caller {
 public:
-	caller(option opt = option()) : m_option(opt) { }
+	caller() { }
 	~caller() { }
 
 %def gen_call(ret, name, send_method, lifetype = nil)
@@ -48,7 +48,7 @@ public:
 		shared_zone& slife = msglife;            %>if lifetype == "shared_zone"
 		shared_zone  slife;                      %>unless lifetype
 		return static_cast<IMPL*>(this)->[%send_method%](
-				name, param, slife, m_option);
+				name, param, slife);
 	}
 
 %end
@@ -58,7 +58,7 @@ public:
 	{
 		type::tuple<> param;
 		return static_cast<IMPL*>(this)->send_request(
-				name, param, shared_zone(), m_option);
+				name, param, shared_zone());
 	}
 
 %gen_call("future", "call", "send_request", "auto_zone")
@@ -69,46 +69,12 @@ public:
 	{
 		type::tuple<> param;
 		return static_cast<IMPL*>(this)->send_notify(
-				name, param, shared_zone(), m_option);
+				name, param, shared_zone());
 	}
 
 %gen_call("void", "notify", "send_notify", "auto_zone")
 %gen_call("void", "notify", "send_notify", "shared_zone")
 %gen_call("void", "notify", "send_notify")
-
-protected:
-	option m_option;
-};
-
-
-class caller_with : public caller<caller_with> {
-public:
-	caller_with(session* s, option opt) :
-		caller<caller_with>(opt), m_session(s) { }
-
-	~caller_with() { }
-
-	caller_with& with(option opt)
-	{
-		m_option = opt;
-		return *this;
-	}
-
-	template <typename Method, typename Parameter>
-	future send_request(Method method,
-			const Parameter& param, shared_zone msglife,
-			option opt);
-
-	template <typename Method, typename Parameter>
-	future send_notify(Method method,
-			const Parameter& param, shared_zone msglife,
-			option opt);
-
-private:
-	session* m_session;
-
-private:
-	caller_with();
 };
 
 

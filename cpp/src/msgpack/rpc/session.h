@@ -45,30 +45,22 @@ public:
 
 	unsigned int get_timeout() const;
 
-public:
-	caller_with with(option opt)
-	{
-		return caller_with(this, opt);
-	}
-
 protected:
 	template <typename Method, typename Parameter>
 	future send_request(Method method,
-			const Parameter& param, shared_zone msglife,
-			option opt = option());
+			const Parameter& param, shared_zone msglife);
 
-	future send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone life, option opt);
+	future send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone life);
 
-	future send_request_impl(msgid_t msgid, sbuffer* sbuf, option opt);
+	future send_request_impl(msgid_t msgid, sbuffer* sbuf);
 
 	template <typename Method, typename Parameter>
 	void send_notify(Method method,
-			const Parameter& param, shared_zone msglife,
-			option opt = option());
+			const Parameter& param, shared_zone msglife);
 
-	void send_notify_impl(vrefbuffer* vbuf, shared_zone life, option opt);
+	void send_notify_impl(vrefbuffer* vbuf, shared_zone life);
 
-	void send_notify_impl(sbuffer* sbuf, option opt);
+	void send_notify_impl(sbuffer* sbuf);
 
 	friend class caller<session>;
 
@@ -87,8 +79,7 @@ private:
 
 template <typename Method, typename Parameter>
 future session::send_request(Method method,
-		const Parameter& param, shared_zone msglife,
-		option opt)
+		const Parameter& param, shared_zone msglife)
 {
 	msgid_t msgid = next_msgid();
 	msg_request<Method, Parameter> msgreq(method, param, msgid);
@@ -96,49 +87,31 @@ future session::send_request(Method method,
 	if(msglife) {
 		msgpack::vrefbuffer* vbuf = msglife->allocate<msgpack::vrefbuffer>();
 		msgpack::pack(vbuf, msgreq);
-		return send_request_impl(msgid, vbuf, msglife, opt);
+		return send_request_impl(msgid, vbuf, msglife);
 
 	} else {
 		msgpack::sbuffer sbuf;
 		msgpack::pack(sbuf, msgreq);
-		return send_request_impl(msgid, &sbuf, opt);
+		return send_request_impl(msgid, &sbuf);
 	}
 }
 
 template <typename Method, typename Parameter>
 void session::send_notify(Method method,
-		const Parameter& param, shared_zone msglife,
-		option opt)
+		const Parameter& param, shared_zone msglife)
 {
 	msg_notify<Method, Parameter> msgreq(method, param);
 
 	if(msglife) {
 		msgpack::vrefbuffer* vbuf = msglife->allocate<msgpack::vrefbuffer>();
 		msgpack::pack(vbuf, msgreq);
-		return send_notify_impl(vbuf, msglife, opt);
+		return send_notify_impl(vbuf, msglife);
 
 	} else {
 		msgpack::sbuffer sbuf;
 		msgpack::pack(sbuf, msgreq);
-		return send_notify_impl(&sbuf, opt);
+		return send_notify_impl(&sbuf);
 	}
-}
-
-
-template <typename Method, typename Parameter>
-inline future caller_with::send_request(Method method,
-		const Parameter& param, shared_zone msglife,
-		option opt)
-{
-	return m_session->send_request(method, param, msglife, opt);
-}
-
-template <typename Method, typename Parameter>
-inline future caller_with::send_notify(Method method,
-		const Parameter& param, shared_zone msglife,
-		option opt)
-{
-	return m_session->send_notify(method, param, msglife, opt);
 }
 
 
