@@ -11,11 +11,10 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.msgpack.rpc.client.netty.RPCClientPipelineFactory;
 
 public class EventLoop {
-	protected ChannelFactory factory;
 	protected ClientBootstrap bootstrap;
 	
 	public EventLoop() {
-        this.factory = new NioClientSocketChannelFactory(
+		ChannelFactory factory = new NioClientSocketChannelFactory(
         		Executors.newCachedThreadPool(),
                 Executors.newCachedThreadPool());
         this.bootstrap = new ClientBootstrap(factory);
