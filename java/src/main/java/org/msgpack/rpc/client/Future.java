@@ -3,7 +3,7 @@ package org.msgpack.rpc.client;
 import java.io.IOException;
 
 public class Future {
-	protected Object error;
+	protected Exception error;
 	protected Object result;
     protected boolean isJoined;
 	
@@ -29,12 +29,17 @@ public class Future {
     }
 
     public void setError(Object error) {
+    	Exception e;
     	if (error instanceof String)
-    		error = new IOException((String)error);
-    	set(error, null);
+    		e = new IOException((String)error);
+    	else if (error instanceof Exception)
+    		e = (Exception)error;
+    	else
+    		e = new IOException("Unknown Error");
+    	set(e, null);
     }
 
-    protected synchronized void set(Object error, Object result) {
+    protected synchronized void set(Exception error, Object result) {
     	this.error = error;
         this.result = result;
         this.notifyAll();
@@ -43,12 +48,8 @@ public class Future {
     public synchronized Object getResult() throws Exception {
     	if (!isJoined)
     		throw new IOException("Calling getResult() without join()");
+    	if (error != null)
+    		throw error;
         return result;
-    }
-    
-    public synchronized Object getError() throws Exception {
-       	if (!isJoined)
-    		throw new IOException("Calling getResult() without join()");
-    	return error;
     }
 }
