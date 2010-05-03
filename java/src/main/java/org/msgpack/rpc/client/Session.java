@@ -53,27 +53,37 @@ public class Session {
 		int msgid;
 		Future future = new Future();
 		synchronized(this) {
-			msgid = Session.msgidCounter++;
-			if (msgid > 1 << 30) Session.msgidCounter = 0;
+			msgid = generateMessageID();
 			reqTable.put(msgid, future);
 		}
 		try {
-	        ArrayList<Object> response = new ArrayList<Object>();
-	        response.add(Constants.TYPE_REQUEST);
-	        response.add(msgid);
-	        response.add(method);
-	        ArrayList<Object> params = new ArrayList<Object>();
-	        if (args != null) {
-	        	for (Object o : args)
-	        		params.add(o);
-	        }
-	        response.add(params);
-			getTransport().sendMessage(response);
+			ArrayList<Object> request = createRPCMessage(Constants.TYPE_REQUEST, msgid, method, args);
+			getTransport().sendMessage(request);
 		} catch (Exception e) {
 			e.printStackTrace();
 			future.setError(e);
 		}
 		return future;
+	}
+	
+	protected int generateMessageID() {
+		int msgid = Session.msgidCounter++;
+		if (msgid > 1 << 30) Session.msgidCounter = 0;
+		return msgid;
+	}
+	
+	protected ArrayList<Object> createRPCMessage(int type, int msgid, String method, Object[] args) {
+        ArrayList<Object> message = new ArrayList<Object>();
+        message.add(Constants.TYPE_REQUEST);
+        message.add(msgid);
+        message.add(method);
+        ArrayList<Object> params = new ArrayList<Object>();
+        if (args != null) {
+        	for (Object o : args)
+        		params.add(o);
+        }
+        message.add(params);
+        return message;
 	}
 
 	// callback
@@ -91,7 +101,7 @@ public class Session {
         Object objResult = a.get(3);
         if (!(objMsgID instanceof Number))
         	throw new IOException("invalid msgid"); // FIXME
-        int msgid = ((Number)objMsgID).intValue();       
+        int msgid = ((Number)objMsgID).intValue();
         if (!reqTable.containsKey(msgid))
         	throw new IOException("not my msgid: msgid=" + msgid);
         
