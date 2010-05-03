@@ -27,16 +27,6 @@ public class Session {
 		return addr;
 	}
 
-	public Object call(String method, Object... args) throws Exception {
-		Future f = sendRequest(method, args);
-		f.join();
-		return f.getResult();
-	}
-
-	public Future send(String method, Object... args) throws Exception {
-		return sendRequest(method, args);
-	}
-
 	protected synchronized TCPTransport getTransport() {
 		if (transport != null) return transport;
 		transport = new TCPTransport(this, loop);
@@ -60,13 +50,13 @@ public class Session {
 		return future;
 	}
 	
-	protected int generateMessageID() {
+	private int generateMessageID() {
 		int msgid = Session.msgidCounter++;
 		if (msgid > 1 << 30) Session.msgidCounter = 0;
 		return msgid;
 	}
 	
-	protected ArrayList<Object> createRPCMessage(int type, int msgid, String method, Object[] args) {
+	private ArrayList<Object> createRPCMessage(int type, int msgid, String method, Object[] args) {
         ArrayList<Object> message = new ArrayList<Object>();
         message.add(Constants.TYPE_REQUEST);
         message.add(msgid);
