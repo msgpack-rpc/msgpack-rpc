@@ -77,7 +77,7 @@ public class Session {
 	}
 
 	// callback
-	public synchronized void onMessageReceived(Object replyObject) throws Exception {
+	public void onMessageReceived(Object replyObject) throws Exception {
 		if (!(replyObject instanceof AbstractList))
 			throw new IOException("invalid MPRPC Response"); // FIXME
 		
@@ -89,14 +89,21 @@ public class Session {
         Object objMsgID  = a.get(1);
         Object objError  = a.get(2);
         Object objResult = a.get(3);
-        if (!(objMsgID instanceof Number))
-        	throw new IOException("invalid msgid"); // FIXME
-        int msgid = ((Number)objMsgID).intValue();
-        if (!reqTable.containsKey(msgid))
-        	throw new IOException("not my msgid: msgid=" + msgid);
         
-        Future future = reqTable.get(msgid);
-        reqTable.remove(msgid);
+        int msgid;
+        if (!(objMsgID instanceof Number))
+        	msgid = ((Number)objMsgID).intValue();
+        else
+        	throw new IOException("invalid msgid");
+        
+        Future future;
+        synchronized (this) {
+        	if (!reqTable.containsKey(msgid))
+        		throw new IOException("not my msgid: msgid=" + msgid);
+        	future = reqTable.get(msgid);
+        	reqTable.remove(msgid);
+        }
+
         try {
         	int type = ((Number)objType).intValue();
         	if (type != Constants.TYPE_RESPONSE) {
@@ -112,7 +119,7 @@ public class Session {
         	}
         	future.setResult(objResult);
         } catch (Exception e) {
-        	future.setError(e.getMessage());
+        	future.setError(e);
         }
 	}
 	
