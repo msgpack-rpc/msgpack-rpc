@@ -47,7 +47,5 @@ public class RPCClientHandler extends SimpleChannelHandler {
     		sock.onConnectFailed();
     	else
     		sock.onFailed();
-        ev.getChannel().close();
-        ctx.sendUpstream(ev);
     }
 }
