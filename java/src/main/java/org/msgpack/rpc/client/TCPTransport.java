@@ -41,7 +41,10 @@ public class TCPTransport {
 	public synchronized void close() {
 		if (socket != null)
 			socket.close();
+		isConnecting = false;
+		isConnected = false;
 		socket = null;
+		pendingMessages.clear();
 	}
 
 	// callback
@@ -52,9 +55,8 @@ public class TCPTransport {
 	}
 
 	// callback
-	public synchronized void onConnectFailed() {
-		isConnecting = false;
-		isConnected = false;
+	public void onConnectFailed() {
+		close();
 		session.onConnectFailed();
 	}
 	
@@ -64,16 +66,14 @@ public class TCPTransport {
 	}
 
 	// callback
-	public synchronized void onClosed() {
+	public void onClosed() {
+		close();
 		session.onClosed();
-		isConnecting = false;
-		isConnected = false;
-		socket = null;
-		pendingMessages.clear();
 	}
 	
 	// callback
 	public void onFailed() {
+		close();
 		session.onFailed();
 	}
 }
