@@ -17,6 +17,7 @@ public class TCPSocket {
 	protected TCPTransport transport;
 
 	// netty-specific
+	protected ClientBootstrap bootstrap;
 	protected ChannelFuture connectFuture;
 	protected Channel channel;
 
@@ -26,13 +27,14 @@ public class TCPSocket {
 		this.transport = transport;
 		this.connectFuture = null;
 		this.channel = null;
-		loop.setPipelineFactory(new RPCClientPipelineFactory(this));
+		this.bootstrap = loop.createBootstrap();
+		this.bootstrap.setPipelineFactory(new RPCClientPipelineFactory(this));
 	}
 	
 	public synchronized void tryConnect() throws Exception {
 		if (connectFuture != null)
 			throw new IOException("already connected");
-		connectFuture = loop.connect(this.address);
+		connectFuture = bootstrap.connect(new InetSocketAddress(address.getHost(), address.getPort()));
 	}
 	
 	public synchronized void trySend(Object msg) throws Exception {
@@ -40,12 +42,8 @@ public class TCPSocket {
 			throw new IOException("not connected, but try send");
 		channel.write(msg);
 	}
-
-	public void close() {
-		tryClose();
-	}
 	
-	protected synchronized void tryClose() {
+	public synchronized void tryClose() {
 		if (channel != null && channel.isOpen())
 			channel.close().awaitUninterruptibly();
 		address = null;
@@ -92,9 +90,9 @@ public class TCPSocket {
 	}
 	
 	// callback
-	public synchronized void onFailed() {
+	public synchronized void onFailed(Exception e) {
 		if (transport != null)
-			transport.onFailed();
+			transport.onFailed(e);
 		tryClose();
 	}
 }

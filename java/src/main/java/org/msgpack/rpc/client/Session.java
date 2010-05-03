@@ -27,22 +27,6 @@ public class Session {
 		return addr;
 	}
 
-	public Object call(String method, Object... args) throws Exception {
-		Future f = sendRequest(method, args);
-		f.join();
-		return f.getResult();
-	}
-
-	public Future send(String method, Object... args) throws Exception {
-		return sendRequest(method, args);
-	}
-
-	public synchronized void close() {
-		if (transport != null)
-			transport.close();
-		transport = null;
-	}
-
 	protected synchronized TCPTransport getTransport() {
 		if (transport != null) return transport;
 		transport = new TCPTransport(this, loop);
@@ -66,13 +50,13 @@ public class Session {
 		return future;
 	}
 	
-	protected int generateMessageID() {
+	private int generateMessageID() {
 		int msgid = Session.msgidCounter++;
 		if (msgid > 1 << 30) Session.msgidCounter = 0;
 		return msgid;
 	}
 	
-	protected ArrayList<Object> createRPCMessage(int type, int msgid, String method, Object[] args) {
+	private ArrayList<Object> createRPCMessage(int type, int msgid, String method, Object[] args) {
         ArrayList<Object> message = new ArrayList<Object>();
         message.add(Constants.TYPE_REQUEST);
         message.add(msgid);
@@ -85,9 +69,15 @@ public class Session {
         message.add(params);
         return message;
 	}
+	
+	protected synchronized void tryClose() {
+		if (transport != null)
+			transport.tryClose();
+		transport = null;
+	}
 
 	// callback
-	public synchronized void onMessageReceived(Object replyObject) throws Exception {
+	public void onMessageReceived(Object replyObject) throws Exception {
 		if (!(replyObject instanceof AbstractList))
 			throw new IOException("invalid MPRPC Response"); // FIXME
 		
@@ -99,14 +89,21 @@ public class Session {
         Object objMsgID  = a.get(1);
         Object objError  = a.get(2);
         Object objResult = a.get(3);
-        if (!(objMsgID instanceof Number))
-        	throw new IOException("invalid msgid"); // FIXME
-        int msgid = ((Number)objMsgID).intValue();
-        if (!reqTable.containsKey(msgid))
-        	throw new IOException("not my msgid: msgid=" + msgid);
         
-        Future future = reqTable.get(msgid);
-        reqTable.remove(msgid);
+        int msgid;
+        if (objMsgID instanceof Number)
+        	msgid = ((Number)objMsgID).intValue();
+        else
+        	throw new IOException("invalid msgid");
+        
+        Future future;
+        synchronized (this) {
+        	if (!reqTable.containsKey(msgid))
+        		throw new IOException("not my msgid: msgid=" + msgid);
+        	future = reqTable.get(msgid);
+        	reqTable.remove(msgid);
+        }
+
         try {
         	int type = ((Number)objType).intValue();
         	if (type != Constants.TYPE_RESPONSE) {
@@ -122,37 +119,37 @@ public class Session {
         	}
         	future.setResult(objResult);
         } catch (Exception e) {
-        	future.setError(e.getMessage());
+        	future.setError(e);
         }
 	}
 	
 	// callback
 	public synchronized void onConnectFailed() {
-		for (Entry<Integer, Future> e : reqTable.entrySet()) {
-			Future f = e.getValue();
+		for (Entry<Integer, Future> ent : reqTable.entrySet()) {
+			Future f = ent.getValue();
 			f.setError("Connect Failed");
 		}
 		reqTable.clear();
-		close();
+		tryClose();
 	}
 
 	// callback
 	public synchronized void onClosed() {
-		for (Entry<Integer, Future> e : reqTable.entrySet()) {
-			Future f = e.getValue();
+		for (Entry<Integer, Future> ent : reqTable.entrySet()) {
+			Future f = ent.getValue();
 			f.setError("Connection Closed");
 		}
 		reqTable.clear();
-		close();
+		tryClose();
 	}
 
 	// callback
-	public synchronized void onFailed() {
-		for (Entry<Integer, Future> e : reqTable.entrySet()) {
-			Future f = e.getValue();
-			f.setError("Failed");
+	public synchronized void onFailed(Exception e) {
+		for (Entry<Integer, Future> ent : reqTable.entrySet()) {
+			Future f = ent.getValue();
+			f.setError(e);
 		}
 		reqTable.clear();
-		close();
+		tryClose();
 	}
 }
