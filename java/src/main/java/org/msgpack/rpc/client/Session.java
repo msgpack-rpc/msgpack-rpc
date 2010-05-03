@@ -91,7 +91,7 @@ public class Session {
         Object objResult = a.get(3);
         
         int msgid;
-        if (!(objMsgID instanceof Number))
+        if (objMsgID instanceof Number)
         	msgid = ((Number)objMsgID).intValue();
         else
         	throw new IOException("invalid msgid");
