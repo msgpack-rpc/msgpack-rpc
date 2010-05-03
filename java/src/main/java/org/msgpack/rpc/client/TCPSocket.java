@@ -29,8 +29,9 @@ public class TCPSocket {
         loop.setPipelineFactory(new RPCClientPipelineFactory(this));
 	}
 	
-	public synchronized void tryConnect() {
-		if (connectFuture != null) return;
+	public synchronized void tryConnect() throws Exception {
+		if (connectFuture != null)
+			throw new IOException("already connected");
 		connectFuture = loop.connect(this.address);
 	}
 	
@@ -39,8 +40,8 @@ public class TCPSocket {
 			throw new IOException("not connected, but try send");
 		channel.write(msg);
 	}
-	
-	public synchronized void close() {
+
+	public void close() {
 		tryClose();
 	}
 	
@@ -56,15 +57,18 @@ public class TCPSocket {
 	// callback
 	public synchronized void onConnected() throws Exception {
 		// connected, but onConnected() called
-		if (channel != null) return;
+		if (channel != null)
+			throw new IOException("already connected");
+		// onConnected() called without tryConnect
+		if (connectFuture == null)
+			throw new IOException("tryConnect was not called");
 
 		// set channel
 		channel = connectFuture.awaitUninterruptibly().getChannel();
-		if (!connectFuture.isSuccess()) {
-			onConnectFailed();
-		} else {
+		if (connectFuture.isSuccess())
 			transport.onConnected();
-		}
+		else
+			onConnectFailed();
 	}
 
 	// callback
