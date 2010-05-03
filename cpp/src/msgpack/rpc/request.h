@@ -27,9 +27,7 @@ namespace rpc {
 
 class request {
 public:
-	request(shared_request pimpl) :
-		m_pimpl(pimpl) { }
-
+	request(shared_request pimpl) : m_pimpl(pimpl) { }
 	~request() { }
 
 	session from();
@@ -57,6 +55,9 @@ public:
 	template <typename Error>
 	void error(Error err, shared_zone z);
 
+	template <typename T>
+	class type;
+
 private:
 	template <typename Result, typename Error>
 	void call(Result& res, Error& err);
@@ -72,6 +73,33 @@ private:
 
 private:
 	shared_request m_pimpl;
+};
+
+
+template <typename T>
+class request::type : public request {
+public:
+	type(const request& req) : request(req) { }
+	~type() { }
+
+	void result(T res)
+		{ request::result(res); }
+
+	void result(T res, auto_zone z)
+		{ request::result(res, z); }
+
+	void result(T res, shared_zone z)
+		{ request::result(res, z); }
+};
+
+template <>
+class request::type<void> : public request {
+public:
+	type(const request& req) : request(req) { }
+	~type() { }
+
+	void result()
+		{ request::result_nil(); }
 };
 
 

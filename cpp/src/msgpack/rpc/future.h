@@ -30,11 +30,7 @@ namespace rpc {
 
 class future {
 public:
-	future() { }
-
-	future(shared_future pimpl) :
-		m_pimpl(pimpl) { }
-
+	future(shared_future pimpl) : m_pimpl(pimpl) { }
 	~future() { }
 
 	template <typename T>
@@ -61,9 +57,49 @@ public:
 	future& attach_callback(
 			mp::function<void (future)> func);
 
+	template <typename T>
+	class type;
+
 private:
 	shared_future m_pimpl;
 	object get_impl();
+};
+
+
+template <typename T>
+class future::type : public future {
+public:
+	type(const future& f) : future(f) { }
+	~type() { }
+
+	T get()
+		{ return future::get<T>(); }
+
+	T get(auto_zone* z)
+		{ return future::get<T>(z); }
+
+	T result() const
+		{ return future::result().template as<T>(); }
+
+	// FIXME attach_callback
+};
+
+template <>
+class future::type<void> : public future {
+public:
+	type(const future& f) : future(f) { }
+	~type() { }
+
+	void get()
+		{ future::get<msgpack::type::nil>(); }
+
+	void get(auto_zone* z)
+		{ future::get<msgpack::type::nil>(z); }
+
+	void result() const
+		{ future::result().as<msgpack::type::nil>(); }
+
+	// FIXME attach_callback
 };
 
 
@@ -76,6 +112,13 @@ T future::get()
 	return get_impl().as<T>();
 }
 
+template <> inline
+void future::get<void>()
+{
+	get_impl().as<msgpack::type::nil>();
+}
+
+
 template <typename T>
 T future::get(auto_zone* z)
 {
@@ -83,6 +126,15 @@ T future::get(auto_zone* z)
 	*z = zone();
 	return obj.as<T>();
 }
+
+template <> inline
+void future::get<void>(auto_zone* z)
+{
+	msgpack::object obj = get_impl();
+	*z = zone();
+	obj.as<msgpack::type::nil>();
+}
+
 
 template <typename T>
 T future::result_as() const
