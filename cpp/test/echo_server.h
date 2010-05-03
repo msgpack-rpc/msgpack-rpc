@@ -14,15 +14,22 @@ public:
 
 	void dispatch(request req)
 	try {
-		std::string method = req.method().as<std::string>();
+		std::string method;
+		req.method().convert(&method);
 
 		if(method == "add") {
-			add(req);
+			msgpack::type::tuple<int, int> params;
+			req.params().convert(&params);
+			add(req, params.get<0>(), params.get<1>());
 
 		} else if(method == "echo") {
-			echo(req);
+			msgpack::type::tuple<std::string> params;
+			req.params().convert(&params);
+			echo(req, params.get<0>());
 
 		} else if(method == "err") {
+			msgpack::type::tuple<> params;
+			req.params().convert(&params);
 			err(req);
 
 		} else {
@@ -38,17 +45,14 @@ public:
 		return;
 	}
 
-
-	void add(request req)
+	void add(request req, int a1, int a2)
 	{
-		msgpack::type::tuple<int, int> params;
-		req.params().convert(&params);
-		req.result(params.get<0>() + params.get<1>());
+		req.result(a1 + a2);
 	}
 
-	void echo(request req)
+	void echo(request req, const std::string& msg)
 	{
-		req.result(req.params());
+		req.result(msg);
 	}
 
 	void err(request req)

@@ -24,13 +24,10 @@ int main(void)
 	rpc::client cli("127.0.0.1", 8080);
 
 	// call
-	rpc::auto_zone z;
-	rpc::object ret;
-	ret = cli.call("echo",
-			std::string("MessagePack-RPC"),
-			std::string("test")).get<msgpack::object>(&z);
+	std::string msg("MessagePack-RPC");
+	std::string ret = cli.call("echo", msg).get<std::string>();
 
-	std::cout << "call: echo(\"MessagePack-RPC\", \"test\") = " << ret << std::endl;
+	std::cout << "call: echo(\"MessagePack-RPC\") = " << ret << std::endl;
 
 	return 0;
 }

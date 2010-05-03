@@ -80,7 +80,11 @@ struct remote_error : rpc_error {
 
 	~remote_error() throw() try { } catch(...) { }
 
+	object result() const { return m_future.result(); }
 	object error() const { return m_future.error(); }
+
+	template <typename T>
+	T result_as() const { return m_future.result_as<T>(); }
 
 	template <typename T>
 	T error_as() const { return m_future.error_as<T>(); }

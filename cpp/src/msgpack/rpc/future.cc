@@ -125,6 +125,16 @@ future& future::recv()
 	return *this;
 }
 
+object future::result() const
+{
+	return m_pimpl->result();
+}
+
+object future::error() const
+{
+	return m_pimpl->error();
+}
+
 future& future::attach_callback(
 		mp::function<void (future)> func)
 {

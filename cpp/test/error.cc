@@ -45,6 +45,8 @@ int main(void)
 		cli.call("err").get<int>();
 	} catch(msgpack::rpc::remote_error& e) {
 		std::cout << "ok: " << e.what() << std::endl;
+		std::cout << "error object: " << e.error() << std::endl;
+		std::cout << "result object: " << e.result() << std::endl;
 	}
 }
 
