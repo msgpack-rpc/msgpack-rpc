@@ -31,6 +31,10 @@
 #endif
 
 #endif
+
+#if CCLOG_LEVEL > 5
+#define DISABLE_CCLOG
+#endif
 % GENERATION_LIMIT = 16
 
 class cclog_initializer;
@@ -106,6 +110,7 @@ inline cclog& cclog::instance()
 
 #include "cclog_null.h"
 
+#ifndef DISABLE_CCLOG
 static unsigned long cclog_initializer_counter = 0;
 
 class cclog_initializer {
@@ -129,6 +134,7 @@ private:
 };
 
 static cclog_initializer cclog_initializer_;
+#endif
 
 #define CCLOG_XSTR(s) #s
 #define CCLOG_XSTR_(x) CCLOG_XSTR(x)
