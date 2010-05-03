@@ -72,8 +72,8 @@ public class TCPTransport {
 	}
 	
 	// callback
-	public void onFailed() {
+	public void onFailed(Exception e) {
 		tryClose();
-		session.onFailed();
+		session.onFailed(e);
 	}
 }

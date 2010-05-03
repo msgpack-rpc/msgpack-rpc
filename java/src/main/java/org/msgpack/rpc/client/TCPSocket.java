@@ -90,9 +90,9 @@ public class TCPSocket {
 	}
 	
 	// callback
-	public synchronized void onFailed() {
+	public synchronized void onFailed(Exception e) {
 		if (transport != null)
-			transport.onFailed();
+			transport.onFailed(e);
 		tryClose();
 	}
 }

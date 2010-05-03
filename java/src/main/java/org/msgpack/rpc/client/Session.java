@@ -125,8 +125,8 @@ public class Session {
 	
 	// callback
 	public synchronized void onConnectFailed() {
-		for (Entry<Integer, Future> e : reqTable.entrySet()) {
-			Future f = e.getValue();
+		for (Entry<Integer, Future> ent : reqTable.entrySet()) {
+			Future f = ent.getValue();
 			f.setError("Connect Failed");
 		}
 		reqTable.clear();
@@ -135,8 +135,8 @@ public class Session {
 
 	// callback
 	public synchronized void onClosed() {
-		for (Entry<Integer, Future> e : reqTable.entrySet()) {
-			Future f = e.getValue();
+		for (Entry<Integer, Future> ent : reqTable.entrySet()) {
+			Future f = ent.getValue();
 			f.setError("Connection Closed");
 		}
 		reqTable.clear();
@@ -144,10 +144,10 @@ public class Session {
 	}
 
 	// callback
-	public synchronized void onFailed() {
-		for (Entry<Integer, Future> e : reqTable.entrySet()) {
-			Future f = e.getValue();
-			f.setError("Failed");
+	public synchronized void onFailed(Exception e) {
+		for (Entry<Integer, Future> ent : reqTable.entrySet()) {
+			Future f = ent.getValue();
+			f.setError(e);
 		}
 		reqTable.clear();
 		tryClose();

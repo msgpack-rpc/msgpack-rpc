@@ -1,5 +1,6 @@
 package org.msgpack.rpc.client.netty;
 
+import java.io.IOException;
 import java.net.ConnectException;
 
 import org.jboss.netty.channel.ChannelEvent;
@@ -36,7 +37,7 @@ public class RPCClientHandler extends SimpleChannelHandler {
         	sock.onMessageReceived(ev.getMessage());
         } catch (Exception e) {
         	e.printStackTrace();
-        	sock.onFailed();
+        	sock.onFailed(e);
         }
 	}
 
@@ -46,6 +47,6 @@ public class RPCClientHandler extends SimpleChannelHandler {
     	if (e instanceof ConnectException)
     		sock.onConnectFailed();
     	else
-    		sock.onFailed();
+    		sock.onFailed(new IOException(e.getMessage()));
     }
 }
