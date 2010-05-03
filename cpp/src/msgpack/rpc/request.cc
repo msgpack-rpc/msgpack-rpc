@@ -21,10 +21,10 @@ namespace msgpack {
 namespace rpc {
 
 
-session request::from()
-{
-	return m_pimpl->from();
-}
+//session request::from()
+//{
+//	return m_pimpl->from();
+//}
 
 object request::method()
 {

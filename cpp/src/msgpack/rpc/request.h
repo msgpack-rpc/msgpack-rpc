@@ -30,7 +30,7 @@ public:
 	request(shared_request pimpl) : m_pimpl(pimpl) { }
 	~request() { }
 
-	session from();
+	//session from();  // FIXME design
 	object method();
 	object params();
 	auto_zone& zone();
