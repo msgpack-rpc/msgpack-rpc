@@ -179,7 +179,7 @@ void MP_UTIL_IMPL(tcp)::connect_callback(
 		LOG_WARN("connect to ",get_address()," failed, abort: ",strerror(err));
 		ref->connecting = 0;
 		ref->pending_xf.clear();
-		//get_session().transport_lost(); / connect_failed  // FIXME
+		get_session().on_connect_failed();
 	}
 }
 

@@ -97,6 +97,8 @@ public:
 			message_sendable* ms,
 			object method, object param, auto_zone z);
 
+	void on_connect_failed();
+
 	void step_timeout();
 
 private:
