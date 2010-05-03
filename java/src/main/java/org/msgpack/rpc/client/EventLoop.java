@@ -1,6 +1,7 @@
 package org.msgpack.rpc.client;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -11,24 +12,23 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.msgpack.rpc.client.netty.RPCClientPipelineFactory;
 
 public class EventLoop {
+	protected ExecutorService bossService;
+	protected ExecutorService workerService;
 	protected ClientBootstrap bootstrap;
 	
 	public EventLoop() {
-		ChannelFactory factory = new NioClientSocketChannelFactory(
-        		Executors.newCachedThreadPool(),
-                Executors.newCachedThreadPool());
-        this.bootstrap = new ClientBootstrap(factory);
+		// using same ExecutorService across same EventLoop
+		bossService = Executors.newCachedThreadPool();
+		workerService = Executors.newCachedThreadPool();
 	}
 	
-	public synchronized void setPipelineFactory(ChannelPipelineFactory factory) {
-		this.bootstrap.setPipelineFactory(factory);
-	}
-	
-	public synchronized ChannelFuture connect(Address addr) {
-		return bootstrap.connect(new InetSocketAddress(addr.getHost(), addr.getPort()));
+	public ClientBootstrap createBootstrap() {
+		ChannelFactory factory = new NioClientSocketChannelFactory(bossService, workerService);
+        return new ClientBootstrap(factory);
 	}
 	
 	public synchronized void shutdown() {
-		bootstrap.releaseExternalResources();
+		bossService.shutdown();
+		workerService.shutdown();
 	}
 }
