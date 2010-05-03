@@ -40,12 +40,8 @@ public class TCPSocket {
 			throw new IOException("not connected, but try send");
 		channel.write(msg);
 	}
-
-	public void close() {
-		tryClose();
-	}
 	
-	protected synchronized void tryClose() {
+	public synchronized void tryClose() {
 		if (channel != null && channel.isOpen())
 			channel.close().awaitUninterruptibly();
 		address = null;

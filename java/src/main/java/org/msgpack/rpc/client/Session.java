@@ -37,12 +37,6 @@ public class Session {
 		return sendRequest(method, args);
 	}
 
-	public synchronized void close() {
-		if (transport != null)
-			transport.close();
-		transport = null;
-	}
-
 	protected synchronized TCPTransport getTransport() {
 		if (transport != null) return transport;
 		transport = new TCPTransport(this, loop);
@@ -84,6 +78,12 @@ public class Session {
         }
         message.add(params);
         return message;
+	}
+	
+	protected synchronized void tryClose() {
+		if (transport != null)
+			transport.tryClose();
+		transport = null;
 	}
 
 	// callback
@@ -133,7 +133,7 @@ public class Session {
 			f.setError("Connect Failed");
 		}
 		reqTable.clear();
-		close();
+		tryClose();
 	}
 
 	// callback
@@ -143,7 +143,7 @@ public class Session {
 			f.setError("Connection Closed");
 		}
 		reqTable.clear();
-		close();
+		tryClose();
 	}
 
 	// callback
@@ -153,6 +153,6 @@ public class Session {
 			f.setError("Failed");
 		}
 		reqTable.clear();
-		close();
+		tryClose();
 	}
 }

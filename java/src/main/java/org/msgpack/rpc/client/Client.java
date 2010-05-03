@@ -13,7 +13,7 @@ public class Client extends Session {
 	}
 	
 	public void close() {
-		super.close();
+		super.tryClose();
 		loop.shutdown();
 	}
 }
