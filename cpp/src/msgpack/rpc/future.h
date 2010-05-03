@@ -29,6 +29,7 @@ namespace rpc {
 
 class future {
 public:
+	future() { }
 	future(shared_future pimpl) : m_pimpl(pimpl) { }
 	~future() { }
 

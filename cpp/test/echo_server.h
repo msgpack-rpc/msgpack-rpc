@@ -18,17 +18,26 @@ public:
 
 		if(method == "add") {
 			add(req);
-			return;
+
 		} else if(method == "echo") {
 			echo(req);
-			return;
+
+		} else if(method == "err") {
+			err(req);
+
 		} else {
-			throw rpc::type_error();
+			req.error(msgpack::rpc::NO_METHOD_ERROR);
 		}
+
+	} catch (msgpack::type_error& e) {
+		req.error(msgpack::rpc::ARGUMENT_ERROR);
+		return;
 
 	} catch (std::exception& e) {
 		req.error(std::string(e.what()));
+		return;
 	}
+
 
 	void add(request req)
 	{
@@ -40,6 +49,11 @@ public:
 	void echo(request req)
 	{
 		req.result(req.params());
+	}
+
+	void err(request req)
+	{
+		req.error(std::string("always fail"));
 	}
 };
 

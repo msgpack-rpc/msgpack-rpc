@@ -15,7 +15,8 @@ check_PROGRAMS = \
 		async_call \
 		callback \
 		notify \
-		async_server
+		async_server \
+		error
 
 TESTS = $(check_PROGRAMS)
 
@@ -28,4 +29,6 @@ callback_SOURCES = callback.cc
 notify_SOURCES = notify.cc
 
 async_server_SOURCES = async_server.cc
+
+error_SOURCES = error.cc
 

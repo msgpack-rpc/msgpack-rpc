@@ -48,8 +48,8 @@ void reqtable::take_all(std::vector<shared_future>* all)
 			it != m_map.end(); ) {
 		shared_future& f = it->second;
 		all->push_back(f);
+		m_map.erase(it++);
 	}
-	m_map.clear();
 }
 
 void reqtable::step_timeout(std::vector<shared_future>* timedout)
