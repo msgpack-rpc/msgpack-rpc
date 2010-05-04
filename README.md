@@ -24,6 +24,24 @@ MessagePack-RPC for Ruby is available by RubyGems:
 
 See [cpp](http://github.com/msgpack/msgpack-rpc/tree/master/cpp/) directory.
 
+### Java
+
+[Maven2 repository](http://msgpack.sourceforge.net/maven2/) is available. Please add these lines to your pom.xml.
+
+  <repositories>
+    <repository>
+    <id>msgpack.sourceforge.net</id>
+    <name>MessagePack Repository for Maven</name> 
+    <url>http://msgpack.sourceforge.net/maven2/</url>
+    </repository>
+  </repositories>
+  <dependencies>
+    <dependency>
+      <groupId>org.msgpack</groupId>
+      <artifactId>msgpack-rpc</artifactId>
+      <version>0.1.0</version>
+    </dependency>
+  </dependencies>
 
 ## License
 
