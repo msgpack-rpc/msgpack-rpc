@@ -36,6 +36,7 @@ public class TCPTransport {
 	protected synchronized void trySendPending() throws Exception {
 		for (Object msg : pendingMessages)
 			socket.trySend(msg);
+		pendingMessages.clear();
 	}
 	
 	public synchronized void tryClose() {
