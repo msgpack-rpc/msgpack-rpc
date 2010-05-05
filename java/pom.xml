@@ -18,8 +18,8 @@
   </licenses>
 
   <scm>
-    <connection>scm:git:git://github.com/msgpack/msgpack.git</connection>
-    <url>scm:git:git://github.com/msgpack/msgpack.git</url>
+    <connection>scm:git:git://github.com/msgpack/msgpack-rpc.git</connection>
+    <url>scm:git:git://github.com/msgpack/msgpack-rpc.git</url>
   </scm>
 
   <dependencies>
@@ -74,7 +74,7 @@
         <configuration>
           <!--  do not run site-deploy goal, which is included in the default setting  -->
           <goals>deploy</goals>
-          <connectionUrl>scm:git://github.com/msgpack/msgpack.git</connectionUrl>
+          <connectionUrl>scm:git:git://github.com/msgpack/msgpack-rpc.git</connectionUrl>
         </configuration>
       </plugin>
     </plugins>
