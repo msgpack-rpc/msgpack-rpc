@@ -6,19 +6,34 @@ public class Future {
 	protected Exception error;
 	protected Object result;
     protected boolean isJoined;
-	
-    public Future() {
+	protected long expireMills;
+    protected boolean isTimeouted;
+
+    public Future(double timeoutSec) {
         this.error = null;
         this.result = null;
         this.isJoined = false;
+        
+    	this.expireMills = System.currentTimeMillis() + (long)(timeoutSec * 1000);
+    	this.isTimeouted = false;
     }
 
     public synchronized void join() {
     	try {
-    		while (error == null && result == null)
-    			this.wait();
+    		while (true) {
+        		if (error != null || result != null)
+        			break;
+        		
+        		// check if timeout occurred
+        		long curMills = System.currentTimeMillis();
+        		if (curMills >= expireMills) {
+        			isTimeouted = true;
+        			throw new IOException("timeout occurred");
+        		}
+        		
+        		this.wait(expireMills - curMills);
+    		}
     	} catch (Exception e) {
-    		e.printStackTrace();
     		error = e;
     	}
     	isJoined = true;
@@ -40,6 +55,7 @@ public class Future {
     }
 
     protected synchronized void set(Exception error, Object result) {
+    	if (isTimeouted) return;
     	this.error = error;
         this.result = result;
         this.notifyAll();

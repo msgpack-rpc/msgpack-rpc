@@ -11,20 +11,32 @@ import org.msgpack.rpc.Constants;
 public class Session {
 	protected Address addr;
 	protected EventLoop loop;
+	protected double timeoutSec;
+	
 	protected HashMap<Integer, Future> reqTable;
 	protected TCPTransport transport;
 	
 	static int msgidCounter = 0;
-	
+
 	public Session(Address addr, EventLoop loop) {
 		this.addr = addr;
 		this.loop = loop;
+		this.timeoutSec = Constants.DEFAULT_TIMEOUT_SEC;
+
 		this.reqTable = new HashMap<Integer, Future>();
 		this.transport = null;
 	}
 	
 	public Address getAddress() {
 		return addr;
+	}
+	
+	public synchronized void setTimeoutSec(double timeoutSec) {
+		this.timeoutSec = timeoutSec;
+	}
+	
+	public synchronized double getTimeoutSec() {
+		return timeoutSec;
 	}
 
 	protected synchronized TCPTransport getTransport() {
@@ -35,7 +47,7 @@ public class Session {
 
 	protected Future sendRequest(String method, Object[] args) {
 		int msgid;
-		Future future = new Future();
+		Future future = new Future(getTimeoutSec());
 		synchronized(this) {
 			msgid = generateMessageID();
 			reqTable.put(msgid, future);
