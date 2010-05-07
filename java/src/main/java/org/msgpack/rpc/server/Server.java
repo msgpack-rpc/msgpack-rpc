@@ -11,20 +11,27 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 
 @ChannelPipelineCoverage("all")
 public class Server {
-	public Server() {
+	protected InetSocketAddress addr;
+	protected ServerBootstrap bootstrap;
+	
+	public Server(String host, int port, Object userHandler) {
+		this(new InetSocketAddress(host, port), userHandler);
 	}
-
-	public void listen(int port, Object userHandler) throws IOException {
-        ChannelFactory factory = new NioServerSocketChannelFactory(
+	
+	public Server(InetSocketAddress addr, Object userHandler) {
+		this.addr = addr;
+		ChannelFactory factory = new NioServerSocketChannelFactory(
         		Executors.newCachedThreadPool(),
         		Executors.newCachedThreadPool());
-        
-        ServerBootstrap bootstrap = new ServerBootstrap(factory);
+        bootstrap = new ServerBootstrap(factory);
         bootstrap.setPipelineFactory(new RPCServerPipelineFactory(userHandler));
         bootstrap.setOption("reuseAddress", true);
         bootstrap.setOption("child.tcpNoDelay", true);
         bootstrap.setOption("child.keepAlive", true);
-        bootstrap.bind(new InetSocketAddress(port));
+	}
+
+	public void serv() throws IOException {
+        bootstrap.bind(addr);
     }
 
 }
