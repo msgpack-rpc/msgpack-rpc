@@ -158,10 +158,10 @@ public:
 	%srv.functions.each do |f|
 
 	[%f.type%] [%f.name%]([%join(f.fields){|a|"const #{a.type}& #{a.name}"}%])
-		{ return instance.call("[%f.name%]"[%join(f.fields,""){|a|", #{a.name}"}%]).get<[%f.type%]>(); }
+		{ return instance.call("[%f.name%]"[%join(f.fields,''){|a|", #{a.name}"}%]).get<[%f.type%]>(); }
 
 	msgpack::rpc::future::type<[%f.type%]> [%f.name%]_async([%join(f.fields){|a|"const #{a.type}& #{a.name}"}%])
-		{ return instance.call("[%f.name%]"[%join(f.fields,""){|a|", #{a.name}"}%]); }
+		{ return instance.call("[%f.name%]"[%join(f.fields,''){|a|", #{a.name}"}%]); }
 	%end
 };
 
@@ -169,7 +169,7 @@ public:
 
 /*
 %srv.functions.each do |f|
-void [%srv.name%]::server::[%f.name%](msgpack::rpc::request::type<[%f.type%]> req, [%join(f.fields)%])
+void [%srv.name%]::server::[%f.name%](msgpack::rpc::request::type<[%f.type%]> req[%join(f.fields,''){|a|", #{a}"}%])
 %end
 */
 

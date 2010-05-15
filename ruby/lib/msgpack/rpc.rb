@@ -243,155 +243,10 @@ class Responder
 end
 
 
-class ExchangeOption
-	def initialize(flags = 0)
-		@flags = flags
-	end
-
-	def get
-		@flags
-	end
-
-	def deflate=(val)
-		val ? (@flags |= OPT_DEFLATE) : (@flags &= ~OPT_DEFLATE)
-	end
-
-	def deflate?
-		@flags & OPT_DEFLATE != 0
-	end
-
-	def reset
-		@flags = 0
-		self
-	end
-
-	def ==(o)
-		@flags == o.get
-	end
-
-	def to_msgpack(out = '')
-		@flags.to_msgpack(out)
-	end
-
-	def self.from_msgpack(obj)
-		@flags = obj
-	end
-end
-
-class StreamOption
-	def initialize(txopt = ExchangeOption.new, rxopt = ExchangeOption.new) #, rxproto = nil, rxaddr = nil)
-		@txopt = txopt
-		@rxopt = rxopt
-		#@rxproto = rxproto  # nil or PROTO_TCP or PROTO_UDP
-		#@rxaddr  = rxaddr   # nil or address
-	end
-	attr_accessor :txopt, :rxopt  #, :rxproto, :rxaddr
-
-	def default?
-		@txopt.get == 0 && @rxopt.get == 0 && @rxproto.nil?
-	end
-
-	def reset
-		@txopt.reset
-		@rxopt.reset
-		#@rxproto = nil
-		#@rxaddr = nil
-		self
-	end
-
-	def ==(o)
-		@txopt == o.txopt && @rxopt == o.rxopt  # &&
-			#@rxproto == o.rxproto && @rxaddr == o.rxaddr
-	end
-
-	def to_msgpack(out = '')
-		array = [OPTION, @txopt, @rxopt]
-		#if @rxproto
-		#	array << @rxproto
-		#	if @rxaddr
-		#		array << @rxaddr
-		#	end
-		#end
-		array.to_msgpack(out)
-	end
-
-	def self.from_msgpack(obj)
-		txopt = ExchangeOption.new(obj[1] || 0)
-		rxopt = ExchangeOption.new(obj[2] || 0)
-		#if obj[3]
-		#	rxproto = obj[3]
-		#	if obj[4]
-		#		rxaddr = Address.load(obj[4])
-		#	end
-		#end
-		StreamOption.new(txopt, rxopt)  #, rxproto, rxaddr)
-	end
-end
-
-class TransportOption < StreamOption
-	def initialize(*args)
-		super()
-		#@proto = PROTO_TCP
-		#@address = nil
-		args.each do |x|
-			case x
-			#when :tx_tcp, :tcp
-			#	@proto = PROTO_TCP
-			#when :tx_udp, :udp
-			#	@proto = PROTO_UDP
-			#when :rx_tcp
-			#	@rxproto = PROTO_TCP
-			#when :rx_udp
-			#	@rxproto = PROTO_UDP
-			when :deflate
-				@txopt.deflate = true
-				@rxopt.deflate = true
-			when :tx_deflate
-				@txopt.deflate = true
-			when :rx_deflate
-				@rxopt.deflate = true
-			#when PROTO_TCP
-			#	@proto = PROTO_TCP
-			#when PROTO_UDP
-			#	@proto = PROTO_UDP
-			#when Address
-			#	@rxaddr = x
-			else
-				raise "unknown option #{x.inspect}"
-			end
-		end
-	end
-	#attr_accessor :proto, :address
-
-	def reset
-		#@proto = PROTO_TCP
-		@address = nil
-		super
-	end
-
-	def ==(o)
-		super(o)  # && @proto = o.proto && @address = o.address
-	end
-
-	#def deflate(val = true) txopt.deflate = va; rxopt.deflate = va; self end
-	#def rx_deflate(val = true) @rxopt.deflate = val; self; end
-	#def tx_deflate(val = true) @txopt.deflate = val; self; end
-
-	#def tcp; @proto = PROTO_TCP; self; end
-	#def tx_tcp; @proto = PROTO_TCP; self; end
-	#def rx_tcp; @rxproto = PROTO_TCP; self; end
-
-	#def udp; @proto = PROTO_UDP; self; end
-	#def rx_udp; @proto = PROTO_UDP; self; end
-	#def rx_udp; @rxproto = PROTO_UDP; self; end
-end
-
-
 class Session
-	def initialize(to_addr, dtopt, dispatcher, self_addr, loop)
+	def initialize(to_addr, dtopt, self_addr, loop)
 		@address = to_addr  # destination address
 		@self_address = self_addr  # self session identifier
-		@dispatcher = dispatcher || NullDispatcher.new
 		@dtopt = dtopt   # default transport option
 		@dtran = create_transport(@dtopt)  # default transport
 		@loop = loop
@@ -1252,7 +1107,7 @@ class Client < Session
 		@port = port
 
 		addr = Address.new(host, port)
-		super(addr, dtopt, NullDispatcher.new, nil, loop)
+		super(addr, dtopt, nil, loop)
 
 		@timer = Timer.new(1, true) {
 			step_timeout
@@ -1310,7 +1165,7 @@ class SessionPool
 
 	protected
 	def create_session(addr)
-		Session.new(addr, @dtopt, nil, nil, @loop)
+		Session.new(addr, @dtopt, nil, @loop)
 	end
 
 	private
@@ -1367,85 +1222,7 @@ class Server < SessionPool
 
 	protected
 	def create_session(addr)
-		Session.new(addr, @dtopt, @dispatcher, nil, @loop)
-	end
-end
-
-
-class Cluster < SessionPool
-	def initialize(host, port, loop = Loop.new, dtopt = TransportOption.new)
-		super(loop, dtopt)
-		@host = host
-		@port = port
-		@dispatcher = nil
-		@self_addr = Address.new(host, port)
-		@listeners = []
-		listen(host, port)  # FIXME obsolete?
-	end
-	attr_reader :host, :port
-
-	def serve(obj, accept = obj.public_methods)
-		@dispatcher = ObjectDispatcher.new(obj, accept)
-		self
-	end
-
-	def listen(host, port)  #, proto = PROTO_TCP)
-		lz = LazyBinder.new(self)
-		creator = Proc.new { lz }
-		#case proto
-		#when PROTO_TCP, :tcp
-		#	listener = TCPTransport::Listener.new(host, port, &creator)
-		#when PROTO_UDP, :udp
-		#	listener = UDPTransport::Listener.new(host, port, &creator)
-		#else
-		#	raise "unknown option: #{proto.inspect}"
-		#end
-		listener = TCPTransport::Listener.new(host, port, &creator)
-		@listeners.push(listener)
-		listener.activate(@loop)
-		self
-	end
-
-	def close
-		if @lsock
-			@lsock.detach if @lsock.attached?
-			@lsock.close
-		end
-		super
-	end
-
-	include LoopUtil
-
-	protected
-	def create_session(addr)
-		Session.new(addr, @dtopt, @dispatcher, @self_addr, @loop)
-	end
-
-	public
-	def create_server_session
-		# FIXME
-		Session.new(nil, @dtopt, @dispatcher, @self_addr, @loop)
-	end
-
-	private
-	class LazyBinder < Session
-		def initialize(cluster)
-			@cluster = cluster
-		end
-
-		def on_message(sock, msg)   # Session interface
-			if msg[0] == SESSION
-				# cluster
-				addr = Address.load(msg[1])
-				session = @cluster.get_session_addr(addr)
-				sock.rebind(session)
-			else
-				# subsys
-				session = @cluster.create_server_session
-				sock.rebind(session)
-				sock.on_message(msg)
-			end
-		end
+		Session.new(addr, @dtopt, nil, @loop)
 	end
 end
 
