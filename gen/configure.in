@@ -1,0 +1,15 @@
+AC_INIT(mprpc_ast.rb)
+AC_CONFIG_AUX_DIR(ac)
+
+AM_INIT_AUTOMAKE(mprpcgen, 0.0.2)
+
+AC_CHECK_PROG(RUBY, ruby, ruby)
+if test "x$RUBY" = x; then
+	AC_MSG_ERROR([cannot find ruby. Ruby is required to build.])
+fi
+
+RUBY_PATH="`which $RUBY`"
+AC_SUBST(RUBY_PATH)
+
+AC_OUTPUT([Makefile])
+

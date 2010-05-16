@@ -8,13 +8,24 @@
 void add_callback(rpc::future f, rpc::loop lo)
 {
 	try {
-		std::cout << "callback: add(1,2) = " << f.get<int>() << std::endl;
+		int result = f.get<int>();
 	} catch (msgpack::rpc::remote_error& e) {
 		std::cout << e.what() << std::endl;
 		exit(1);
 	}
 	lo->end();
 }
+
+//void add_callback(rpc::future f, rpc::loop lo)
+//{
+//	try {
+//		std::cout << "callback: add(1,2) = " << f.get<int>() << std::endl;
+//	} catch (msgpack::rpc::remote_error& e) {
+//		std::cout << e.what() << std::endl;
+//		exit(1);
+//	}
+//	lo->end();
+//}
 
 using namespace mp::placeholders;
 
