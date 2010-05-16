@@ -21,8 +21,8 @@ rubylib/rubygems: treetop/bin/tt
 	cp -rf treetop/LICENSE rubylib/treetop/
 	echo "# dummy" > $@
 
-mprpc_idl.tt: mprpc_idl.tt.mpl mplex
-	$(RUBY) mplex mprpc_idl.tt.mpl -o $@
+mprpc_idl.tt: mprpc_idl.tt.mpl mplex.rb
+	$(RUBY) -rmplex -e 'Mplex.write("mprpc_idl.tt.mpl", "$@")'
 
 mprpc_idl.rb: treetop/bin/tt mprpc_idl.tt rubylib/rubygems
 	$(RUBY) -Irubylib treetop/bin/tt -o $@ mprpc_idl.tt
