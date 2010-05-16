@@ -126,8 +126,7 @@ end
 
 class Exception < Struct
 	def initialize(name, fields)
-		@name = name
-		super(fields)
+		super(name, fields)
 	end
 	attr_accessor :name
 end

@@ -151,7 +151,7 @@ grammar MessagePackIDL
 	end
 
 	rule exception
-		k_exception id k_lwing field* k_rwing {
+		k_exception id k_lwing fs:field* k_rwing {
 			def ast
 				ffs = fs.elements.map {|f| f.ast }
 				AST::Exception.new(id.symbol, ffs)
@@ -190,7 +190,7 @@ grammar MessagePackIDL
 				frt = return_type.type
 				fid = id.symbol
 				ffs = fs.elements.map {|f| f.ast }
-				fth = th.respond_to?(:array) ? fth.array : []
+				fth = th.respond_to?(:array) ? th.array : []
 				AST::Function.new(frt, fid, ffs, fth)
 			end
 		}
