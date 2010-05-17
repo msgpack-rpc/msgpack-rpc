@@ -204,12 +204,12 @@ class Type
 		@name = name
 	end
 
-	TYPE_NORMALIZE = {
+	TYPE_NORMALIZE_MAP = {
 		'byte' => 'int8',
-		'i8'   => 'int8' ,
-		'i16'  => 'int16' ,
-		'i32'  => 'int32' ,
-		'i64'  => 'int64' ,
+		'i8'   => 'int8',
+		'i16'  => 'int16',
+		'i32'  => 'int32',
+		'i64'  => 'int64',
 		'u8'   => 'uint8',
 		'u16'  => 'uint16',
 		'u32'  => 'uint32',
@@ -217,7 +217,7 @@ class Type
 	}
 
 	def normalize!(conf)
-		if n = TYPE_NORMALIZE[@name]
+		if n = TYPE_NORMALIZE_MAP[@name]
 			@name = n
 		end
 	end
