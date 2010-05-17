@@ -1,6 +1,6 @@
 %def keyword(word, name = "k_#{word}")
 	rule [%name%]
-		'[%word%]' w_
+		'[%word%]' word_spacing
 		{
 			def text
 				text_value.rstrip
@@ -11,8 +11,8 @@
 
 %def separator(sym, name)
 	rule [%name%]
-		"[%sym%]" _ %>if  sym.include?("'")
-		'[%sym%]' _ %>if !sym.include?("'")
+		"[%sym%]" spacing %>if  sym.include?("'")
+		'[%sym%]' spacing %>if !sym.include?("'")
 		{
 			def text
 				text_value.rstrip
@@ -27,7 +27,7 @@ grammar MessagePackIDL
 	## Document
 	##
 	rule document
-		_ h:header* d:definition* _ {
+		spacing h:header* d:definition* spacing {
 			def ast
 				headers     = h.elements.map {|n| n.ast }
 				definitions = d.elements.map {|n| n.ast }
@@ -66,7 +66,7 @@ grammar MessagePackIDL
 	end
 
 	rule namespace_id
-		[a-zA-Z\_\.]+ w_ {
+		[a-zA-Z\_\.]+ word_spacing {
 			def text
 				text_value.rstrip
 			end
@@ -185,10 +185,6 @@ grammar MessagePackIDL
 	end
 
 	rule function
-		function_thrift
-	end
-
-	rule function_thrift
 		return_type id k_lparen fs:field* k_rparen th:throws? eol_mark {
 			def ast
 				frt = return_type.type
@@ -212,7 +208,7 @@ grammar MessagePackIDL
 	rule throws_class
 		num:field_id? id eol_mark {
 			def ast
-				fnum  = num.respond_to?(:value) ? num.value : nil
+				fnum  = num.respond_to?(:number) ? num.number : nil
 				fname = id.text
 				AST::ThrowsClass.new(fnum, fname)
 			end
@@ -224,7 +220,7 @@ grammar MessagePackIDL
 		field {
 			#warn "Thrift style exception is obsolete."
 			def ast
-				fnum  = num.respond_to?(:value) ? num.value : nil
+				fnum  = num.respond_to?(:number) ? num.number : nil
 				fname = id.text
 				AST::ThrowsClass.new(fnum, fname)
 			end
@@ -337,7 +333,7 @@ grammar MessagePackIDL
 	end
 
 	rule literal_string
-		'"' val:(!'"' . )* '"' _ {
+		'"' val:(!'"' . )* '"' spacing {
 			def text
 				val.text_value.rstrip
 			end
@@ -346,7 +342,7 @@ grammar MessagePackIDL
 			end
 		}
 		/
-		"'" val:(!"'" . )* "'" _ {
+		"'" val:(!"'" . )* "'" spacing {
 			def text
 				val.text_value.rstrip
 			end
@@ -357,7 +353,7 @@ grammar MessagePackIDL
 	end
 
 	rule literal_int
-		[\+\-]? (decimal_int / hex_int / octal_int) w_ {
+		[\+\-]? (decimal_int / hex_int / octal_int) word_spacing {
 			def number
 				text_value.rstrip.to_i
 			end
@@ -368,7 +364,7 @@ grammar MessagePackIDL
 	end
 
 	rule literal_uint
-		(decimal_int / hex_int / octal_int) w_ {
+		(decimal_int / hex_int / octal_int) word_spacing {
 			def number
 				text_value.rstrip.to_i
 			end
@@ -431,7 +427,7 @@ grammar MessagePackIDL
 	## Basic symbol
 	##
 	rule id
-		([a-zA-Z] / '_') id_char* w_ {
+		([a-zA-Z] / '_') id_char* word_spacing {
 			def text
 				text_value.rstrip
 			end
@@ -477,7 +473,7 @@ grammar MessagePackIDL
 		([ \t\r\n] / comment)*
 	end
 
-	rule id_separate
+	rule word_spacing
 		!id_char spacing
 	end
 
@@ -489,17 +485,6 @@ grammar MessagePackIDL
 		(k_comma / k_semi)?
 	end
 
-
-	####
-	## Alias
-	##
-	rule _
-		spacing
-	end
-
-	rule w_
-		id_separate
-	end
 
 	% keyword('include')
 	% keyword('namespace')

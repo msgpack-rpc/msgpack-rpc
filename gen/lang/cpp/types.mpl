@@ -13,6 +13,7 @@ namespace [%ns%] {  %|ns| nss.each
 %case d
 %when AST::Const
 static const {{d.type}} {{d.name}} = {{d.value}};
+%# FIXME list, map
 
 %when AST::Typedef
 typedef {{d.type}} {{d.name}};
@@ -20,30 +21,28 @@ typedef {{d.type}} {{d.name}};
 %when AST::Enum
 enum {{d.name}} {
 	%d.fields.each do |f|
-	%if f.value
 	{{f.name}} = {{f.value}},
-	%else
-	{{f.name}},
-	%end
 	%end
 };
 
 %when AST::Struct
 struct {{d.name}} {
+	{{d.name}}() { }
 	%d.fields.each do |f|
 	{{f.type}} {{f.name}};
 	%end
 	MSGPACK_DEFINE([%join(d.fields){|f|f.name}%]);
-	%#FIXME id, type, required, optional
+	%#FIXME id, required, optional
 };
 
 %when AST::Exception
 struct {{d.name}} : public std::exception {
+	{{d.name}}() : std::exception("{{d.name}}") { }
 	%d.fields.each do |f|
 	{{f.type}} {{f.name}};
 	%end
 	MSGPACK_DEFINE([%join(d.fields){|f|f.name}%]);
-	%#FIXME id, type, required, optional
+	%#FIXME id, required, optional
 };
 
 %when AST::Service

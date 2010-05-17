@@ -54,14 +54,13 @@ corelibdir = $(pkgdatadir)/rubylib
 corelib_DATA = \
 		mplex.rb \
 		mprpc_ast.rb \
+		mprpc_ast_impl.rb \
 		mprpc_idl.rb
 
 EXTRA_DIST = \
 		$(LANG_DIST) \
 		$(RUBYLIB) \
 		$(DOC_FILES) \
-		mprpcgen.rb \
-		mplex.rb \
-		mprpc_ast.rb \
-		mprpc_idl.rb
+		$(corelib_DATA) \
+		mprpcgen.rb
 

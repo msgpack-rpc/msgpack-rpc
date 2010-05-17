@@ -7,6 +7,7 @@ module Util
 end
 
 module IDNormalizable
+	# Struct, Exception, ThrowsList
 	def normalize_id(fields)
 		used = []
 		fields.each do |f|
