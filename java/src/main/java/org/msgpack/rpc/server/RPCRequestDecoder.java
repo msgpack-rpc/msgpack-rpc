@@ -21,10 +21,10 @@ public class RPCRequestDecoder extends FrameDecoder {
 
     @Override
     protected Object decode(ChannelHandlerContext ctx, Channel channel, ChannelBuffer buffer) throws Exception {
-    	int len = buffer.readableBytes();
-    	if (len == 0) return null;
-    	
-    	unpacker.reserveBuffer(len);
+        int len = buffer.readableBytes();
+        if (len == 0) return null;
+        
+        unpacker.reserveBuffer(len);
         byte[] unpacker_buf = unpacker.getBuffer();
         buffer.readBytes(unpacker_buf, unpacker.getBufferOffset(), len);
         unpacker.bufferConsumed(len);

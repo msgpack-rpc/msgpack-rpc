@@ -29,10 +29,10 @@ public class RPCServerHandler extends SimpleChannelHandler {
         ev.getCause().printStackTrace();
         Channel ch = (Channel) ev.getChannel();
         try {
-			ch.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+            ch.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

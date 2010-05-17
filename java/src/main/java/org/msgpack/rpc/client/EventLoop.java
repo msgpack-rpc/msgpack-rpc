@@ -12,23 +12,23 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.msgpack.rpc.client.netty.RPCClientPipelineFactory;
 
 public class EventLoop {
-	protected ExecutorService bossService;
-	protected ExecutorService workerService;
-	protected ClientBootstrap bootstrap;
-	
-	public EventLoop() {
-		// using same ExecutorService across same EventLoop
-		bossService = Executors.newCachedThreadPool();
-		workerService = Executors.newCachedThreadPool();
-	}
-	
-	public ClientBootstrap createBootstrap() {
-		ChannelFactory factory = new NioClientSocketChannelFactory(bossService, workerService);
+    protected ExecutorService bossService;
+    protected ExecutorService workerService;
+    protected ClientBootstrap bootstrap;
+    
+    public EventLoop() {
+        // using same ExecutorService across same EventLoop
+        bossService = Executors.newCachedThreadPool();
+        workerService = Executors.newCachedThreadPool();
+    }
+    
+    public ClientBootstrap createBootstrap() {
+        ChannelFactory factory = new NioClientSocketChannelFactory(bossService, workerService);
         return new ClientBootstrap(factory);
-	}
-	
-	public synchronized void shutdown() {
-		bossService.shutdown();
-		workerService.shutdown();
-	}
+    }
+    
+    public synchronized void shutdown() {
+        bossService.shutdown();
+        workerService.shutdown();
+    }
 }

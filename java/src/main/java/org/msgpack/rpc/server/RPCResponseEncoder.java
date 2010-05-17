@@ -12,14 +12,14 @@ import org.msgpack.Packer;
 
 @ChannelPipelineCoverage("all")
 public class RPCResponseEncoder extends OneToOneEncoder {
-	@Override
-	protected Object encode(ChannelHandlerContext ctx, Channel channel,
-			Object msg) throws Exception {
+    @Override
+    protected Object encode(ChannelHandlerContext ctx, Channel channel,
+            Object msg) throws Exception {
         ByteArrayOutputStream o = new ByteArrayOutputStream();
         new Packer(o).pack(msg);
         byte[] b = o.toByteArray();
         ChannelBuffer buf = ChannelBuffers.dynamicBuffer();
         buf.writeBytes(b);
         return buf;
-	}
+    }
 }

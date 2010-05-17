@@ -3,10 +3,10 @@ package org.msgpack.rpc.client;
 import java.io.IOException;
 
 public class Future {
-	protected Exception error;
-	protected Object result;
+    protected Exception error;
+    protected Object result;
     protected boolean isJoined;
-	protected long expireMills;
+    protected long expireMills;
     protected boolean isTimeouted;
 
     public Future(double timeoutSec) {
@@ -14,58 +14,58 @@ public class Future {
         this.result = null;
         this.isJoined = false;
         
-    	this.expireMills = System.currentTimeMillis() + (long)(timeoutSec * 1000);
-    	this.isTimeouted = false;
+        this.expireMills = System.currentTimeMillis() + (long)(timeoutSec * 1000);
+        this.isTimeouted = false;
     }
 
     public synchronized void join() {
-    	try {
-    		while (true) {
-        		if (error != null || result != null)
-        			break;
-        		
-        		// check if timeout occurred
-        		long curMills = System.currentTimeMillis();
-        		if (curMills >= expireMills) {
-        			isTimeouted = true;
-        			throw new IOException("timeout occurred");
-        		}
-        		
-        		this.wait(expireMills - curMills);
-    		}
-    	} catch (Exception e) {
-    		error = e;
-    	}
-    	isJoined = true;
+        try {
+            while (true) {
+                if (error != null || result != null)
+                    break;
+                
+                // check if timeout occurred
+                long curMills = System.currentTimeMillis();
+                if (curMills >= expireMills) {
+                    isTimeouted = true;
+                    throw new IOException("timeout occurred");
+                }
+                
+                this.wait(expireMills - curMills);
+            }
+        } catch (Exception e) {
+            error = e;
+        }
+        isJoined = true;
     }
     
     public void setResult(Object result) {
-    	set(null, result);
+        set(null, result);
     }
 
     public void setError(Object error) {
-    	Exception e;
-    	if (error instanceof String)
-    		e = new IOException((String)error);
-    	else if (error instanceof Exception)
-    		e = (Exception)error;
-    	else
-    		e = new IOException("Unknown Error");
-    	set(e, null);
+        Exception e;
+        if (error instanceof String)
+            e = new IOException((String)error);
+        else if (error instanceof Exception)
+            e = (Exception)error;
+        else
+            e = new IOException("Unknown Error");
+        set(e, null);
     }
 
     protected synchronized void set(Exception error, Object result) {
-    	if (isTimeouted) return;
-    	this.error = error;
+        if (isTimeouted) return;
+        this.error = error;
         this.result = result;
         this.notifyAll();
     }
 
     public synchronized Object getResult() throws Exception {
-    	if (!isJoined)
-    		throw new IOException("Calling getResult() without join()");
-    	if (error != null)
-    		throw error;
+        if (!isJoined)
+            throw new IOException("Calling getResult() without join()");
+        if (error != null)
+            throw error;
         return result;
     }
 }

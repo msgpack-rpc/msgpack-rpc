@@ -14,39 +14,39 @@ import org.msgpack.rpc.client.TCPSocket;
 
 @ChannelPipelineCoverage("all")
 public class RPCClientHandler extends SimpleChannelHandler {
-	protected TCPSocket sock;
-	
-	public RPCClientHandler(TCPSocket sock) {
-    	super();
-    	this.sock = sock;
+    protected TCPSocket sock;
+    
+    public RPCClientHandler(TCPSocket sock) {
+        super();
+        this.sock = sock;
     }
 
     @Override
     public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent ev) {
-    	try {
-    		sock.onConnected();
-    	} catch (Exception e) {
-    		e.printStackTrace();
-    		sock.onConnectFailed();
-		}
+        try {
+            sock.onConnected();
+        } catch (Exception e) {
+            e.printStackTrace();
+            sock.onConnectFailed();
+        }
     }
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent ev) {
         try {
-        	sock.onMessageReceived(ev.getMessage());
+            sock.onMessageReceived(ev.getMessage());
         } catch (Exception e) {
-        	e.printStackTrace();
-        	sock.onFailed(e);
+            e.printStackTrace();
+            sock.onFailed(e);
         }
-	}
+    }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent ev) {
-    	Throwable e = ev.getCause();
-    	if (e instanceof ConnectException)
-    		sock.onConnectFailed();
-    	else
-    		sock.onFailed(new IOException(e.getMessage()));
+        Throwable e = ev.getCause();
+        if (e instanceof ConnectException)
+            sock.onConnectFailed();
+        else
+            sock.onFailed(new IOException(e.getMessage()));
     }
 }
