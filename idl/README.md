@@ -16,6 +16,14 @@ Configure and install in the usual way:
     $ sudo make install
 
 
+## Usage
+
+    Usage: mprpcgen [options] <input>
+        -o, --output DIR
+        -g, --gen LANG
+        -v, --verbose
+
+
 ## Writing language binding
 
 Add **&lt;language name&gt;.rb** file to [lang/](http://github.com/msgpack/msgpack-rpc/blob/master/idl/lang/) directory and modify [Makefile.am](http://github.com/msgpack/msgpack-rpc/blob/master/idl/Makefile.am) file.
@@ -23,6 +31,8 @@ Add **&lt;language name&gt;.rb** file to [lang/](http://github.com/msgpack/msgpa
 In the file, implement **generate(doc, outdir, langdir)** method. *doc* is a AST::Document, *outdir* is the path to output directory, *langdir* is the path to lang/ directory.
 
 See [mprpc_ast.rb](http://github.com/msgpack/msgpack-rpc/blob/master/idl/mprpc_ast.rb) file for the specification of AST module.
+
+[Mplex](http://github.com/frsyuki/mplex) is bundled for code generation.
 
 
 ## License
