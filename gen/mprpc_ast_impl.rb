@@ -69,6 +69,10 @@ class Const
 		@name = name
 		@value = value
 	end
+
+	def normalize!(conf)
+		@type.normalize!(conf)
+	end
 end
 
 
@@ -76,6 +80,10 @@ class Typedef
 	def initialize(type, name)
 		@type = type
 		@name = name
+	end
+
+	def normalize!(conf)
+		@type.normalize!(conf)
 	end
 end
 
@@ -139,6 +147,7 @@ class Field
 		unless @qualifier
 			@qualifier = "required"
 		end
+		@type.normalize!(conf)
 	end
 end
 
@@ -166,6 +175,7 @@ class Function
 
 	def normalize!(conf)
 		@throws.normalize!(conf)
+		@type.normalize!(conf)
 	end
 end
 
@@ -191,29 +201,63 @@ end
 
 class Type
 	def initialize(name)
-		@name = name.to_sym
+		@name = name
+	end
+
+	TYPE_NORMALIZE = {
+		'byte' => 'int8',
+		'i8'   => 'int8' ,
+		'i16'  => 'int16' ,
+		'i32'  => 'int32' ,
+		'i64'  => 'int64' ,
+		'u8'   => 'uint8',
+		'u16'  => 'uint16',
+		'u32'  => 'uint32',
+		'u64'  => 'uint64',
+	}
+
+	def normalize!(conf)
+		if n = TYPE_NORMALIZE[@name]
+			@name = n
+		end
 	end
 end
 
 class ListType < Type
-	def initialize(element)
+	def initialize(element_type)
 		super("list")
-		@element = element
+		@element_type = element_type
+	end
+
+	def normalize!(conf)
+		super
+		@element_type.normalize!(conf)
 	end
 end
 
 class SetType < Type
-	def initialize(element)
+	def initialize(element_type)
 		super("set")
-		@element = element
+		@element_type = element_type
+	end
+
+	def normalize!(conf)
+		super
+		@element_type.normalize!(conf)
 	end
 end
 
 class MapType < Type
-	def initialize(key, value)
+	def initialize(key_type, value_type)
 		super("map")
-		@key = key
-		@value = value
+		@key_type = key_type
+		@value_type = value_type
+	end
+
+	def normalize!(conf)
+		super
+		@key_type.normalize!(conf)
+		@value_type.normalize!(conf)
 	end
 end
 

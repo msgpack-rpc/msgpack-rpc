@@ -1,6 +1,7 @@
 
 exception NotFoundError {
 	1:string message;
+	2:list<list<i16>> x;
 }
 
 service ExceptionTest {

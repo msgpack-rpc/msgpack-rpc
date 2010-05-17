@@ -189,18 +189,77 @@ end
 
 class Type
 	include Util
-	def to_s
-		@name.to_s
+
+	attr_accessor :name
+
+	def container?
+		false
 	end
+
+	def list?
+		false
+	end
+
+	def set?
+		false
+	end
+
+	def map?
+		false
+	end
+
+
+	## base type:
+	# int8
+	# int16
+	# int32
+	# int64
+	# uint8
+	# uint16
+	# uint32
+	# uint64
+	# bool
+	# double  # 64bit double
+	# bytes   # raw bytes
+	# string  # UTF-8 string
+
+	## container type:
+	# list<TYPE>  # ordered sequence
+	# set<TYPE>   # unordered sequence
+	# map<TYPE>   # unordered map
+
+	## other:
+	# typedef or user-defined type
 end
 
 class ListType < Type
+	def container?
+		true
+	end
+	def list?
+		true
+	end
+	attr_accessor :element_type
 end
 
 class SetType < Type
+	def container?
+		true
+	end
+	def set?
+		true
+	end
+	attr_accessor :element_type
 end
 
 class MapType < Type
+	def container?
+		true
+	end
+	def map?
+		true
+	end
+	attr_accessor :key_type, :value_type
 end
 
 

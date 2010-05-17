@@ -95,7 +95,7 @@ grammar MessagePackIDL
 	## Definition
 	##
 	rule definition
-		const / typedef / enum / senum / struct / exception / service
+		const / typedef / enum / senum_thrift / struct / exception / service
 	end
 
 	rule const
@@ -132,7 +132,7 @@ grammar MessagePackIDL
 		}
 	end
 
-	rule senum
+	rule senum_thrift
 		# FIXME?
 		k_senum id k_lwing (literal list_separator?)* k_rwing {
 			def ast
@@ -284,7 +284,15 @@ grammar MessagePackIDL
 	end
 
 	rule base_type
-		k_bool / k_byte / k_i16 / k_i32 / k_i64 / k_double / k_string / k_binary / k_slist
+		k_int8 / k_int16 / k_int32 / k_int64
+		/ k_uint8 / k_uint16 / k_uint32 / k_uint64
+		/ k_bool / k_double
+		/ k_bytes / k_string
+		/ base_type_thrift
+	end
+
+	rule base_type_thrift
+		k_byte / k_i16 / k_i32 / k_i64 / k_binary
 	end
 
 	rule container_type
@@ -488,6 +496,7 @@ grammar MessagePackIDL
 
 	% keyword('include')
 	% keyword('namespace')
+
 	% keyword('cpp')
 	% keyword('java')
 	% keyword('py')
@@ -496,30 +505,44 @@ grammar MessagePackIDL
 	% keyword('rb')
 	% keyword('csharp')
 	% keyword('cpp_include')
+
 	% keyword('const')
 	% keyword('typedef')
 	% keyword('enum')
-	% keyword('senum')
 	% keyword('struct')
+	% keyword('senum')
 	% keyword('exception')
 	% keyword('service')
+
 	% keyword('extends')
 	% keyword('throws')
 	% keyword('required')
 	% keyword('optional')
+
+	% keyword('void')
+	% keyword('int8')
+	% keyword('int16')
+	% keyword('int32')
+	% keyword('int64')
+	% keyword('uint8')
+	% keyword('uint16')
+	% keyword('uint32')
+	% keyword('uint64')
 	% keyword('bool')
+	% keyword('double')
+	% keyword('bytes')
+	% keyword('string')
+
 	% keyword('byte')
+	% keyword('binary')
 	% keyword('i16')
 	% keyword('i32')
 	% keyword('i64')
-	% keyword('double')
-	% keyword('string')
-	% keyword('binary')
-	% keyword('slist')
-	% keyword('void')
+
 	% keyword('map')
 	% keyword('set')
 	% keyword('list')
+
 	% keyword('true')
 	% keyword('false')
 
