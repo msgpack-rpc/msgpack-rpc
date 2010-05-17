@@ -1,11 +1,8 @@
 package org.msgpack.rpc.client;
 
 public class Client extends Session {
-	protected EventLoop loop;
-	
 	public Client(String host, int port, EventLoop loop) {
 		super(new Address(host, port), loop);
-		this.loop = loop;
 	}
 	
 	public Object call(String method, Object... args) throws Exception {
