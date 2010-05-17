@@ -333,7 +333,7 @@ grammar MessagePackIDL
 	rule literal
 		id {
 			def value
-				ConstValue.new(symbol);
+				AST::ConstValue.new(symbol);
 			end
 		}
 		/ literal_string / literal_int / literal_float

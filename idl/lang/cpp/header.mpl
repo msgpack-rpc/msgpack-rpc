@@ -17,6 +17,7 @@ public:
 
 	~server() { }
 
+	void dispatch(msgpack::rpc::request req);
 
 public:
 	%functions.each do |f|
