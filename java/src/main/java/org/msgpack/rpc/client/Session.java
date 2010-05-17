@@ -9,10 +9,10 @@ import java.util.Map.Entry;
 import org.msgpack.rpc.Constants;
 
 public class Session {
-	protected Address addr;
-	protected EventLoop loop;
+	protected final Address addr;
+	protected final EventLoop loop;
+
 	protected double timeoutSec;
-	
 	protected HashMap<Integer, Future> reqTable;
 	protected TCPTransport transport;
 	
