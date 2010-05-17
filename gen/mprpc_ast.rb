@@ -2,41 +2,42 @@ module AST
 
 
 module Util
-	def join(array, sep = ', ', &block)
+	def join(array=self, sep = ', ', &block)
 		block ||= Proc.new {|a| a }
 		array.map(&block).join(sep)
 	end
-	attr_accessor :document
-	alias doc document
 end
 
 
 class Document < Array
 	include Util
-	def initialize(defs)
-		defs.compact!
-		defs.each {|d| d.document = self }
-		super(defs)
-	end
+
+	attr_accessor :conf
 
 	def consts
 		select {|x| x.class == Const }
 	end
+
 	def typedefs
 		select {|x| x.class == Typedef }
 	end
+
 	def enums
 		select {|x| x.class == Enum }
 	end
+
 	def structs
 		select {|x| x.class == Struct }
 	end
+
 	def exceptions
 		select {|x| x.class == Exception }
 	end
+
 	def services
 		select {|x| x.class == Service }
 	end
+
 	def namespace(scope)
 		select {|x| x.class == Namespace &&
 			(x.scope.to_s == scope.to_s || x.scope.to_s == "*") }.last
@@ -50,162 +51,228 @@ end
 
 class CppInclude
 	include Util
-	def initialize(name)
-		@name = name
-	end
+
 	attr_accessor :name
+
 	def to_s
 		name.to_s
 	end
+
+	attr_accessor :document
+	alias doc document
 end
 
 
+# Namespace is an Array of domain name.
+# e.g. org.msgpack.ns => ["org", "msgpack", "ns"]
 class Namespace < Array
 	include Util
-	def initialize(scope, name)
-		@scope = scope
-		@name = name
-		super(name.split('.'))
-	end
+
 	attr_accessor :scope, :name
+
 	def to_s
-		@name
+		name.to_s
 	end
+
+	attr_accessor :document
+	alias doc document
 end
 
 
 class Const
 	include Util
-	def initialize(type, name, value)
-		@type = type
-		@name = name
-		@value = value
-	end
+
+	# value is always a Value, not null.
 	attr_accessor :type, :name, :value
+
+	attr_accessor :document
+	alias doc document
 end
 
 
 class Typedef
 	include Util
-	def initialize(type, name)
-		@type = type
-		@name = name
-	end
 	attr_accessor :type, :name
+
+	attr_accessor :document
+	alias doc document
 end
 
-
-class EnumField
-	include Util
-	def initialize(name, value)
-		@name = name
-		@value = value
-	end
-	attr_accessor :name, :value
-end
 
 class Enum
 	include Util
-	def initialize(name, fields)
-		@name = name
-		@fields = fields
-	end
+
+	# fields is an Array of EnumField.
 	attr_accessor :name, :fields
+
+	attr_accessor :document
+	alias doc document
+end
+
+class EnumField
+	include Util
+
+	# value is always a Integer, not null.
+	attr_accessor :name, :value
 end
 
 
 class Struct
 	include Util
-	def initialize(name, fields)
-		@name = name
-		@fields = fields
-	end
+
+	# fields is an Array of Field.
 	attr_accessor :name, :fields
+
+	def exception?
+		false
+	end
+
+	attr_accessor :document
+	alias doc document
 end
 
-
+# Exception is a Struct.
 class Exception < Struct
-	def initialize(name, fields)
-		super(name, fields)
-	end
 	attr_accessor :name
+	def exception?
+		true
+	end
+end
+
+class Field
+	include Util
+
+	# id is a always Fixnum, not null.
+	# qualifier is "required" or "optional", not null.
+	# default is a Value, nullable.
+	attr_accessor :id, :qualifier, :type, :name, :default
+
+	def required?
+		qualifier == "required"
+	end
+
+	def optional?
+		qualifier == "optional"
+	end
 end
 
 
 class Service
 	include Util
-	def initialize(name, extends, functions)
-		@name = name
-		@extends = extends
-		@functions = functions
-	end
+
+	# extends is a Symbol, nullable.
+	# functions is an Array of Function.
 	attr_accessor :name, :extends, :functions
+
+	attr_accessor :document
+	alias doc document
 end
 
 
 class Function
 	include Util
-	def initialize(type, name, fields, thorws)
-		@type = type
-		@name = name
-		@fields = fields
-		@throws = throws
-	end
+
+	# throws is an ThrowsList.
 	attr_accessor :type, :name, :fields, :throws
 end
 
 
-class Field
+class ThrowsList < Array
 	include Util
-	def initialize(id, qualifier, type, name, default)
-		@id = id
-		@qualifier = qualifier
-		@type = type
-		@name = name
-		@default = default
-	end
-	attr_accessor :id, :qualifier, :type, :name, :default
-	def required?
-		@qualifier == "required"
-	end
-	def optional?
-		@qualifier == "optional"
-	end
+end
+
+class ThrowsClass
+	include Util
+	attr_accessor :id, :name
 end
 
 
 class Type
 	include Util
-	def initialize(name)
-		@name = name.to_sym
-	end
 	def to_s
 		@name.to_s
 	end
 end
 
-
 class ListType < Type
-	def initialize(element)
-		super("list")
-		@element = element
-	end
 end
-
 
 class SetType < Type
-	def initialize(element)
-		super("set")
-		@element = element
-	end
+end
+
+class MapType < Type
 end
 
 
-class MapType < Type
-	def initialize(key, value)
-		super("map")
-		@key = key
-		@value = value
+class Value
+	include Util
+	attr_accessor :value
+
+	def const?
+		type == :const
+	end
+
+	def string?
+		type == :string
+	end
+
+	def int?
+		type == :int
+	end
+
+	def float?
+		type == :float
+	end
+
+	def list?
+		type == :list
+	end
+
+	def map?
+		type == :map
+	end
+end
+
+class ConstValue < Value
+	def type
+		:const
+	end
+	alias name value
+end
+
+class StringValue < Value
+	def type
+		:string
+	end
+end
+
+class IntValue < Value
+	def type
+		:int
+	end
+end
+
+class FloatValue < Value
+	def type
+		:float
+	end
+end
+
+class BoolValue < Value
+	def type
+		:bool
+	end
+end
+
+class ListValue < Value
+	def type
+		:list
+	end
+end
+
+class MapValue < Value
+	def type
+		:map
 	end
 end
 

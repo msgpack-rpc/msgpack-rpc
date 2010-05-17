@@ -1,0 +1,10 @@
+
+exception NotFoundError {
+	1:string message;
+}
+
+service ExceptionTest {
+	void check() throws (1:NotFoundError)
+	void check() throws (1:NotFoundError x)
+}
+

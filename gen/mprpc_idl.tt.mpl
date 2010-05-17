@@ -85,7 +85,7 @@ grammar MessagePackIDL
 	rule cpp_include
 		k_cpp_include name:literal_string {
 			def ast
-				AST::CppInclude.new(name.value)
+				AST::CppInclude.new(name.text)
 			end
 		}
 	end
@@ -126,7 +126,7 @@ grammar MessagePackIDL
 	rule enum_field
 		id val:(k_equal i:literal_int)? list_separator? {
 			def ast
-				n = val.respond_to?(:i) ? val.i.value : nil
+				n = val.respond_to?(:i) ? val.i.number : nil
 				AST::EnumField.new(id.symbol, n)
 			end
 		}
@@ -185,22 +185,48 @@ grammar MessagePackIDL
 	end
 
 	rule function
+		function_thrift
+	end
+
+	rule function_thrift
 		return_type id k_lparen fs:field* k_rparen th:throws? eol_mark {
 			def ast
 				frt = return_type.type
 				fid = id.symbol
 				ffs = fs.elements.map {|f| f.ast }
 				fth = th.respond_to?(:array) ? th.array : []
+				fth = AST::ThrowsList.new(fth)
 				AST::Function.new(frt, fid, ffs, fth)
 			end
 		}
 	end
 
 	rule throws
-		# FIXME なぜfield*？
-		k_throws k_lparen field* k_rparen {
+		k_throws k_lparen ls:throws_class* k_rparen {
 			def array
-				[]  # FIXME
+				ls.elements.map {|s| s.ast }
+			end
+		}
+	end
+
+	rule throws_class
+		num:field_id? id eol_mark {
+			def ast
+				fnum  = num.respond_to?(:value) ? num.value : nil
+				fname = id.text
+				AST::ThrowsClass.new(fnum, fname)
+			end
+		}
+		/ throws_class_thrift
+	end
+
+	rule throws_class_thrift
+		field {
+			#warn "Thrift style exception is obsolete."
+			def ast
+				fnum  = num.respond_to?(:value) ? num.value : nil
+				fname = id.text
+				AST::ThrowsClass.new(fnum, fname)
 			end
 		}
 	end
@@ -212,7 +238,7 @@ grammar MessagePackIDL
 	rule field
 		num:field_id? qu:field_qualifier? field_type id val:default_value? eol_mark {
 			def ast
-				fnum  = num.respond_to?(:value) ? num.value : nil
+				fnum  = num.respond_to?(:number) ? num.number : nil
 				fqu   = qu.respond_to?(:text) ? qu.text : nil
 				ft    = field_type.type
 				fname = id.text
@@ -224,8 +250,8 @@ grammar MessagePackIDL
 
 	rule field_id
 		literal_uint k_colon {
-			def value
-				literal_uint.value
+			def number
+				literal_uint.number
 			end
 		}
 	end
@@ -301,85 +327,103 @@ grammar MessagePackIDL
 	## Literal
 	##
 	rule literal
-		id { def value; symbol; end }
+		id {
+			def value
+				ConstValue.new(symbol);
+			end
+		}
 		/ literal_string / literal_int / literal_float
 		/ literal_bool / literal_list / literal_map
 	end
 
 	rule literal_string
 		'"' val:(!'"' . )* '"' _ {
-			def value
+			def text
 				val.text_value.rstrip
+			end
+			def value
+				AST::StringValue.new(text)
 			end
 		}
 		/
 		"'" val:(!"'" . )* "'" _ {
-			def value
+			def text
 				val.text_value.rstrip
+			end
+			def value
+				AST::StringValue.new(text)
 			end
 		}
 	end
 
 	rule literal_int
 		[\+\-]? (decimal_int / hex_int / octal_int) w_ {
-			def value
+			def number
 				text_value.rstrip.to_i
+			end
+			def value
+				AST::IntValue.new(number)
 			end
 		}
 	end
 
 	rule literal_uint
 		(decimal_int / hex_int / octal_int) w_ {
-			def value
+			def number
 				text_value.rstrip.to_i
+			end
+			def value
+				AST::IntValue.new(number)
 			end
 		}
 	end
 
 	rule decimal_int
-		(([1-9] [0-9]*) / '0') {
-			def value
-				text_value.rstrip.to_i
-			end
-		}
+		(([1-9] [0-9]*) / '0')
 	end
 
 	rule hex_int
-		('0x' / '0X') [a-fA-F0-9]+ {
-			def value
-				text_value.rstrip.to_i
-			end
-		}
+		('0x' / '0X') [a-fA-F0-9]+
 	end
 
 	rule octal_int
-		'0'  [0-7]+ {
-			def value
-				text_value.rstrip.to_i
-			end
-		}
+		'0'  [0-7]+
 	end
 
 	rule literal_float
 		# FIXME
 		[\+\-]? [0-9]* ('.' [0-9]+)? ([Ee] literal_uint)? {
-			def value
+			def number
 				text_value.rstrip.to_f
+			end
+			def value
+				AST::FloatValue.new(number)
 			end
 		}
 	end
 
 	rule literal_bool
-		k_false { def value; false; end }
-		/ k_true { def value; true; end }
+		k_false  { def value; AST::BoolValue.new(false); end }
+		/ k_true { def value; AST::BoolValue.new(true);  end }
 	end
 
 	rule literal_list
-		k_lbracket (literal list_separator?)* k_rbracket
+		k_lbracket ls:(e:literal list_separator?)* k_rbracket {
+			def value
+				fls = ls.elements.map {|n| n.e.value }
+				AST::ListValue.new(fls)
+			end
+		}
 	end
 
 	rule literal_map
-		k_lwing (literal k_colon literal list_separator?)* k_rwing
+		k_lwing ls:(k:literal k_colon v:literal list_separator?)* k_rwing {
+			def value
+				fls = {}
+				ls.elements.each {|n| fls[n.k.value] = n.v.value }
+				AST::MapValue.new(fls)
+			end
+		}
 	end
 
 

@@ -1,4 +1,6 @@
 
+SUBDIRS = test
+
 DOC_FILES = \
 		README.md
 
@@ -10,7 +12,8 @@ CPP_DIST = \
 		lang/cpp.rb
 
 LANG_DIST = \
-		$(CPP_DIST)
+		$(CPP_DIST) \
+		lang/lang.rb
 
 RUBYLIB = \
 		rubylib/treetop.rb \

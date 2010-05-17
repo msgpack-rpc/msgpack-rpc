@@ -11,5 +11,5 @@ fi
 RUBY_PATH="`which $RUBY`"
 AC_SUBST(RUBY_PATH)
 
-AC_OUTPUT([Makefile])
+AC_OUTPUT([Makefile test/Makefile])
 
