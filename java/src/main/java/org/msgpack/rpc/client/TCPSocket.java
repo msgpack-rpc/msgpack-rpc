@@ -12,9 +12,9 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.msgpack.rpc.client.netty.RPCClientPipelineFactory;
 
 public class TCPSocket {
-	protected Address address;
-	protected EventLoop loop;
-	protected TCPTransport transport;
+	protected final Address address;
+	protected final EventLoop loop;
+	protected final TCPTransport transport;
 
 	// netty-specific
 	protected ClientBootstrap bootstrap;
@@ -46,8 +46,6 @@ public class TCPSocket {
 	public synchronized void tryClose() {
 		if (channel != null && channel.isOpen())
 			channel.close().awaitUninterruptibly();
-		address = null;
-		transport = null;
 		connectFuture = null;
 		channel = null;
 	}
@@ -70,29 +68,25 @@ public class TCPSocket {
 	}
 
 	// callback
-	public synchronized void onConnectFailed() {
-		if (transport != null)
-			transport.onConnectFailed();
+	public void onConnectFailed() {
+		transport.onConnectFailed();
 		tryClose();
 	}
 
 	// callback
-	public synchronized void onMessageReceived(Object replyObject) throws Exception {
-		if (transport != null)
-			transport.onMessageReceived(replyObject);
+	public void onMessageReceived(Object replyObject) throws Exception {
+		transport.onMessageReceived(replyObject);
 	}
 	
 	// callback
-	public synchronized void onClosed() {
-		if (transport != null)
-			transport.onClosed();
+	public void onClosed() {
+		transport.onClosed();
 		tryClose();
 	}
 	
 	// callback
 	public synchronized void onFailed(Exception e) {
-		if (transport != null)
-			transport.onFailed(e);
+		transport.onFailed(e);
 		tryClose();
 	}
 }
