@@ -65,8 +65,25 @@ else
 	in_body  = File.read(in_fname)
 end
 
+
+def expand_include(src, fname, body="")
+	s = src.split(/(?:(?![a-zA-Z0-9_]).|\A)include[ \t\r\n]*[\'\"]([^\'\"]*)[\'\"]/)
+	s.each_with_index do |m,i|
+		if i % 2 == 1
+			path = File.expand_path(m, File.dirname(fname))
+			expand_include(File.read(path), path, body)
+		else
+			body << m
+		end
+	end
+	body
+end
+
+body = expand_include(in_body, in_fname)
+
+
 parser = MessagePackIDLParser.new
-sn = parser.parse(in_body)
+sn = parser.parse(body)
 
 doc = sn.ast
 doc.normalize!(conf)

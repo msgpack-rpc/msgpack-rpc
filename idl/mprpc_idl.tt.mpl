@@ -40,16 +40,7 @@ grammar MessagePackIDL
 	## Header
 	##
 	rule header
-		include_ / namespace / lang_header
-	end
-
-	## IDL include
-	rule include_
-		k_include name:literal_string {
-			def ast
-				# FIXME
-			end
-		}
+		namespace / lang_header
 	end
 
 	## Namespace

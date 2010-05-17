@@ -208,7 +208,6 @@ class Type
 		false
 	end
 
-
 	## base type:
 	# int8
 	# int16
@@ -222,6 +221,7 @@ class Type
 	# double  # 64bit double
 	# bytes   # raw bytes
 	# string  # UTF-8 string
+	# void    # only for return type of Function
 
 	## container type:
 	# list<TYPE>  # ordered sequence
