@@ -1,5 +1,5 @@
-MessagePack-RPC IDL and code generator
-======================================
+MessagePack-RPC IDL
+===================
 
 ## Requirements
 
@@ -18,11 +18,11 @@ Configure and install in the usual way:
 
 ## Writing language binding
 
-Add **&lt;language name&gt;.rb** file to [lang/](http://github.com/msgpack/msgpack-rpc/blob/master/gen/lang/) directory and modify [Makefile.am](http://github.com/msgpack/msgpack-rpc/blob/master/gen/Makefile.am) file.
+Add **&lt;language name&gt;.rb** file to [lang/](http://github.com/msgpack/msgpack-rpc/blob/master/idl/lang/) directory and modify [Makefile.am](http://github.com/msgpack/msgpack-rpc/blob/master/idl/Makefile.am) file.
 
 In the file, implement **generate(doc, outdir, langdir)** method. *doc* is a AST::Document, *outdir* is the path to output directory, *langdir* is the path to lang/ directory.
 
-See [mprpc_ast.rb](http://github.com/msgpack/msgpack-rpc/blob/master/gen/mprpc_ast.rb) file for the specification of AST module.
+See [mprpc_ast.rb](http://github.com/msgpack/msgpack-rpc/blob/master/idl/mprpc_ast.rb) file for the specification of AST module.
 
 
 ## License
