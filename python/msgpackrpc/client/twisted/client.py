@@ -1,4 +1,5 @@
-from mprpc.rpc import (session, address, loop)
+from msgpackrpc.client import address
+from msgpackrpc.client.twisted import session, loop
 
 class Client(session.Session):
     """

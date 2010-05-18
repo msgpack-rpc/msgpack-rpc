@@ -1,4 +1,4 @@
-from mprpc.rpc import socket
+from msgpackrpc.client.twisted import socket
 
 import msgpack
 

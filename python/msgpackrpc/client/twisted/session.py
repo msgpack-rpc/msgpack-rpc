@@ -1,4 +1,4 @@
-from mprpc.rpc import future, transport
+from msgpackrpc.client.twisted import future, transport
 
 class Session(object):
     """

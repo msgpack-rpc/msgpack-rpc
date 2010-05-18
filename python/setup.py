@@ -8,5 +8,6 @@ setup(name='msgpackrpc',
       version='0.0.1dev',
       packages=['msgpackrpc',
                 'msgpackrpc.client',
+                'msgpackrpc.client.twisted',
                 ],
       )
