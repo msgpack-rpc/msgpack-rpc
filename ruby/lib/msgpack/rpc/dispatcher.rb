@@ -53,6 +53,13 @@ class ObjectDispatcher
 				end
 				early_result = result_
 			end
+
+		# FIXME on NoMethodError
+		# res.error(NO_METHOD_ERROR); return
+
+		# FIXME on ArgumentError
+		# res.error(ArgumentError); return
+
 		rescue
 			responder.error($!.to_s)
 			return
