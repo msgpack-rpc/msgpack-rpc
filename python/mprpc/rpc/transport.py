@@ -2,7 +2,7 @@ from mprpc.rpc import socket
 
 import msgpack
 
-class TCPTransport:
+class TCPTransport(object):
     """
     TCPTransport sends/receives the data, by using underlying socket layer.
     Before sending the data, it serializes the data into MessagePack format.

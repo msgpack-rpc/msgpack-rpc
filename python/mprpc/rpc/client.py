@@ -1,6 +1,4 @@
-from mprpc.rpc import session
-from mprpc.rpc import address
-from mprpc.rpc import loop
+from mprpc.rpc import (session, address, loop)
 
 class Client(session.Session):
     """
@@ -8,8 +6,8 @@ class Client(session.Session):
     The folowing code shows how to use the asynchronous API.
 
     from mprpc.rpc import client
-    c = client.Client(\"127.0.0.1\", 1985)
-    f = c.send(\"hello1\", [1])
+    c = client.Client("127.0.0.1", 1985)
+    f = c.send("hello1", [1])
     f.join()
     print f.get_result()
     c.close()
@@ -22,8 +20,8 @@ class Client(session.Session):
         """
         This is the asynchronous API, which returns Future class.
         To get the result from the Future, you need to future.join() like this:
-        
-        future = client.send(\"method\", args)
+
+        future = client.send("method", args)
         future.join()
         ret = future.get_result()
         """

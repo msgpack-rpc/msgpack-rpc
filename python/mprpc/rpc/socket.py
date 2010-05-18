@@ -2,7 +2,7 @@ import sys
 
 from twisted.internet import protocol, reactor
 
-class TCPSocket:
+class TCPSocket(object):
     """
     TCPSocket uses Twisted framework to actually establish the connection, and
     send/recv the data buffer.
