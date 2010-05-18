@@ -22,7 +22,6 @@ public class Future {
     public synchronized void join() {
         try {
             while (true) {
-                System.out.println("joining...");
                 if (isSet)
                     break;
                 
