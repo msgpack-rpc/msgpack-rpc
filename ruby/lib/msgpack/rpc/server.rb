@@ -111,5 +111,14 @@ class AsyncResult
 end
 
 
+class Server::Base
+	def initialize(*args)
+		@base = Server.new(*args)
+		@base.serve(self)
+	end
+	attr_reader :base
+end
+
+
 end
 end

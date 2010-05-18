@@ -53,22 +53,6 @@ class AST::MapType
 	end
 end
 
-
-class AST::ListType
-	def container_to_s
-	end
-end
-
-class AST::ListType
-	def container_to_s
-	end
-end
-
-class AST::ListType
-	def container_to_s
-	end
-end
-
 module AST::Util
 	def expand_template(*types)
 		#"<#{types.join(',').gsub('>>','> >')}>"

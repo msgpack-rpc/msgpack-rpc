@@ -60,6 +60,17 @@ class Namespace < Array
 		@name = name
 		super(name.split('.'))
 	end
+
+	SCOPE_NORMALIZE_MAP = {
+		'rb'   => 'ruby',
+		'py'   => 'python',
+	}
+
+	def normalize!(conf)
+		if n = SCOPE_NORMALIZE_MAP[@scope]
+			@scope = n
+		end
+	end
 end
 
 

@@ -192,10 +192,6 @@ class Type
 
 	attr_accessor :name
 
-	def container?
-		false
-	end
-
 	def list?
 		false
 	end
@@ -207,6 +203,34 @@ class Type
 	def map?
 		false
 	end
+
+	def base_type?
+		TYPE_BASE_TYPES.include?(@name)
+	end
+
+	def container_type?
+		list? || set? || map?
+	end
+
+	def builtin_type?
+		container_type? || base_type?
+	end
+
+	TYPE_BASE_TYPES = [
+		'int8',
+		'int16',
+		'int32',
+		'int64',
+		'uint8',
+		'uint16',
+		'uint32',
+		'uint64',
+		'bool',
+		'double',
+		'bytes',
+		'string',
+		'void',
+	]
 
 	## base type:
 	# int8
@@ -233,9 +257,6 @@ class Type
 end
 
 class ListType < Type
-	def container?
-		true
-	end
 	def list?
 		true
 	end
@@ -243,9 +264,6 @@ class ListType < Type
 end
 
 class SetType < Type
-	def container?
-		true
-	end
 	def set?
 		true
 	end
@@ -253,9 +271,6 @@ class SetType < Type
 end
 
 class MapType < Type
-	def container?
-		true
-	end
 	def map?
 		true
 	end

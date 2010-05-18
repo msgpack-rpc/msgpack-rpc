@@ -1,9 +1,9 @@
 %def keyword(word, name = "k_#{word}")
 	rule [%name%]
-		'[%word%]' word_spacing
+		val:('[%word%]') word_spacing
 		{
 			def text
-				text_value.rstrip
+				val.text_value
 			end
 		}
 	end
@@ -11,11 +11,11 @@
 
 %def separator(sym, name)
 	rule [%name%]
-		"[%sym%]" spacing %>if  sym.include?("'")
-		'[%sym%]' spacing %>if !sym.include?("'")
+		val:("[%sym%]") spacing %>if  sym.include?("'")
+		val:('[%sym%]') spacing %>if !sym.include?("'")
 		{
 			def text
-				text_value.rstrip
+				val.text_value
 			end
 		}
 	end
@@ -53,13 +53,14 @@ grammar MessagePackIDL
 	end
 
 	rule namespace_scope
-		k_star / k_cpp / k_java / k_py / k_perl / k_php / k_rb / k_csharp
+		k_star / k_cpp / k_java / k_python / k_perl / k_php / k_ruby / k_csharp
+		/ k_rb / k_py
 	end
 
 	rule namespace_id
-		[a-zA-Z\_\.]+ word_spacing {
+		val:[a-zA-Z\_\.]+ word_spacing {
 			def text
-				text_value.rstrip
+				val.text_value
 			end
 			def symbol
 				text.symbol
@@ -334,7 +335,7 @@ grammar MessagePackIDL
 	rule literal_string
 		'"' val:(!'"' . )* '"' spacing {
 			def text
-				val.text_value.rstrip
+				val.text_value
 			end
 			def value
 				AST::StringValue.new(text)
@@ -343,7 +344,7 @@ grammar MessagePackIDL
 		/
 		"'" val:(!"'" . )* "'" spacing {
 			def text
-				val.text_value.rstrip
+				val.text_value
 			end
 			def value
 				AST::StringValue.new(text)
@@ -352,9 +353,9 @@ grammar MessagePackIDL
 	end
 
 	rule literal_int
-		[\+\-]? (decimal_int / hex_int / octal_int) word_spacing {
+		val:([\+\-]? (decimal_int / hex_int / octal_int)) word_spacing {
 			def number
-				text_value.rstrip.to_i
+				val.text_value.to_i
 			end
 			def value
 				AST::IntValue.new(number)
@@ -363,9 +364,9 @@ grammar MessagePackIDL
 	end
 
 	rule literal_uint
-		(decimal_int / hex_int / octal_int) word_spacing {
+		val:((decimal_int / hex_int / octal_int)) word_spacing {
 			def number
-				text_value.rstrip.to_i
+				val.text_value.to_i
 			end
 			def value
 				AST::IntValue.new(number)
@@ -389,7 +390,7 @@ grammar MessagePackIDL
 		# FIXME
 		[\+\-]? [0-9]* ('.' [0-9]+)? ([Ee] literal_uint)? {
 			def number
-				text_value.rstrip.to_f
+				text_value.to_f
 			end
 			def value
 				AST::FloatValue.new(number)
@@ -426,9 +427,9 @@ grammar MessagePackIDL
 	## Basic symbol
 	##
 	rule id
-		([a-zA-Z] / '_') id_char* word_spacing {
+		val:(([a-zA-Z] / '_') id_char*) word_spacing {
 			def text
-				text_value.rstrip
+				val.text_value
 			end
 			def symbol
 				text.to_sym
@@ -491,9 +492,11 @@ grammar MessagePackIDL
 	% keyword('cpp')
 	% keyword('java')
 	% keyword('py')
+	% keyword('python')
 	% keyword('perl')
 	% keyword('php')
 	% keyword('rb')
+	% keyword('ruby')
 	% keyword('csharp')
 	% keyword('cpp_include')
 

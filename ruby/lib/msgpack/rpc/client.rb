@@ -57,5 +57,13 @@ class Client < Session
 end
 
 
+class Client::Base
+	def initialize(*args)
+		@base = Client.new(*args)
+	end
+	attr_reader :base
+end
+
+
 end
 end

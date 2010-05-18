@@ -31,7 +31,7 @@ class TCPTransport
 		TCPClientTransport.new(session, address, @reconnect_limit)
 	end
 
-	class RevSocket < Rev::TCPSocket
+	class BasicSocket < Rev::TCPSocket
 		def initialize(io)
 			super(io)
 			@pac = MessagePack::Unpacker.new
@@ -89,7 +89,7 @@ class TCPClientTransport
 		self
 	end
 
-	# from TCPClientTransport::RevClientSocket::on_connect
+	# from TCPClientTransport::ClientSocket::on_connect
 	def on_connect(sock)
 		@sockpool.push(sock)
 		sock.send_pending(@pending)
@@ -97,7 +97,7 @@ class TCPClientTransport
 		@connecting = 0
 	end
 
-	# from TCPClientTransport::RevClientSocket::on_connect_failed
+	# from TCPClientTransport::ClientSocket::on_connect_failed
 	def on_connect_failed(sock)
 		if @connecting < @reconnect_limit
 			try_connect
@@ -110,7 +110,7 @@ class TCPClientTransport
 		end
 	end
 
-	# from TCPClientTransport::RevClientSocket::on_close
+	# from TCPClientTransport::ClientSocket::on_close
 	def on_close(sock)
 		@sockpool.delete(sock)
 	end
@@ -118,11 +118,11 @@ class TCPClientTransport
 	private
 	def try_connect
 		host, port = *@address
-		sock = RevClientSocket.connect(host, port, self, @session)  # async connect
+		sock = ClientSocket.connect(host, port, self, @session)  # async connect
 		@session.loop.attach(sock)
 	end
 
-	class RevClientSocket < TCPTransport::RevSocket
+	class ClientSocket < TCPTransport::BasicSocket
 		def initialize(io, transport, session)
 			super(io)
 			@t = transport
@@ -184,7 +184,7 @@ class TCPServerTransport
 		@server = server
 		@loop   = loop
 		host, port = *@address.unpack
-		@lsock  = Rev::TCPServer.new(host, port, RevServerSocket, @server)
+		@lsock  = Rev::TCPServer.new(host, port, ServerSocket, @server)
 		loop.attach(@lsock)
 	end
 
@@ -196,7 +196,7 @@ class TCPServerTransport
 	end
 
 	private
-	class RevServerSocket < TCPTransport::RevSocket
+	class ServerSocket < TCPTransport::BasicSocket
 		def initialize(io, server)
 			super(io)
 			@server = server
