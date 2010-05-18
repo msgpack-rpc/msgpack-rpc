@@ -5,6 +5,7 @@ import java.io.IOException;
 public class Future {
     protected Exception error;
     protected Object result;
+    protected boolean isSet;
     protected boolean isJoined;
     protected long expireMills;
     protected boolean isTimeouted;
@@ -12,8 +13,8 @@ public class Future {
     public Future(double timeoutSec) {
         this.error = null;
         this.result = null;
+        this.isSet = false;
         this.isJoined = false;
-        
         this.expireMills = System.currentTimeMillis() + (long)(timeoutSec * 1000);
         this.isTimeouted = false;
     }
@@ -21,7 +22,8 @@ public class Future {
     public synchronized void join() {
         try {
             while (true) {
-                if (error != null || result != null)
+                System.out.println("joining...");
+                if (isSet)
                     break;
                 
                 // check if timeout occurred
@@ -56,6 +58,7 @@ public class Future {
 
     protected synchronized void set(Exception error, Object result) {
         if (isTimeouted) return;
+        this.isSet = true;
         this.error = error;
         this.result = result;
         this.notifyAll();
