@@ -1,5 +1,5 @@
 #
-# MessagePack-RPC for Ruby TCP transport
+# MessagePack-RPC for Ruby
 #
 # Copyright (C) 2010 FURUHASHI Sadayuki
 #
@@ -15,18 +15,14 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-require 'msgpack'
-require 'socket'
-require 'rev'
-require 'msgpack/rpc/address'
-require 'msgpack/rpc/message'
-require 'msgpack/rpc/exception'
-require 'msgpack/rpc/loop'
-require 'msgpack/rpc/future'
-require 'msgpack/rpc/session'
-require 'msgpack/rpc/session_pool'
-require 'msgpack/rpc/dispatcher'
-require 'msgpack/rpc/client'
-require 'msgpack/rpc/server'
-require 'msgpack/rpc/transport/base'
-require 'msgpack/rpc/transport/tcp'
+module MessagePack
+module RPC
+
+
+REQUEST  = 0    # [0, msgid, method, param]
+RESPONSE = 1    # [1, msgid, error, result]
+NOTIFY   = 2    # [2, method, param]
+
+
+end
+end

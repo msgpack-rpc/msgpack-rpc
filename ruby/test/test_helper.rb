@@ -1,3 +1,3 @@
 require 'test/unit'
-require File.dirname(__FILE__) + '/../lib/msgpack/rpc'
-
+$LOAD_PATH.unshift File.dirname(__FILE__)+'/../lib'
+require 'msgpack/rpc'

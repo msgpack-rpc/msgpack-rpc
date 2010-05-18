@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
   s.name = "msgpack-rpc"
-  s.version = "0.3.0"
+  s.version = "0.4.0"
   s.summary = "MessagePack-RPC, asynchronous RPC library using MessagePack"
   s.author = "FURUHASHI Sadayuki"
   s.email = "frsyuki@users.sourceforge.jp"

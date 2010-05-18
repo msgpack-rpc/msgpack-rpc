@@ -1,5 +1,5 @@
 #
-# MessagePack-RPC for Ruby TCP transport
+# MessagePack-RPC for Ruby
 #
 # Copyright (C) 2010 FURUHASHI Sadayuki
 #
@@ -15,18 +15,34 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 #
-require 'msgpack'
-require 'socket'
-require 'rev'
-require 'msgpack/rpc/address'
-require 'msgpack/rpc/message'
-require 'msgpack/rpc/exception'
-require 'msgpack/rpc/loop'
-require 'msgpack/rpc/future'
-require 'msgpack/rpc/session'
-require 'msgpack/rpc/session_pool'
-require 'msgpack/rpc/dispatcher'
-require 'msgpack/rpc/client'
-require 'msgpack/rpc/server'
-require 'msgpack/rpc/transport/base'
-require 'msgpack/rpc/transport/tcp'
+module MessagePack
+module RPC
+
+
+module MessageReceiver
+	def on_message(msg)
+		case msg[0]
+		when REQUEST
+			on_request(msg[1], msg[2], msg[3])
+		when RESPONSE
+			on_response(msg[1], msg[2], msg[3])
+		when NOTIFY
+			on_notify(msg[1], msg[2])
+		else
+			raise RPCError.new("unknown message type #{msg[0]}")
+		end
+	end
+
+	#def on_request(msgid, method, param)
+	#end
+
+	#def on_notify(method, param)
+	#end
+
+	#def on_response(msgid, error, result)
+	#end
+end
+
+
+end
+end
