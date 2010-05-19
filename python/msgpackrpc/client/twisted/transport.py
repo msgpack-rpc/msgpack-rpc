@@ -24,7 +24,7 @@ class TCPTransport(object):
         self._unpacker = msgpack.Unpacker()
         self._is_connecting = False
         self._is_connected = False
-        self._socket = socket.TCPSocket(self._session.get_addr(), loop, self)
+        self._socket = TCPSocket(self._session.get_addr(), loop, self)
         self._pending_msgs = []
 
     def send_message(self, message):
