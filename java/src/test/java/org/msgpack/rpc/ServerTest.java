@@ -101,10 +101,10 @@ public class ServerTest extends TestCase {
         Object o;
         o = c.call("nilFunc0");
         assertEquals(null, o);
-        //o = c.call("nilFunc1", null);
-        //assertEquals(null, o);
-        //o = c.call("nilFunc2", null, null);
-        //assertEquals(null, o);
+        o = c.call("nilFunc1", null);
+        assertEquals(null, o);
+        o = c.call("nilFunc2", null, null);
+        assertEquals(null, o);
     }
     
     public Boolean boolFunc0() { return false; }
