@@ -86,8 +86,8 @@ class UDPClientTransport
 
 	private
 	class ClientSocket < UDPTransport::BasicSocket
-		def initialize(sock, session)
-			super(sock)
+		def initialize(io, session)
+			super(io)
 			@s = session
 		end
 

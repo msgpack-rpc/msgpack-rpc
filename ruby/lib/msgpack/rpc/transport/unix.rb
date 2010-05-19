@@ -1,5 +1,5 @@
 #
-# MessagePack-RPC for Ruby TCP transport
+# MessagePack-RPC for Ruby UNIX transport
 #
 # Copyright (C) 2010 FURUHASHI Sadayuki
 #
@@ -19,25 +19,22 @@ module MessagePack
 module RPC
 
 
-class TCPTransport
+class UNIXTransport
 	def initialize
-		@reconnect_limit = 5   # FIXME default reconnect_limit
 	end
-
-	attr_accessor :reconnect_limit
 
 	# Transport interface
 	def build_transport(session, address)
-		TCPClientTransport.new(session, address, @reconnect_limit)
+		UNIXClientTransport.new(session, address)
 	end
 
-	class BasicSocket < Rev::TCPSocket
+	class BasicSocket < Rev::UNIXSocket
 		def initialize(io)
 			super(io)
 			@pac = MessagePack::Unpacker.new
 		end
 
-		# from Rev::TCPSocket
+		# from Rev::UNIXSocket
 		def on_read(data)
 			@pac.feed(data)
 			@pac.each {|obj|
@@ -50,93 +47,44 @@ class TCPTransport
 end
 
 
-class TCPClientTransport
-	def initialize(session, address, reconnect_limit)
-		@session = session
-		@address = address
+class UNIXClientTransport
+	def initialize(session, address)
+		io = UNIXSocket.new(address)
 
-		@pending = ""
-		@sockpool = []
-		@connecting = 0
-		@reconnect_limit = reconnect_limit
+		begin
+			@sock = ClientSocket.new(io, session)
+		rescue
+			io.close
+			raise
+		end
+
+		begin
+			session.loop.attach(@sock)
+		rescue
+			@sock.close
+			raise
+		end
 	end
 
 	# ClientTransport interface
 	def send_data(data)
-		if @sockpool.empty?
-			if @connecting == 0
-				try_connect
-				@connecting = 1
-			end
-			@pending << data
-		else
-			# FIXME pesudo connection load balance
-			# sock = @sockpool.choice
-			sock = @sockpool.first
-			sock.send_data(data)
-		end
+		@sock.send_data(data)
 	end
 
 	# ClientTransport interface
 	def close
-		@sockpool.reject! {|sock|
-			sock.detach if sock.attached?
-			sock.close
-			true
-		}
-		@sockpool = []
-		@connecting = 0
-		@pending = ""
-		self
+		@sock.detach if @sock.attached?
+		@sock.close
 	end
 
-	# from TCPClientTransport::ClientSocket::on_connect
-	def on_connect(sock)
-		@sockpool.push(sock)
-		sock.send_pending(@pending)
-		@pending = ""
-		@connecting = 0
-	end
-
-	# from TCPClientTransport::ClientSocket::on_connect_failed
-	def on_connect_failed(sock)
-		if @connecting < @reconnect_limit
-			try_connect
-			@connecting += 1
-		else
-			@connecting = 0
-			@pending = ""
-			@deflate.reset if @deflate
-			@session.on_connect_failed
-		end
-	end
-
-	# from TCPClientTransport::ClientSocket::on_close
-	def on_close(sock)
-		@sockpool.delete(sock)
-	end
-
-	private
-	def try_connect
-		host, port = *@address
-		sock = ClientSocket.connect(host, port, self, @session)  # async connect
-		@session.loop.attach(sock)
-	end
-
-	class ClientSocket < TCPTransport::BasicSocket
-		def initialize(io, transport, session)
+	class ClientSocket < UNIXTransport::BasicSocket
+		def initialize(io, session)
 			super(io)
-			@t = transport
 			@s = session
 		end
 
 		# MessageSendable interface
 		def send_data(data)
-			write data
-		end
-
-		# from TCPClientTransport::on_connect
-		def send_pending(data)
 			write data
 		end
 
@@ -154,45 +102,20 @@ class TCPClientTransport
 		def on_response(msgid, error, result)
 			@s.on_response(self, msgid, error, result)
 		end
-
-		# from Rev::TCPSocket
-		def on_connect
-			return unless @t
-			@t.on_connect(self)
-		end
-
-		# from Rev::TCPSocket
-		def on_connect_failed
-			return unless @t
-			@t.on_connect_failed(self)
-		rescue
-			nil
-		end
-
-		# from Rev::TCPSocket
-		def on_close
-			return unless @t
-			@t.on_close(self)
-			@t = nil
-			@s = nil
-		rescue
-			nil
-		end
 	end
 end
 
 
-class TCPServerTransport
+class UNIXServerTransport
 	def initialize(address)
 		@address = address
-		@lsock = nil
+		@sock = nil
 	end
 
 	# ServerTransport interface
 	def listen(server)
 		@server = server
-		host, port = *@address.unpack
-		@lsock  = Rev::TCPServer.new(host, port, ServerSocket, @server)
+		@lsock  = Rev::UNIXServer.new(@address, ServerSocket, @server)
 		begin
 			@server.loop.attach(@lsock)
 		rescue
@@ -209,7 +132,7 @@ class TCPServerTransport
 	end
 
 	private
-	class ServerSocket < TCPTransport::BasicSocket
+	class ServerSocket < UNIXTransport::BasicSocket
 		def initialize(io, server)
 			super(io)
 			@server = server
