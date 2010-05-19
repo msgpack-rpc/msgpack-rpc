@@ -22,11 +22,11 @@ module RPC
 class Session
 	def initialize(builder, address, loop)
 		@address = address
-		@transport = builder.build_transport(self, address)
 		@loop = loop
 		@reqtable = {}
 		@timeout = 10    # FIXME default timeout time
 		@seqid = 0
+		@transport = builder.build_transport(self, address)
 	end
 	attr_reader :loop, :address
 	attr_accessor :timeout

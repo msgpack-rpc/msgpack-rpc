@@ -52,7 +52,7 @@ class Server < SessionPool
 			serve(obj, accept)
 		end
 
-		listener.listen(self, @loop)
+		listener.listen(self)
 		@listeners.push(listener)
 		nil
 	end
@@ -72,7 +72,7 @@ class Server < SessionPool
 	end
 
 	# from ServerTransport
-	def on_notify(sock, method, param)
+	def on_notify(method, param)
 		@dispatcher.dispatch_notify(self, method, param)
 	end
 end

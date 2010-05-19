@@ -37,6 +37,7 @@ class TCPTransport
 			@pac = MessagePack::Unpacker.new
 		end
 
+		# from Rev::TCPSocket
 		def on_read(data)
 			@pac.feed(data)
 			@pac.each {|obj|
@@ -180,12 +181,11 @@ class TCPServerTransport
 	end
 
 	# ServerTransport interface
-	def listen(server, loop)
+	def listen(server)
 		@server = server
-		@loop   = loop
 		host, port = *@address.unpack
 		@lsock  = Rev::TCPServer.new(host, port, ServerSocket, @server)
-		loop.attach(@lsock)
+		@server.loop.attach(@lsock)
 	end
 
 	# ServerTransport interface
@@ -214,7 +214,7 @@ class TCPServerTransport
 
 		# MessageReceiver interface
 		def on_notify(method, param)
-			@server.on_notify(self, method, param)
+			@server.on_notify(method, param)
 		end
 
 		# MessageReceiver interface
