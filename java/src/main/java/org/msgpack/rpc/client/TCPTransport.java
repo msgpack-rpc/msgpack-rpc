@@ -3,6 +3,13 @@ package org.msgpack.rpc.client;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * TCPTransport sends/receives the data, by using underlying socket layer.
+ *
+ * This class also hides the latency of establishing the connection. If the
+ * connection is not established. the sending messages are temporarily queued.
+ * Then, they are actually sent to the network when it's connected.
+ */
 public class TCPTransport {
     protected Session session;
     protected EventLoop loop;
@@ -20,7 +27,18 @@ public class TCPTransport {
         this.pendingMessages = new ArrayList<Object>();
     }
 
-    // hide the connect(2) latency from the Transport user
+    /**
+     * Send the message to the remote server.
+     *
+     * This method tries to hide the connection latency.
+     * If it's already connected, then the message is sent immediately.
+     * Otherwise, the message is temporarily buffered in the
+     * this.pendingMessages. Once it's connected, the buffered messages are
+     * sent to the server.
+     * 
+     * @param msg the message to send.
+     * @throws Exception
+     */
     public synchronized void sendMessage(Object msg) throws Exception {
         if (isConnected) {
             socket.trySend(msg);
@@ -33,12 +51,19 @@ public class TCPTransport {
         }
     }
 
+    /**
+     * Send the pending messages.
+     * @throws Exception
+     */
     protected synchronized void trySendPending() throws Exception {
         for (Object msg : pendingMessages)
             socket.trySend(msg);
         pendingMessages.clear();
     }
-    
+
+    /**
+     * Close the connection associated with this transport.
+     */
     public synchronized void tryClose() {
         if (socket != null)
             socket.tryClose();
@@ -48,31 +73,45 @@ public class TCPTransport {
         pendingMessages.clear();
     }
 
-    // callback
+    /**
+     * The callback function, called when the connection is established.
+     * @throws Exception
+     */
     public synchronized void onConnected() throws Exception {
         isConnecting = false;
         isConnected = true;
         trySendPending();
     }
 
-    // callback
+    /**
+     * The callback function, called when the connection failed.
+     */
     public void onConnectFailed() {
         tryClose();
         session.onConnectFailed();
     }
     
-    // callback
+    /**
+     * The callback called when the message arrives
+     * @param replyObject the received object, already unpacked.
+     * @throws Exception
+     */
     public void onMessageReceived(Object replyObject) throws Exception {
         session.onMessageReceived(replyObject);
     }
 
-    // callback
+    /**
+     * The callback called when the connection closed.
+     */
     public void onClosed() {
         tryClose();
         session.onClosed();
     }
     
-    // callback
+    /**
+     * The callback called when the error occurred.
+     * @param e occurred exception.
+     */
     public void onFailed(Exception e) {
         tryClose();
         session.onFailed(e);

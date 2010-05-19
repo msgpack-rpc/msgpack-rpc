@@ -11,6 +11,9 @@ import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.msgpack.rpc.client.netty.RPCClientPipelineFactory;
 
+/**
+ * TCPSocket establishes the connection, and also sends/receives the object.
+ */
 public class TCPSocket {
     protected final Address address;
     protected final EventLoop loop;
@@ -31,18 +34,31 @@ public class TCPSocket {
         this.bootstrap.setPipelineFactory(new RPCClientPipelineFactory(this));
     }
     
+    /**
+     * Try to connect to the server.
+     * @throws Exception
+     */
     public synchronized void tryConnect() throws Exception {
         if (connectFuture != null)
             throw new IOException("already connected");
         connectFuture = bootstrap.connect(new InetSocketAddress(address.getHost(), address.getPort()));
     }
     
+
+    /**
+     * Try to send the message.
+     * @param msg the message to send
+     * @throws Exception
+     */
     public synchronized void trySend(Object msg) throws Exception {
         if (connectFuture == null || channel == null)
             throw new IOException("not connected, but try send");
         channel.write(msg);
     }
-    
+
+    /**
+     * Try to close the connection.
+     */
     public synchronized void tryClose() {
         if (channel != null && channel.isOpen())
             channel.close().awaitUninterruptibly();
@@ -50,7 +66,10 @@ public class TCPSocket {
         channel = null;
     }
 
-    // callback
+    /**
+     * The callback function, called when the connection is established.
+     * @throws Exception
+     */
     public synchronized void onConnected() throws Exception {
         // connected, but onConnected() called
         if (channel != null)
@@ -67,24 +86,35 @@ public class TCPSocket {
             onConnectFailed();
     }
 
-    // callback
+    /**
+     * The callback function, called when the connection failed.
+     */
     public void onConnectFailed() {
         transport.onConnectFailed();
         tryClose();
     }
 
-    // callback
+    /**
+     * The callback called when the message arrives
+     * @param replyObject the received object, already unpacked.
+     * @throws Exception
+     */
     public void onMessageReceived(Object replyObject) throws Exception {
         transport.onMessageReceived(replyObject);
     }
     
-    // callback
+    /**
+     * The callback called when the connection closed.
+     */
     public void onClosed() {
         transport.onClosed();
         tryClose();
     }
     
-    // callback
+    /**
+     * The callback called when the error occurred.
+     * @param e occurred exception.
+     */
     public synchronized void onFailed(Exception e) {
         transport.onFailed(e);
         tryClose();

@@ -2,6 +2,10 @@ package org.msgpack.rpc.client;
 
 import java.io.IOException;
 
+/**
+ * This class is used as the result of asynchronous call.
+ * By using join(), the caller is able to wait for the completion.
+ */
 public class Future {
     protected Exception error;
     protected Object result;
@@ -19,6 +23,9 @@ public class Future {
         this.isTimeouted = false;
     }
 
+    /**
+     * Wait for the request completion.
+     */
     public synchronized void join() {
         try {
             while (true) {
@@ -39,11 +46,19 @@ public class Future {
         }
         isJoined = true;
     }
-    
+
+    /**
+     * Set the result to this future.
+     * @param result the result object.
+     */
     public void setResult(Object result) {
         set(null, result);
     }
 
+    /**
+     * Set the error to this future.
+     * @param error the error message or exception.
+     */
     public void setError(Object error) {
         Exception e;
         if (error instanceof String)
@@ -55,6 +70,11 @@ public class Future {
         set(e, null);
     }
 
+    /**
+     * Set the error and result to this future.
+     * @param error the exception object.
+     * @param result the result object.
+     */
     protected synchronized void set(Exception error, Object result) {
         if (isTimeouted) return;
         this.isSet = true;
@@ -63,6 +83,12 @@ public class Future {
         this.notifyAll();
     }
 
+    /**
+     * Try to get the result of this future. If the error happened, then the
+     * exception is thrown.
+     * @return the RPC result object.
+     * @throws Exception
+     */
     public synchronized Object getResult() throws Exception {
         if (!isJoined)
             throw new IOException("Calling getResult() without join()");
