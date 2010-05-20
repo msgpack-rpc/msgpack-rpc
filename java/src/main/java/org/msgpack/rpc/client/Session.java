@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 
 import org.msgpack.rpc.Constants;
+import org.msgpack.rpc.client.transport.TCPTransport;
 
 /**
  * Session handles send/recv request of the message, by using underlying
@@ -25,7 +26,7 @@ public class Session {
 
     protected double timeoutSec;
     protected HashMap<Integer, Future> reqTable;
-    protected TCPTransport transport;
+    protected Transport transport;
     
     static int msgidCounter = 0;
 
@@ -94,7 +95,7 @@ public class Session {
      * Create new transport when it's not available. If exists, return that.
      * @return transport class
      */
-    private synchronized TCPTransport getTransport() {
+    private synchronized Transport getTransport() {
         if (transport != null) return transport;
         transport = new TCPTransport(this, loop);
         return transport;

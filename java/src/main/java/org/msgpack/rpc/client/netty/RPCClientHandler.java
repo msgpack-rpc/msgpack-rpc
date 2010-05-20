@@ -3,14 +3,13 @@ package org.msgpack.rpc.client.netty;
 import java.io.IOException;
 import java.net.ConnectException;
 
-import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelPipelineCoverage;
 import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
-import org.msgpack.rpc.client.TCPSocket;
+import org.msgpack.rpc.client.transport.TCPSocket;
 
 @ChannelPipelineCoverage("all")
 public class RPCClientHandler extends SimpleChannelHandler {

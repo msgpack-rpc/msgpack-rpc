@@ -3,7 +3,7 @@ package org.msgpack.rpc.client.netty;
 import static org.jboss.netty.channel.Channels.*;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.msgpack.rpc.client.TCPSocket;
+import org.msgpack.rpc.client.transport.TCPSocket;
 
 public class RPCClientPipelineFactory implements ChannelPipelineFactory {
     protected TCPSocket sock;

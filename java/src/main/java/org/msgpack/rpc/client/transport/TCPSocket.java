@@ -1,4 +1,4 @@
-package org.msgpack.rpc.client;
+package org.msgpack.rpc.client.transport;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -9,6 +9,8 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
+import org.msgpack.rpc.client.Address;
+import org.msgpack.rpc.client.EventLoop;
 import org.msgpack.rpc.client.netty.RPCClientPipelineFactory;
 
 /**
@@ -38,13 +40,12 @@ public class TCPSocket {
      * Try to connect to the server.
      * @throws Exception
      */
-    public synchronized void tryConnect() throws Exception {
+    protected synchronized void tryConnect() throws Exception {
         if (connectFuture != null)
             throw new IOException("already connected");
         connectFuture = bootstrap.connect(new InetSocketAddress(address.getHost(), address.getPort()));
     }
     
-
     /**
      * Try to send the message.
      * @param msg the message to send

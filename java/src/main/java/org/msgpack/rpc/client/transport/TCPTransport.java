@@ -1,7 +1,11 @@
-package org.msgpack.rpc.client;
+package org.msgpack.rpc.client.transport;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import org.msgpack.rpc.client.EventLoop;
+import org.msgpack.rpc.client.Session;
+import org.msgpack.rpc.client.Transport;
 
 /**
  * TCPTransport sends/receives the data, by using underlying socket layer.
@@ -10,7 +14,7 @@ import java.util.List;
  * connection is not established. the sending messages are temporarily queued.
  * Then, they are actually sent to the network when it's connected.
  */
-public class TCPTransport {
+public class TCPTransport extends Transport {
     protected Session session;
     protected EventLoop loop;
     protected Boolean isConnecting;
@@ -39,6 +43,7 @@ public class TCPTransport {
      * @param msg the message to send.
      * @throws Exception
      */
+    @Override
     public synchronized void sendMessage(Object msg) throws Exception {
         if (isConnected) {
             socket.trySend(msg);
@@ -64,6 +69,7 @@ public class TCPTransport {
     /**
      * Close the connection associated with this transport.
      */
+    @Override
     public synchronized void tryClose() {
         if (socket != null)
             socket.tryClose();
