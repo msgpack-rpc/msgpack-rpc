@@ -21,7 +21,7 @@ public class Address {
      * Get the hostname.
      * @return the hostname.
      */
-    String getHost() {
+    public String getHost() {
         return host;
     }
     
@@ -29,7 +29,7 @@ public class Address {
      * Get the port number.
      * @return the port number.
      */
-    int getPort() {
+    public int getPort() {
         return port;
     }
 }
