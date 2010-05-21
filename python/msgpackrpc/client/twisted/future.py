@@ -1,4 +1,4 @@
-class Future:
+class Future(object):
     """
     This class is used as the result of asynchronous call.
     By using join(), the caller is able to wait for the completion.

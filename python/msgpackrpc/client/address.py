@@ -1,4 +1,4 @@
-class Address:
+class Address(object):
     """
     The class to represent the RPC address.
     Currently, only IPV4 is supported in this version.

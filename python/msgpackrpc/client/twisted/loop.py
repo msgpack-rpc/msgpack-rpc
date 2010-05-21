@@ -1,6 +1,6 @@
 from twisted.internet import reactor, error
 
-class Loop:
+class Loop(object):
     """
     An I/O loop class which wraps the Twisted reactor.
     """
