@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.msgpack.rpc.client.Client;
 import org.msgpack.rpc.client.EventLoop;
 import org.msgpack.rpc.server.Server;
+import org.msgpack.rpc.server.TCPServer;
 
 import static org.junit.Assert.*;
 
@@ -16,7 +17,7 @@ public class ServerTest extends TestCase {
         serverThread = new Thread() {
             public void run() {
                 try {
-                    server = new Server("0.0.0.0", 19850, handler);
+                    server = new TCPServer("0.0.0.0", 19850, handler);
                     server.serv();
                 } catch (Exception e) {
                     fail();
@@ -24,7 +25,7 @@ public class ServerTest extends TestCase {
             }
         };
         serverThread.start();
-        Thread.sleep(1000);
+        Thread.sleep(1500);
     }
     
     private void stopServer() throws Exception {

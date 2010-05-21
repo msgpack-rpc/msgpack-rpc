@@ -7,14 +7,26 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 
 import org.msgpack.rpc.Constants;
+import org.msgpack.rpc.client.transport.TCPTransport;
 
+/**
+ * Session handles send/recv request of the message, by using underlying
+ * transport layer.
+ *
+ * this.reqTable stores the relationship between message id and corresponding
+ * future. When the new requests are sent, the Session generates new message
+ * id and new future. Then the Session registers them to req_table.
+ * 
+ * When it receives the message, the Session lookups the req_table and set the
+ * result to the corresponding future.     
+ */
 public class Session {
     protected final Address addr;
     protected final EventLoop loop;
 
     protected double timeoutSec;
     protected HashMap<Integer, Future> reqTable;
-    protected TCPTransport transport;
+    protected Transport transport;
     
     static int msgidCounter = 0;
 
@@ -26,25 +38,42 @@ public class Session {
         this.reqTable = new HashMap<Integer, Future>();
         this.transport = null;
     }
-    
+
+    /**
+     * Retrieve the address associated with this Session.
+     * @return the address.
+     */
     public Address getAddress() {
         return addr;
     }
-    
+
+    /**
+     * Set the timeout value for this Session.
+     * @param timeoutSec timeout value in seconds.
+     */
     public synchronized void setTimeoutSec(double timeoutSec) {
         this.timeoutSec = timeoutSec;
     }
-    
+
+    /**
+     * Get the timeout value for this Session.
+     * @return timeout value in seconds.
+     */
     public synchronized double getTimeoutSec() {
         return timeoutSec;
     }
 
-    protected synchronized TCPTransport getTransport() {
-        if (transport != null) return transport;
-        transport = new TCPTransport(this, loop);
-        return transport;
-    }
-
+    /**
+     * Send the request to the remote MessagePack-RPC server. This takes
+     * the following steps.                                                                                                                                                      
+     * (1) Generates the new message id and the new future.
+     * (2) Registers them to the reqTable.
+     * (3) Passes the message to the underlying transport layer.
+     * @param method method name to call
+     * @param args arrays of the arguments
+     * @return Future instance
+     * @note future.join() will give you the result.
+     */
     protected Future sendRequest(String method, Object[] args) {
         int msgid;
         Future future = new Future(getTimeoutSec());
@@ -62,12 +91,34 @@ public class Session {
         return future;
     }
     
+    /**
+     * Create new transport when it's not available. If exists, return that.
+     * @return transport class
+     */
+    private synchronized Transport getTransport() {
+        if (transport != null) return transport;
+        transport = new TCPTransport(this, loop);
+        return transport;
+    }
+
+    /**
+     * Generate new message id, from the global counter.
+     * @return generated message id
+     */
     private int generateMessageID() {
         int msgid = Session.msgidCounter++;
         if (msgid > 1 << 30) Session.msgidCounter = 0;
         return msgid;
     }
     
+    /**
+     * Create tuples for MessagePack-RPC.
+     * @param type the type.
+     * @param msgid the message id.
+     * @param method the name of the method.
+     * @param args the arguments of the method.
+     * @return the tuple for RPC.
+     */
     private ArrayList<Object> createRPCMessage(int type, int msgid, String method, Object[] args) {
         ArrayList<Object> message = new ArrayList<Object>();
         message.add(Constants.TYPE_REQUEST);
@@ -81,14 +132,21 @@ public class Session {
         message.add(params);
         return message;
     }
-    
+
+    /**
+     * Try to close this session.
+     */
     protected synchronized void tryClose() {
         if (transport != null)
             transport.tryClose();
         transport = null;
     }
 
-    // callback
+    /**
+     * The callback called when the message arrives
+     * @param replyObject the received object, already unpacked.
+     * @throws Exception
+     */
     public void onMessageReceived(Object replyObject) throws Exception {
         if (!(replyObject instanceof AbstractList))
             throw new IOException("invalid MPRPC Response"); // FIXME
@@ -134,8 +192,10 @@ public class Session {
             future.setError(e);
         }
     }
-    
-    // callback
+
+    /**
+     * The callback function, called when the connection failed.
+     */
     public synchronized void onConnectFailed() {
         for (Entry<Integer, Future> ent : reqTable.entrySet()) {
             Future f = ent.getValue();
@@ -145,7 +205,9 @@ public class Session {
         tryClose();
     }
 
-    // callback
+    /**
+     * The callback called when the connection closed.
+     */
     public synchronized void onClosed() {
         for (Entry<Integer, Future> ent : reqTable.entrySet()) {
             Future f = ent.getValue();
@@ -155,7 +217,10 @@ public class Session {
         tryClose();
     }
 
-    // callback
+    /**
+     * The callback called when the error occurred.
+     * @param e occurred exception.
+     */
     public synchronized void onFailed(Exception e) {
         for (Entry<Integer, Future> ent : reqTable.entrySet()) {
             Future f = ent.getValue();

@@ -1,7 +1,6 @@
-from mprpc.rpc import future
-from mprpc.rpc import transport
+from msgpackrpc.client.twisted import future, transport
 
-class Session:
+class Session(object):
     """
     Session processes send/recv request of the message, by using underlying
     transport layer.
@@ -15,12 +14,18 @@ class Session:
     """
 
     def __init__(self, addr, loop):
+        """
+        :param addr:    address of the server.
+        :param loop:    context object.
+        """
         self._addr = addr
         self._loop = loop
         self._req_table = {}
         self._transport = None
 
-    def get_addr(self):
+    @property
+    def address(self):
+        """address of the server."""
         return self._addr
 
     def send_request(self, method, args):
@@ -39,7 +44,7 @@ class Session:
         return f
 
     def try_close(self):
-        if (self._transport != None):
+        if self._transport:
             self._transport.try_close()
         self._transport = None
 
@@ -47,15 +52,17 @@ class Session:
 
     def _gen_msgid(self):
         """Generates new message id, from the global counter"""
-        msgid = self._msgid_counter
-        self._msgid_counter = self._msgid_counter + 1
-        if self._msgid_counter > (1 << 30):
-            self._msgid_counter = 0
-        return msgid
+        with self._lock:
+            counter = msgid = self._msgid_counter
+            counter += 1
+            if counter > (1 << 30):
+                counter = 0
+            self._msgid_counter = counter
+            return msgid
 
     def _get_transport(self):
         """Creates new transport when it's not available"""
-        if self._transport != None:
+        if self._transport is not None:
             return self._transport
         self._transport = transport.TCPTransport(self, self._loop)
         return self._transport
@@ -65,7 +72,7 @@ class Session:
         Called by the transport layer.
         """
         # set error for all requests
-        for msgid, future in self._req_table.items():
+        for msgid, future in self._req_table.iteritems():
             future.set_error(reason)
         self._req_table = {}
         self.try_close()
@@ -77,18 +84,14 @@ class Session:
         """
         if len(msg) != 4:
             raise Exception("invalid mprpc protocol")
-        msgtype = msg[0]
-        msgid   = msg[1]
-        msgerr  = msg[2]
-        msgret  = msg[3]
-        if (msgtype != 1):
+        msgtype, msgid, msgerr, msgret = msg
+        if msgtype != 1:
             raise Exception("invalid mprpc protocol")
 
         # lookup msgid in req_table
         if not msgid in self._req_table:
             raise Exception("unknown msgid")
-        future = self._req_table[msgid]
-        del self._req_table[msgid]
+        future = self._req_table.pop(msgid)
 
         # set value to the future
         if msgerr != None:
@@ -102,7 +105,7 @@ class Session:
         Called by the transport layer.
         """
         # set error for all requests
-        for msgid, future in self._req_table.items():
+        for msgid, future in self._req_table.iteritems():
             future.set_error(reason)
         self._req_table = {}
         self.try_close()
