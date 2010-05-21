@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-#from distutils.core import setup
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(name='msgpackrpc',
       version='0.0.1dev',
-      packages=['msgpackrpc',
-                'msgpackrpc.client',
-                'msgpackrpc.client.twisted',
-                ],
+      author='INADA Naoki',
+      author_email='songofacandy@gmail.com',
+      packages=find_packages(),
+      install_requires=['msgpack'],
       )

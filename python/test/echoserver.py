@@ -26,21 +26,23 @@ class EchoHandler(SocketServer.BaseRequestHandler):
                 sdata = packs((1, msg[1], None, msg[-1]))
                 self.request.sendall(sdata)
 
-def serve_background(server, daemon=True):
+def serve_background(server, daemon=False):
     import threading
     t = threading.Thread(target=server.serve_forever)
     t.setDaemon(daemon)
     t.start()
 
-def serve(daemon=True):
-    """serve echo server in background on localhost.
-    return port number in integer.
+def serve(daemon=False):
+    """Serve echo server in background on localhost.
+    This returns (server, port). port is number in integer.
+
+    To stop, use ``server.shutdown()``
     """
     for port in xrange(9000, 10000):
         try:
             server = SocketServer.TCPServer(('localhost', port), EchoHandler)
             serve_background(server, daemon)
-            return port
+            return server, port
         except Exception:
             pass
 
