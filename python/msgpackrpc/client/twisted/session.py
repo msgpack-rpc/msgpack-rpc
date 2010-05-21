@@ -91,8 +91,7 @@ class Session(object):
         # lookup msgid in req_table
         if not msgid in self._req_table:
             raise Exception("unknown msgid")
-        future = self._req_table[msgid]
-        del self._req_table[msgid]
+        future = self._req_table.pop(msgid)
 
         # set value to the future
         if msgerr != None:
@@ -106,7 +105,7 @@ class Session(object):
         Called by the transport layer.
         """
         # set error for all requests
-        for msgid, future in self._req_table.items():
+        for msgid, future in self._req_table.iteritems():
             future.set_error(reason)
         self._req_table = {}
         self.try_close()
