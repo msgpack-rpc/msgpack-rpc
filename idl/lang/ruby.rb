@@ -1,4 +1,3 @@
-require 'fileutils'
 
 def generate(doc, outdir, langdir)
 	Mplex.write("#{langdir}/ruby/types.mpl", "#{outdir}/types.rb", doc)

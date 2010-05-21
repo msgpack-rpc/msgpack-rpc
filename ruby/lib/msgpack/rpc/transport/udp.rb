@@ -153,7 +153,6 @@ class UDPServerTransport
 	class ServerSocket < UDPTransport::BasicSocket
 		def initialize(io, server)
 			super(io)
-			@io = io
 			@server = server
 		end
 

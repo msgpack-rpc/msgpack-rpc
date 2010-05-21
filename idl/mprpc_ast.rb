@@ -13,6 +13,7 @@ class Document < Array
 	include Util
 
 	attr_accessor :conf
+	attr_accessor :data
 
 	def consts
 		select {|x| x.class == Const }
@@ -120,7 +121,7 @@ end
 class Struct
 	include Util
 
-	# fields is an Array of Field.
+	# fields is an FieldList.
 	attr_accessor :name, :fields
 
 	def exception?
@@ -136,6 +137,55 @@ class Exception < Struct
 	attr_accessor :name
 	def exception?
 		true
+	end
+end
+
+# FieldList is an array of Field
+class FieldList < Array
+	include Util
+
+	def get_id(id)
+		find {|f| f.id == id }
+	end
+
+	def optionals
+		select {|f| f.required? }
+	end
+
+	def requireds
+		select {|f| f.required? }
+	end
+
+	def min_id
+		if minf = last
+			minf.id
+		else
+			nil
+		end
+	end
+
+	def max_id
+		if maxf = last
+			maxf.id
+		else
+			nil
+		end
+	end
+
+	def min_required_id
+		if min = requireds.first
+			min.id
+		else
+			nil
+		end
+	end
+
+	def max_required_id
+		if max = requireds.last
+			max.id
+		else
+			nil
+		end
 	end
 end
 
@@ -172,11 +222,13 @@ end
 class Function
 	include Util
 
+	# fields is an FieldList.
 	# throws is an ThrowsList.
 	attr_accessor :type, :name, :fields, :throws
 end
 
 
+# ThrowsList is an array of ThrowsClass
 class ThrowsList < Array
 	include Util
 end
@@ -191,6 +243,27 @@ class Type
 	include Util
 
 	attr_accessor :name
+
+	def integer?
+		name == 'int8' || name == 'int16' || name == 'int32' || name == 'int64' ||
+		name == 'uint8' || name == 'uint16' || name == 'uint32' || name == 'uint64'
+	end
+
+	def bool?
+		name == 'bool'
+	end
+
+	def double?
+		name == 'double'
+	end
+
+	def string?
+		name == 'string'
+	end
+
+	def bytes?
+		name == 'bytes'
+	end
 
 	def list?
 		false
@@ -304,6 +377,10 @@ class Value
 
 	def map?
 		type == :map
+	end
+
+	def container?
+		list? || map?
 	end
 end
 

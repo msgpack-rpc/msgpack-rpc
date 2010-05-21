@@ -137,6 +137,7 @@ grammar MessagePackIDL
 		k_struct id k_lwing fs:field* k_rwing {
 			def ast
 				ffs = fs.elements.map {|f| f.ast }
+				ffs = AST::FieldList.new(ffs)
 				AST::Struct.new(id.symbol, ffs)
 			end
 		}
@@ -146,6 +147,7 @@ grammar MessagePackIDL
 		k_exception id k_lwing fs:field* k_rwing {
 			def ast
 				ffs = fs.elements.map {|f| f.ast }
+				ffs = AST::FieldList.new(ffs)
 				AST::Exception.new(id.symbol, ffs)
 			end
 		}
@@ -182,6 +184,7 @@ grammar MessagePackIDL
 				frt = return_type.type
 				fid = id.symbol
 				ffs = fs.elements.map {|f| f.ast }
+				ffs = AST::FieldList.new(ffs)
 				fth = th.respond_to?(:array) ? th.array : []
 				fth = AST::ThrowsList.new(fth)
 				AST::Function.new(frt, fid, ffs, fth)

@@ -39,7 +39,7 @@ end
 class ObjectDispatcher
 	def initialize(obj, accept = obj.public_methods)
 		@obj = obj
-		@accept = accept.map {|m| m.is_a?(Integer) ? m : m.to_s}
+		@accept = accept.map {|m| m.is_a?(Integer) ? m : m.to_s }
 	end
 
 	def dispatch_request(session, method, param, responder)

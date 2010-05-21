@@ -2,6 +2,10 @@ module AST
 
 
 module Util
+	def initialize_util
+		@data = {}
+	end
+
 	def normalize!(conf)
 	end
 end
@@ -35,6 +39,7 @@ end
 
 class Document < Array
 	def initialize(defs)
+		initialize_util
 		super(defs)
 	end
 
@@ -49,6 +54,7 @@ end
 
 class CppInclude
 	def initialize(name)
+		initialize_util
 		@name = name
 	end
 end
@@ -56,6 +62,7 @@ end
 
 class Namespace < Array
 	def initialize(scope, name)
+		initialize_util
 		@scope = scope
 		@name = name
 		super(name.split('.'))
@@ -76,6 +83,7 @@ end
 
 class Const
 	def initialize(type, name, value)
+		initialize_util
 		@type = type
 		@name = name
 		@value = value
@@ -89,6 +97,7 @@ end
 
 class Typedef
 	def initialize(type, name)
+		initialize_util
 		@type = type
 		@name = name
 	end
@@ -101,6 +110,7 @@ end
 
 class Enum
 	def initialize(name, fields)
+		initialize_util
 		@name = name
 		@fields = fields
 	end
@@ -120,6 +130,7 @@ end
 
 class EnumField
 	def initialize(name, value)
+		initialize_util
 		@name = name
 		@value = value
 	end
@@ -128,14 +139,13 @@ end
 
 class Struct
 	def initialize(name, fields)
+		initialize_util
 		@name = name
 		@fields = fields
 	end
 
-	include IDNormalizable
 	def normalize!(conf)
-		normalize_id(@fields)
-		@fields.each {|f| f.normalize!(conf) }
+		@fields.normalize!(conf)
 	end
 end
 
@@ -145,8 +155,23 @@ class Exception < Struct
 	end
 end
 
+class FieldList < Array
+	def initialize(fields)
+		initialize_util
+		super(fields)
+	end
+
+	include IDNormalizable
+	def normalize!(conf)
+		normalize_id(self)
+		each {|f| f.normalize!(conf) }
+		sort! {|a,b| a.id <=> b.id }
+	end
+end
+
 class Field
 	def initialize(id, qualifier, type, name, default)
+		initialize_util
 		@id = id
 		@qualifier = qualifier
 		@type = type
@@ -165,6 +190,7 @@ end
 
 class Service
 	def initialize(name, extends, functions)
+		initialize_util
 		@name = name
 		@extends = extends
 		@functions = functions
@@ -178,6 +204,7 @@ end
 
 class Function
 	def initialize(type, name, fields, throws)
+		initialize_util
 		@type = type
 		@name = name
 		@fields = fields
@@ -193,6 +220,7 @@ end
 
 class ThrowsList
 	def initialize(list)
+		initialize_util
 		super(list)
 	end
 
@@ -204,6 +232,7 @@ end
 
 class ThrowsClass
 	def initialize(id, name)
+		initialize_util
 		@id = id
 		@name = name
 	end
@@ -212,19 +241,21 @@ end
 
 class Type
 	def initialize(name)
+		initialize_util
 		@name = name
 	end
 
 	TYPE_NORMALIZE_MAP = {
-		'byte' => 'int8',
-		'i8'   => 'int8',
-		'i16'  => 'int16',
-		'i32'  => 'int32',
-		'i64'  => 'int64',
-		'u8'   => 'uint8',
-		'u16'  => 'uint16',
-		'u32'  => 'uint32',
-		'u64'  => 'uint64',
+		'byte'   => 'int8',
+		'i8'     => 'int8',
+		'i16'    => 'int16',
+		'i32'    => 'int32',
+		'i64'    => 'int64',
+		'u8'     => 'uint8',
+		'u16'    => 'uint16',
+		'u32'    => 'uint32',
+		'u64'    => 'uint64',
+		'binary' => 'bytes',
 	}
 
 	def normalize!(conf)
@@ -275,6 +306,7 @@ end
 
 class Value
 	def initialize(value)
+		initialize_util
 		@value = value
 	end
 end
