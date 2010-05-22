@@ -1,0 +1,56 @@
+####################################
+ MessagePack-RPC library for Python
+####################################
+
+:author:    INADA Naoki  <songofacandy@gmail.com>
+
+(twisted module is written by kzk)
+
+
+What's the MessagePack-RPC
+===========================
+
+`MessagePack-RPC`_ is a RPC protocol using MessagePack_.
+See http://msgpack.sourceforge.net/ for detail.
+
+
+What's this package
+====================
+
+This package provides MessagePack-RPC client library.
+And it will provide server library in the future.
+
+
+Client Usage
+==============
+
+Synchronized call
+-----------------
+
+Asynchronized call with Future object
+--------------------------------------
+
+
+Server Usage
+=============
+
+Single thread server
+---------------------
+
+Threaded server
+----------------
+
+tasklet base server with concurrent
+------------------------------------
+
+Event-driven server
+--------------------
+
+Transport
+==========
+
+Single Transport
+-----------------
+
+Multi Transport
+----------------
