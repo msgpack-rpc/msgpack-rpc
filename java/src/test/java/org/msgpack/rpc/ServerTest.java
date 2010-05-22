@@ -1,5 +1,11 @@
 package org.msgpack.rpc;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import junit.framework.*;
 import org.junit.Test;
 import org.msgpack.rpc.client.Client;
@@ -48,6 +54,8 @@ public class ServerTest extends TestCase {
             testNil(c);
             testBool(c);
             testString(c);
+            testArray(c);
+            testMap(c);
             c.close();
         } finally {
             loop.shutdown();
@@ -132,5 +140,63 @@ public class ServerTest extends TestCase {
         assertEquals("1", new String((byte[])o));
         o = c.call("strFunc2", "1", "2");
         assertEquals("2", new String((byte[])o));
+    }
+
+    public List<Byte> arrayFunc0() {
+        return new ArrayList<Byte>();
+    }
+    public List<Byte> arrayFunc1(List<Byte> a) {
+        return a;
+    }
+    public List<Byte> arrayFunc2(List<Byte> a, List<Byte> b) {
+        return b;
+    }
+    protected void testArray(Client c) throws Exception {
+        Object o;
+        o = c.call("arrayFunc0");
+        assertEquals(new ArrayList<Byte>(), o);
+        
+        List<Byte> a1 = new ArrayList<Byte>();
+        a1.add((byte)1);
+        a1.add((byte)2);
+        a1.add((byte)3);
+        o = c.call("arrayFunc1", a1);
+        assertEquals(a1, o);
+        
+        List<Byte> a2 = new ArrayList<Byte>();
+        a2.add((byte)11);
+        a2.add((byte)12);
+        a2.add((byte)13);
+        o = c.call("arrayFunc2", a1, a2);
+        assertEquals(a2, o);
+    }
+
+    public Map<Byte, Byte> mapFunc0() {
+        return new HashMap<Byte, Byte>();
+    }
+    public Map<Byte, Byte> mapFunc1(Map<Byte, Byte> a) {
+        return a;
+    }
+    public Map<Byte, Byte> mapFunc2(Map<Byte, Byte> a, Map<Byte, Byte> b) {
+        return b;
+    }
+    protected void testMap(Client c) throws Exception {
+        Object o;
+        o = c.call("mapFunc0");
+        assertEquals(new HashMap<Byte, Byte>(), o);
+
+        HashMap<Byte, Byte> m1 = new HashMap<Byte, Byte>();
+        m1.put((byte)1, (byte)1);
+        m1.put((byte)2, (byte)2);
+        m1.put((byte)3, (byte)3);
+        o = c.call("mapFunc1", m1);
+        assertEquals(m1, o);
+
+        HashMap<Byte, Byte> m2 = new HashMap<Byte, Byte>();
+        m2.put((byte)11, (byte)11);
+        m2.put((byte)12, (byte)12);
+        m2.put((byte)13, (byte)13);
+        o = c.call("mapFunc2", m1, m2);
+        assertEquals(m2, o);
     }
 }
