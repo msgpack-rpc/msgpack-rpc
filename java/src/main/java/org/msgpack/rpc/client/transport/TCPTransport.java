@@ -57,10 +57,14 @@ public class TCPTransport extends Transport {
      * Send the pending messages.
      * @throws Exception
      */
-    protected synchronized void trySendPending() throws Exception {
-        for (Object msg : pendingMessages)
+    protected void trySendPending() throws Exception {
+        Object[] msgs;
+        synchronized(this) {
+            msgs = pendingMessages.toArray();
+            pendingMessages.clear();
+        }
+        for (Object msg : msgs)
             socket.trySend(msg);
-        pendingMessages.clear();
     }
 
     /**
