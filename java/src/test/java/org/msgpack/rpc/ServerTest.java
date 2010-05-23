@@ -4,29 +4,32 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
 import junit.framework.*;
+
 import org.junit.Test;
 import org.msgpack.rpc.client.Client;
 import org.msgpack.rpc.client.EventLoop;
+import org.msgpack.rpc.client.TCPClient;
+import org.msgpack.rpc.client.UDPClient;
 import org.msgpack.rpc.server.Server;
 import org.msgpack.rpc.server.TCPServer;
+import org.msgpack.rpc.server.UDPServer;
 
-import static org.junit.Assert.*;
-
-public class ServerTest extends TestCase {
+class ServerMock {
     private Thread serverThread;
     private Server server;
+    
+    public ServerMock(Server s) {
+        this.server = s;
+    }
 
-    private void startServer(final Object handler) throws Exception {
+    public void startServer() throws Exception {
         serverThread = new Thread() {
             public void run() {
                 try {
-                    server = new TCPServer("0.0.0.0", 19850, handler);
                     server.serv();
                 } catch (Exception e) {
-                    fail();
+                    Assert.fail();
                 }
             }
         };
@@ -34,34 +37,61 @@ public class ServerTest extends TestCase {
         Thread.sleep(1500);
     }
     
-    private void stopServer() throws Exception {
+    public void stopServer() throws Exception {
         server.stop();
         try {
             serverThread.join();
         } catch (InterruptedException e) {}
     }
-    
-    @Test
-    public void testIt() throws Exception {
-        startServer(this);
-        
+}
+
+public class ServerTest extends TestCase {
+    @Test    
+    public void testTCP() throws Exception{
         EventLoop loop = new EventLoop();
         try {
-            Client c = new Client("localhost", 19850, loop);
-            testInt(c);
-            testFloat(c);
-            testDouble(c);
-            testNil(c);
-            testBool(c);
-            testString(c);
-            testArray(c);
-            testMap(c);
-            c.close();
+            ServerMock s = new ServerMock(new TCPServer("0.0.0.0", 19850, this));
+            Client c = new TCPClient("localhost", 19850, loop);
+            try {
+                testRPC(c, s);
+            } finally {
+                c.close();
+            }
         } finally {
             loop.shutdown();
         }
+    }
+    
+    @Test
+    public void testUDP() throws Exception{
+        EventLoop loop = new EventLoop();
+        try {
+            ServerMock s = new ServerMock(new UDPServer("0.0.0.0", 19850, this));
+            Client c = new UDPClient("localhost", 19850, loop);
+            try {
+                testRPC(c, s);
+            } finally {
+                c.close();
+            }
+        } finally {
+            loop.shutdown();
+        }
+    }
+    
+    protected void testRPC(Client c, ServerMock sm) throws Exception {       
+        sm.startServer();
         
-        stopServer();
+        testInt(c);
+        testFloat(c);
+        testDouble(c);
+        testNil(c);
+        testBool(c);
+        testString(c);
+        testArray(c);
+        testMap(c);
+        c.close();
+        
+        sm.stopServer();
     }
     
     public int intFunc0() { return 0; }

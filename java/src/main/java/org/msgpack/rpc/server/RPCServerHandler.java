@@ -65,7 +65,7 @@ public class RPCServerHandler extends SimpleChannelHandler {
         response.add(errorMessage);
         response.add(handlerResult);
 
-        e.getChannel().write(response);
+        e.getChannel().write(response, e.getRemoteAddress());
     }
 
     protected Object callMethod(Object handler, String method, AbstractList params) throws Exception {

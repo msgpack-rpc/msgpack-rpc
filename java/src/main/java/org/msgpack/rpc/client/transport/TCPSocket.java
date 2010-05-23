@@ -1,26 +1,89 @@
 package org.msgpack.rpc.client.transport;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.concurrent.Executors;
+import static org.jboss.netty.channel.Channels.pipeline;
 
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.InetSocketAddress;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelPipeline;
+import org.jboss.netty.channel.ChannelPipelineCoverage;
+import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.ChannelStateEvent;
+import org.jboss.netty.channel.ExceptionEvent;
+import org.jboss.netty.channel.MessageEvent;
+import org.jboss.netty.channel.SimpleChannelHandler;
 import org.msgpack.rpc.client.Address;
 import org.msgpack.rpc.client.EventLoop;
-import org.msgpack.rpc.client.netty.RPCClientPipelineFactory;
+import org.msgpack.rpc.client.netty.RPCRequestEncoder;
+import org.msgpack.rpc.client.netty.RPCResponseDecoder;
+
+@ChannelPipelineCoverage("all")
+class TCPClientHandler extends SimpleChannelHandler {
+    protected TCPSocket sock;
+    
+    public TCPClientHandler(TCPSocket sock) {
+        super();
+        this.sock = sock;
+    }
+
+    @Override
+    public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent ev) {
+        try {
+            sock.onConnected();
+        } catch (Exception e) {
+            e.printStackTrace();
+            sock.onConnectFailed();
+        }
+    }
+
+    @Override
+    public void messageReceived(ChannelHandlerContext ctx, MessageEvent ev) {
+        try {
+            sock.onMessageReceived(ev.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            sock.onFailed(e);
+        }
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent ev) {
+        Throwable e = ev.getCause();
+        if (e instanceof ConnectException)
+            sock.onConnectFailed();
+        else
+            sock.onFailed(new IOException(e.getMessage()));
+    }
+}
+
+class TCPClientPipelineFactory implements ChannelPipelineFactory {
+    protected TCPSocket sock;
+    
+    public TCPClientPipelineFactory(TCPSocket sock) {
+        this.sock = sock;
+    }
+
+    public ChannelPipeline getPipeline() throws Exception {
+        ChannelPipeline pipeline = pipeline();
+        pipeline.addLast("encoder", new RPCRequestEncoder());        
+        pipeline.addLast("decoder", new RPCResponseDecoder());
+        pipeline.addLast("client", new TCPClientHandler(sock));
+        return pipeline;
+    }
+}
 
 /**
  * TCPSocket establishes the connection, and also sends/receives the object.
  */
-public class TCPSocket {
+public class TCPSocket {   
     protected final Address address;
     protected final EventLoop loop;
     protected final TCPTransport transport;
-
+    
     // netty-specific
     protected ClientBootstrap bootstrap;
     protected ChannelFuture connectFuture;
@@ -32,8 +95,8 @@ public class TCPSocket {
         this.transport = transport;
         this.connectFuture = null;
         this.channel = null;
-        this.bootstrap = loop.createBootstrap();
-        this.bootstrap.setPipelineFactory(new RPCClientPipelineFactory(this));
+        this.bootstrap = loop.createSocketBootstrap();
+        this.bootstrap.setPipelineFactory(new TCPClientPipelineFactory(this));
     }
     
     /**

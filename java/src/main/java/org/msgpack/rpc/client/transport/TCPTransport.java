@@ -5,26 +5,23 @@ import java.util.List;
 
 import org.msgpack.rpc.client.EventLoop;
 import org.msgpack.rpc.client.Session;
-import org.msgpack.rpc.client.Transport;
 
 /**
- * TCPTransport sends/receives the data, by using underlying socket layer.
+ * TCPTransport sends/receives the data through TCP, by using underlying
+ * TCPSocket layer.
  *
  * This class also hides the latency of establishing the connection. If the
  * connection is not established. the sending messages are temporarily queued.
  * Then, they are actually sent to the network when it's connected.
  */
 public class TCPTransport extends Transport {
-    protected Session session;
-    protected EventLoop loop;
     protected Boolean isConnecting;
     protected Boolean isConnected;
     protected TCPSocket socket;
     protected List<Object> pendingMessages;
 
     public TCPTransport(Session session, EventLoop loop) {
-        this.session = session;
-        this.loop = loop;
+        super(session, loop);
         this.isConnecting = false;
         this.isConnected = false;
         this.socket = new TCPSocket(session.getAddress(), loop, this);
@@ -75,10 +72,9 @@ public class TCPTransport extends Transport {
             socket.tryClose();
         isConnecting = false;
         isConnected = false;
-        socket = null;
         pendingMessages.clear();
     }
-
+    
     /**
      * The callback function, called when the connection is established.
      * @throws Exception
@@ -87,14 +83,6 @@ public class TCPTransport extends Transport {
         isConnecting = false;
         isConnected = true;
         trySendPending();
-    }
-
-    /**
-     * The callback function, called when the connection failed.
-     */
-    public void onConnectFailed() {
-        tryClose();
-        session.onConnectFailed();
     }
     
     /**
@@ -106,6 +94,14 @@ public class TCPTransport extends Transport {
         session.onMessageReceived(replyObject);
     }
 
+    /**
+     * The callback function, called when the connection failed.
+     */
+    public void onConnectFailed() {
+        tryClose();
+        session.onConnectFailed();
+    }
+    
     /**
      * The callback called when the connection closed.
      */

@@ -4,8 +4,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
+import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
+import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
 
 /**
  * I/O loop class used by the Client class.
@@ -26,9 +28,18 @@ public class EventLoop {
      * Create the ClientBootstrap object.
      * @return the ClientBootstrap object.
      */
-    public ClientBootstrap createBootstrap() {
+    public ClientBootstrap createSocketBootstrap() {
         ChannelFactory factory = new NioClientSocketChannelFactory(bossService, workerService);
         return new ClientBootstrap(factory);
+    }
+    
+    /**
+     * Create the ConnectionlessBootstrap object.
+     * @return the ConectionlessBootstrap object.
+     */
+    public ConnectionlessBootstrap createDatagramBootstrap() {
+        ChannelFactory factory = new NioDatagramChannelFactory(bossService);
+        return new ConnectionlessBootstrap(factory);
     }
 
     /**

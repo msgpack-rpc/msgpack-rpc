@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 
 import org.msgpack.rpc.Constants;
 import org.msgpack.rpc.client.transport.TCPTransport;
+import org.msgpack.rpc.client.transport.Transport;
 
 /**
  * Session handles send/recv request of the message, by using underlying
@@ -20,7 +21,7 @@ import org.msgpack.rpc.client.transport.TCPTransport;
  * When it receives the message, the Session lookups the req_table and set the
  * result to the corresponding future.     
  */
-public class Session {
+public abstract class Session {
     protected final Address addr;
     protected final EventLoop loop;
 
@@ -38,6 +39,12 @@ public class Session {
         this.reqTable = new HashMap<Integer, Future>();
         this.transport = null;
     }
+
+    /**
+     * Get the transport.
+     * @return transport class
+     */
+    protected abstract Transport getTransport();
 
     /**
      * Retrieve the address associated with this Session.
@@ -91,16 +98,6 @@ public class Session {
         return future;
     }
     
-    /**
-     * Create new transport when it's not available. If exists, return that.
-     * @return transport class
-     */
-    private synchronized Transport getTransport() {
-        if (transport != null) return transport;
-        transport = new TCPTransport(this, loop);
-        return transport;
-    }
-
     /**
      * Generate new message id, from the global counter.
      * @return generated message id

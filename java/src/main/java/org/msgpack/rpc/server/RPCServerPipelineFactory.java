@@ -1,11 +1,8 @@
 package org.msgpack.rpc.server;
 
 import static org.jboss.netty.channel.Channels.*;
-import java.util.concurrent.TimeUnit;
-
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.handler.execution.MemoryAwareThreadPoolExecutor;
 
 public class RPCServerPipelineFactory implements ChannelPipelineFactory {
     private final RPCServerHandler handler;
@@ -19,9 +16,9 @@ public class RPCServerPipelineFactory implements ChannelPipelineFactory {
     }
 
     public ChannelPipeline getPipeline() throws Exception {
-        MemoryAwareThreadPoolExecutor eventExecutor =
-            new MemoryAwareThreadPoolExecutor(5, 1000000, 10000000, 100,
-                                              TimeUnit.MILLISECONDS);
+        //MemoryAwareThreadPoolExecutor eventExecutor =
+        //    new MemoryAwareThreadPoolExecutor(5, 1000000, 10000000, 100,
+        //                                      TimeUnit.MILLISECONDS);
         ChannelPipeline pipeline = pipeline();
         pipeline.addLast("decoder", new RPCRequestDecoder(isStream));
         pipeline.addLast("encoder", encoder);
