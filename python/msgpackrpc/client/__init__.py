@@ -98,23 +98,21 @@ class Client(object):
         transport = self._get_transport()
         transport.try_send(msg)
 
-    def send_request(self, method, args, callback=None):
+    def send_request(self, method, *args):
         msgid = self._msgidgen.next()
         future = Future(self)
         self._req_table[msgid] = future
         try:
             self._send_msg((0, msgid, method, args))
-            if callback is not None:
-                future.add_done_callback(callback)
             return future
         except:
             del self._req_table[msgid]
             raise
 
-    def call_request(self, method, args):
+    def call_request(self, method, *args):
         """Call request synchronous.
         Return (error, result) tuple."""
-        future = self.send_request()
+        future = self.send_request(method, *args)
         return future.error(), future.result()
 
     def try_close(self):

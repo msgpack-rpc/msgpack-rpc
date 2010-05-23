@@ -4,7 +4,7 @@ import logging
 
 _log = logging.getLogger(__name__)
 
-class RequestHandler(SocketServer.StreamRequestHandler):
+class RequestHandler(SocketServer.BaseRequestHandler):
     """RequestHandler for TCPServer."""
 
     # Dispatcher for request and notify.
@@ -15,16 +15,17 @@ class RequestHandler(SocketServer.StreamRequestHandler):
     rbufsize = wbufsize = 0
 
     def _send_response(self, msgid, error, result):
-        msg = packs(2, msgid, error, result)
-        self.wfile.write(msg)
+        print "Sending response: %r", ((msgid, error, result))
+        msg = packs((1, msgid, error, result))
+        self.request.sendall(msg)
 
-    def handler(self):
+    def handle(self):
         unpacker = Unpacker()
-        dispatch = self,dispatcher.dispatch
+        dispatch = self.dispatcher.dispatch
         _send_response = self._send_response
 
         while True:
-            data = self.rfile.read()
+            data = self.request.recv(4096)
             if not data:
                 break
             unpacker.feed(data)
@@ -42,9 +43,11 @@ class Dispatcher(object):
         self._obj = obj
 
     def dispatch_request(self, msg, send_response):
+        print msg
         _, msgid, method, params = msg
         result = error = None
         try:
+            print params
             result = self._methods[method](*params)
         except Exception as e:
             error = str(e)
@@ -53,13 +56,15 @@ class Dispatcher(object):
     def dispatch_response(self, msg):
         # TODO: implement bi-directional request/response.
         #_, msgid, error, result = msg
+        pass
 
     def dispatch_notify(self, msg):
         _, method, params = msg
         self._methods[method](*params)
 
     def dispatch(self, msg, send_response):
-        _type = msg[0]
+        print "dispatch"
+        type_ = msg[0]
         if type_ == 0:    # request
             self.dispatch_request(msg, send_response)
         elif type_ == 1:  # response
@@ -70,11 +75,12 @@ class Dispatcher(object):
             _log.warn("Invalid message: %r", msg)
             # TODO: raise an exception.
 
-    def register(self, name=None):
+    def __call__(self, name=None):
         def _wrapper(func):
+            _name = name
             if name is None:
-                name = func.__name__
-            self._methods[name] = func
+                _name = func.__name__
+            self._methods[_name] = func
             return func
         return _wrapper
 
@@ -102,7 +108,7 @@ class ThreadPool(object):
             except Exception as e:
                 _log.error("Error occured in worker: %r", e)
 
-    def execute(self, func, args=(,)):
+    def execute(self, func, args=()):
         self._queue.push((func, args))
 
 
@@ -131,14 +137,14 @@ class ThreadPoolServer(SocketServer.TCPServer):
                                   (request, client_address))
 
 
-def make_request_handler(dispatcher):
+def make_request_handler(dispatcher_):
     class Handler(RequestHandler):
-        dispatcher = dispatcher
+        dispatcher = dispatcher_
+
     return Handler
 
 
 def make_server(dispatcher, address, server_class=None):
     if server_class is None:
-        server_class = SocketServer.ThreadingTCPServer()
-    return server_class(server_address,
-                        make_request_handler(dispatcher))
+        server_class = SocketServer.ThreadingTCPServer
+    return server_class(address, make_request_handler(dispatcher))

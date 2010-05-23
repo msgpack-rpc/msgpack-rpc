@@ -32,7 +32,7 @@ def serve_background(server, daemon=False):
     t.setDaemon(daemon)
     t.start()
 
-def serve(daemon=False):
+def serve(background=False, daemon=False):
     """Serve echo server in background on localhost.
     This returns (server, port). port is number in integer.
 
@@ -41,11 +41,14 @@ def serve(daemon=False):
     for port in xrange(9000, 10000):
         try:
             server = SocketServer.TCPServer(('localhost', port), EchoHandler)
-            serve_background(server, daemon)
+            print "Serving on localhost:%d\n" % (port,)
+            if background:
+                serve_background(server, daemon)
+            else:
+                server.serve_forever()
             return server, port
         except Exception:
             pass
 
 if __name__ == '__main__':
-    port = serve(False)
-    print "Serving on localhost:%d\n" % (port,)
+    server, port = serve()
