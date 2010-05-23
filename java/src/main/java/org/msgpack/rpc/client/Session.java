@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 
 import org.msgpack.rpc.Constants;
-import org.msgpack.rpc.client.transport.TCPTransport;
 import org.msgpack.rpc.client.transport.Transport;
 
 /**
@@ -145,10 +144,10 @@ public abstract class Session {
      * @throws Exception
      */
     public void onMessageReceived(Object replyObject) throws Exception {
-        if (!(replyObject instanceof AbstractList))
+        if (!(replyObject instanceof AbstractList<?>))
             throw new IOException("invalid MPRPC Response"); // FIXME
         
-        AbstractList a = (AbstractList)replyObject;
+        AbstractList<?> a = (AbstractList<?>)replyObject;
         if (a.size() != 4)
             throw new IOException("invalid MPRPC Protocol"); // FIXME
 

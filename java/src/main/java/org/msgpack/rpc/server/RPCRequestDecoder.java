@@ -38,7 +38,7 @@ public class RPCRequestDecoder extends FrameDecoder {
         if (unpacker.execute()) {
             Object data = unpacker.getData();
             unpacker.reset();
-            if (data instanceof AbstractList)
+            if (data instanceof AbstractList<?>)
                 return data;
             throw new IOException("invalid MPRPC" + data); // TODO                                                                                                                
         }

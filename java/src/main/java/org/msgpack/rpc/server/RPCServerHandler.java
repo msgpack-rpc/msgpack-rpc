@@ -37,7 +37,7 @@ public class RPCServerHandler extends SimpleChannelHandler {
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        AbstractList a = (AbstractList)e.getMessage();
+        AbstractList<?> a = (AbstractList<?>)e.getMessage();
         if (a.size() != 4)
             throw new IOException("Invalid MPRPC"); // TODO
 
@@ -53,7 +53,12 @@ public class RPCServerHandler extends SimpleChannelHandler {
         Object handlerResult = null;
         String errorMessage = null;
         try {
-            AbstractList paramList = (params instanceof AbstractList) ? (AbstractList)params : new ArrayList();
+            AbstractList<?> paramList;
+            if (params instanceof AbstractList<?>) {
+                paramList = (AbstractList<?>)params;
+            } else {
+                paramList = new ArrayList<Object>();
+            }
             handlerResult = callMethod(handler, new String((byte[])method), paramList);
         } catch (Exception rpc_e) {
             errorMessage = rpc_e.getMessage();
@@ -68,13 +73,13 @@ public class RPCServerHandler extends SimpleChannelHandler {
         e.getChannel().write(response, e.getRemoteAddress());
     }
 
-    protected Object callMethod(Object handler, String method, AbstractList params) throws Exception {
+    protected Object callMethod(Object handler, String method, AbstractList<?> params) throws Exception {
         Method m = findMethod(handler, method, params);
         if (m == null) throw new IOException("No such method");
         return m.invoke(handler, params.toArray());
     }
 
-    protected Method findMethod(Object handler, String method, AbstractList params) {
+    protected Method findMethod(Object handler, String method, AbstractList<?> params) {
         int nParams = params.size();
         Method[] ms = handlerMethods;
         for (int i = 0; i < ms.length; i++) {
