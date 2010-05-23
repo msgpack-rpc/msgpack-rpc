@@ -1,0 +1,11 @@
+Release 0.3 - 2010/05/23
+  NEW FEATURES
+    Added UDP Support. And the API was slightly changed from 0.2.
+    Client and Server class became abstract class. TCPClient/TCPServer,
+    UDPClient/UDPServer classes are the subclasses.
+
+  BUG FIXES
+    Calling the function with one null argument caused the error.
+
+    Updated msgpack to version 0.3. This avoids the bug around zero-length
+    array and the map.
