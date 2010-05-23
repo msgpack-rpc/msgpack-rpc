@@ -80,18 +80,19 @@ public class ServerTest extends TestCase {
     
     protected void testRPC(Client c, ServerMock sm) throws Exception {       
         sm.startServer();
-        
-        testInt(c);
-        testFloat(c);
-        testDouble(c);
-        testNil(c);
-        testBool(c);
-        testString(c);
-        testArray(c);
-        testMap(c);
-        c.close();
-        
-        sm.stopServer();
+        try {
+            testInt(c);
+            testFloat(c);
+            testDouble(c);
+            testNil(c);
+            testBool(c);
+            testString(c);
+            testArray(c);
+            testMap(c);
+            c.close();
+        } finally {
+            sm.stopServer();
+        }
     }
     
     public int intFunc0() { return 0; }
@@ -172,15 +173,9 @@ public class ServerTest extends TestCase {
         assertEquals("2", new String((byte[])o));
     }
 
-    public List<Byte> arrayFunc0() {
-        return new ArrayList<Byte>();
-    }
-    public List<Byte> arrayFunc1(List<Byte> a) {
-        return a;
-    }
-    public List<Byte> arrayFunc2(List<Byte> a, List<Byte> b) {
-        return b;
-    }
+    public List<Byte> arrayFunc0() { return new ArrayList<Byte>(); }
+    public List<Byte> arrayFunc1(List<Byte> a) { return a; }
+    public List<Byte> arrayFunc2(List<Byte> a, List<Byte> b) { return b; }
     protected void testArray(Client c) throws Exception {
         Object o;
         o = c.call("arrayFunc0");
@@ -201,15 +196,9 @@ public class ServerTest extends TestCase {
         assertEquals(a2, o);
     }
 
-    public Map<Byte, Byte> mapFunc0() {
-        return new HashMap<Byte, Byte>();
-    }
-    public Map<Byte, Byte> mapFunc1(Map<Byte, Byte> a) {
-        return a;
-    }
-    public Map<Byte, Byte> mapFunc2(Map<Byte, Byte> a, Map<Byte, Byte> b) {
-        return b;
-    }
+    public Map<Byte, Byte> mapFunc0() { return new HashMap<Byte, Byte>(); }
+    public Map<Byte, Byte> mapFunc1(Map<Byte, Byte> a) { return a; }
+    public Map<Byte, Byte> mapFunc2(Map<Byte, Byte> a, Map<Byte, Byte> b) { return b; }
     protected void testMap(Client c) throws Exception {
         Object o;
         o = c.call("mapFunc0");
