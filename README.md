@@ -39,7 +39,7 @@ See [cpp](http://github.com/msgpack/msgpack-rpc/tree/master/cpp/) directory.
     <dependency>
       <groupId>org.msgpack</groupId>
       <artifactId>msgpack-rpc</artifactId>
-      <version>0.1.0</version>
+      <version>0.3.0</version>
     </dependency>
   </dependencies>
 
