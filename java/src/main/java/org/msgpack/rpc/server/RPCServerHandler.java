@@ -7,13 +7,11 @@ import java.util.AbstractList;
 import java.util.ArrayList;
 
 import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipelineCoverage;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.msgpack.rpc.Constants;
 
-@ChannelPipelineCoverage("all")
 public class RPCServerHandler extends SimpleChannelHandler {
     protected Object handler = null;
     protected Method[] handlerMethods = null;

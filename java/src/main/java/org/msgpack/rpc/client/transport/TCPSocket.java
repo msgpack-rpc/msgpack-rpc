@@ -10,7 +10,6 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineCoverage;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
@@ -21,7 +20,6 @@ import org.msgpack.rpc.client.EventLoop;
 import org.msgpack.rpc.client.netty.RPCRequestEncoder;
 import org.msgpack.rpc.client.netty.RPCResponseDecoder;
 
-@ChannelPipelineCoverage("all")
 class TCPClientHandler extends SimpleChannelHandler {
     protected TCPSocket sock;
     
