@@ -1,17 +1,16 @@
 <?php
-require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . "MsgPackSession.php");
-require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . "MsgPackAddress.php");
-require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . "MsgPackLoop.php");
+require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . "Session.php");
+require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . "Address.php");
+require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . "Loop.php");
 
-class MsgPackClient extends MsgPackSession
+class MessagePackRPC_Client extends MessagePackRPC_Session
 {
   public $addr = null;
 
   public function __construct($host, $port)
   {
-    parent::__construct(new MsgPackAddress($host, $port), new MsgPackLoop());
+    parent::__construct(new MessagePackRPC_Address($host, $port), new MessagePackRPC_Loop());
   }
-
   
   public function send($mt, $a)
   {

@@ -1,5 +1,5 @@
 <?php
-class MsgPackLoop
+class MessagePackRPC_Loop
 {
   public function __construct()
   {

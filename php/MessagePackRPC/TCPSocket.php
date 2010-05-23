@@ -1,5 +1,5 @@
 <?php
-class MsgPackTCPSocket
+class MessagePackRPC_TCPSocket
 {
   public $addr = null;
   public $loop = null;
@@ -19,7 +19,7 @@ class MsgPackTCPSocket
   public function tryConnOpening()
   {
     // TODO: Event Loop Implementation
-    if ($this->cltf != null) throw New Exception("already connected");
+    if ($this->cltf != null) throw new Exception("already connected");
     $host       = $this->addr->getHost();
     $port       = $this->addr->getPort();
     $errs       = "";

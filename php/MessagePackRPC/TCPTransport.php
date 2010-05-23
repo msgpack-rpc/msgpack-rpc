@@ -1,7 +1,7 @@
 <?php
-require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . "MsgPackTCPSocket.php");
+require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . "TCPSocket.php");
 
-class MsgPackTCPTransport
+class MessagePackRPC_TCPTransport
 {
   public $pendingMsgs = null;
   public $messagePack = null;
@@ -15,7 +15,7 @@ class MsgPackTCPTransport
   {
     $this->messagePack = new MessagePack();
     $this->pendingMsgs = array();
-    $this->sock        = new MsgPackTCPSocket($sess->addr, $loop, $this);
+    $this->sock        = new MessagePackRPC_TCPSocket($sess->addr, $loop, $this);
     $this->sess        = $sess;
     $this->loop        = $loop;
     $this->isop        = false;

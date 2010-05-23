@@ -1,5 +1,5 @@
 <?php
-class MsgPackFuture
+class MessagePackRPC_Future
 {
   public $result = null;
   public $errors = null;

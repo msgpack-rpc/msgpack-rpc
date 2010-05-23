@@ -1,5 +1,5 @@
 <?php
-class MsgPackAddress
+class MessagePackRPC_Address
 {
   public $host = null;
   public $port = null;

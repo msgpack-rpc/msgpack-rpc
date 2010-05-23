@@ -1,8 +1,8 @@
 <?php
-require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . "MsgPackTCPTransport.php");
-require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . "MsgPackFuture.php");
+require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . "TCPTransport.php");
+require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . "Future.php");
 
-class MsgPackSession
+class MessagePackRPC_Session
 {
   public $addr = null;
   public $loop = null;
@@ -22,7 +22,7 @@ class MsgPackSession
   {
     $i = $this->generatesMsgId();
     $l = $this->loop;
-    $f = new MsgPackFuture($l);
+    $f = new MessagePackRPC_Future($l);
 
     $this->rtbl[$i]  =& $f;
     $this->tprt      = $this->getCreatesTprt();
@@ -55,7 +55,7 @@ class MsgPackSession
   public function getCreatesTprt()
   {
     if ($this->tprt != null) return $this->tprt;
-    $tt =  new MsgPackTCPTransport($this, $this->loop);
+    $tt =  new MessagePackRPC_TCPTransport($this, $this->loop);
     $this->tprt = $tt;
     return $tt;
   }
