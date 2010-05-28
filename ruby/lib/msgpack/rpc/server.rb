@@ -19,6 +19,8 @@ module MessagePack
 module RPC
 
 
+# Server is usable for RPC server.
+# Note that Server is a SessionPool.
 class Server < SessionPool
 	# 1. initialize(builder, loop = Loop.new)
 	# 2. initialize(loop = Loop.new)
@@ -66,51 +68,36 @@ class Server < SessionPool
 	end
 
 	# from ServerTransport
-	def on_request(sendable, msgid, method, param)
+	def on_request(sendable, msgid, method, param)  #:nodoc:
 		responder = Responder.new(sendable, msgid)
 		@dispatcher.dispatch_request(self, method, param, responder)
 	end
 
 	# from ServerTransport
-	def on_notify(method, param)
+	def on_notify(method, param)  #:nodoc:
 		@dispatcher.dispatch_notify(self, method, param)
 	end
 end
 
 
-class AsyncResult
-	def initialize
-		@responder = nil
-		@sent = false
+class Responder
+	def initialize(sendable, msgid)
+		@sendable = sendable  # send_message method is required
+		@msgid = msgid
 	end
 
 	def result(retval, err = nil)
-		unless @sent
-			if @responder
-				@responder.result(retval, err)
-			else
-				@result = [retval, err]
-			end
-			@sent = true
-		end
-		nil
+		data = [RESPONSE, @msgid, err, retval].to_msgpack
+		@sendable.send_data(data)
 	end
 
-	def error(err)
-		result(nil, err)
-		nil
-	end
-
-	def set_responder(res)
-		@responder = res
-		if @sent && @result
-			@responder.result(*@result)
-			@result = nil
-		end
+	def error(err, retval = nil)
+		result(retval, err)
 	end
 end
 
 
+#:nodoc:
 class Server::Base
 	def initialize(*args)
 		@base = Server.new(*args)

@@ -7,10 +7,9 @@ Gem::Specification.new do |s|
   s.email = "frsyuki@users.sourceforge.jp"
   s.homepage = "http://msgpack.sourceforge.jp/"
   s.rubyforge_project = "msgpack"
-  s.has_rdoc = false
-  #s.extra_rdoc_files = ["README"]
+  s.has_rdoc = true
   s.require_paths = ["lib"]
-  s.add_dependency "msgpack", ">= 0.3.1"
+  s.add_dependency "msgpack", ">= 0.4.0"
   s.add_dependency "rev", ">= 0.3.0"
 	s.test_files = Dir["test/test_*.rb"]
   s.files = Dir["lib/**/*", "ext/**/*", "test/**/*"] + %w[AUTHORS ChangeLog NOTICE README]

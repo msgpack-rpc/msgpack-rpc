@@ -19,6 +19,8 @@ module MessagePack
 module RPC
 
 
+# Session is a abstract class corresponds with a remote host.
+# You can call remote method using call, call_async, callback or notify method.
 class Session
 	def initialize(builder, address, loop)
 		@address = address
@@ -29,32 +31,65 @@ class Session
 		@transport = builder.build_transport(self, address)
 	end
 	attr_reader :loop, :address
+
+	# Sets and gets timeout in seconds.
 	attr_accessor :timeout
 
 	# backward compatibility
-	def port; @address.port; end
-	def host; @address.host; end
+	def port  #:nodoc:
+		@address.port;
+	end
 
+	# backward compatibility
+	def host  #:nodoc:
+		@address.host;
+	end
+
+	# call-seq:
+	#   call(symbol, *args) -> result of remote method
+	#
+	# Calls remote method.
+	# This method is same as call_async(method, *args).get
 	def call(method, *args)
 		call_async(method, *args).get
 	end
 
+	# call-seq:
+	#   call_async(symbol, *args) -> Future
+	#
+	# Calls remote method asynchronously.
+	# This method is non-blocking and returns Future.
 	def call_async(method, *args)
 		future = send_request(method, args)
 	end
-	alias send call_async
 
+	# backward compatibility
+	alias send call_async  #:nodoc:
+
+	# call-seq:
+	#   callback(symbol, *args) {|future| }
+	#
+	# Calls remote method asynchronously.
+	# The callback method is called with Future when the result is reached.
+	# This method is same as call_async(method, *args).attach_callback {|future|  }
 	def callback(method, *args, &block)
 		future = send_request(method, args)
 		future.attach_callback(block)
 		future
 	end
 
+	# call-seq:
+	#   notify(symbol, *args) -> nil
+	#
+	# Calls remote method with NOTIFY protocol.
+	# It doesn't require server to return results.
+	# This method is non-blocking and returns nil.
 	def notify(method, *args)
 		send_notify(method, args)
 		nil
 	end
 
+	# Closes underlaying Transport and destroy resources.
 	def close
 		@transport.close
 		@reqtable = {}
@@ -63,14 +98,14 @@ class Session
 	end
 
 	# from ClientTransport
-	def on_response(sock, msgid, error, result)
+	def on_response(sock, msgid, error, result)  #:nodoc:
 		if future = @reqtable.delete(msgid)
 			future.set_result(error, result)
 		end
 	end
 
 	# from ClientTransport
-	def on_connect_failed
+	def on_connect_failed  #:nodoc:
 		@reqtable.reject! {|msgid, future|
 			begin
 				future.set_result ConnectError.new, nil
@@ -82,7 +117,7 @@ class Session
 	end
 
 	# from Client, SessionPool
-	def step_timeout
+	def step_timeout  #:nodoc:
 		timedout = []
 		@reqtable.reject! {|msgid, future|
 			if future.step_timeout

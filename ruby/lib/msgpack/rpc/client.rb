@@ -19,15 +19,21 @@ module MessagePack
 module RPC
 
 
+# Client is usable for RPC client.
+# Note that SessionPool includes LoopUtil.
 class Client < Session
+	# 1. initialize(builder, address, loop = Loop.new)
+	# 2. initialize(host, port, loop = Loop.new)
+	#
+	# Creates a client.
 	def initialize(arg1, arg2, arg3=nil)
+			# 1.
 		if arg1.respond_to?(:build_transport)
-			# initialize(builder, address, loop = Loop.new)
 			builder = arg1
 			address = arg2
 			loop    = arg3 || Loop.new
 		else
-			# initialize(host, port, loop = Loop.new)
+			# 2.
 			builder = TCPTransport.new
 			address = Address.new(arg1, arg2)
 			loop    = arg3 || Loop.new
@@ -39,6 +45,10 @@ class Client < Session
 		loop.attach(@timer)
 	end
 
+	# call-seq:
+	#   Client.open(arg1, arg2, arg3=nil) {|client|  }
+	#
+	# Creates a client, call the block and close the client.
 	def self.open(*args, &block)
 		c = new(*args)
 		begin
@@ -57,6 +67,7 @@ class Client < Session
 end
 
 
+#:nodoc:
 class Client::Base
 	def initialize(*args)
 		@base = Client.new(*args)

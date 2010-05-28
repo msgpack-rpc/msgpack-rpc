@@ -19,9 +19,14 @@ module MessagePack
 module RPC
 
 
+# SessionPool is usable for connection pooling.
+# You can get pooled Session using get_session method.
+# Note that SessionPool includes LoopUtil.
 class SessionPool
 	# 1. initialize(builder, loop = Loop.new)
 	# 2. initialize(loop = Loop.new)
+	#
+	# Creates an SessionPool.
 	def initialize(arg1=nil, arg2=nil)
 		if arg1.respond_to?(:build_transport)
 			# 1.
@@ -43,6 +48,10 @@ class SessionPool
 
 	# 1. get_session(address)
 	# 2. get_session(host, port)
+	#
+	# Returns pooled Session.
+	# If there are no pooled Session for the specified address,
+	# this method creates the Session and pools it.
 	def get_session(arg1, arg2=nil)
 		if arg2.nil?
 			# 1.
@@ -58,7 +67,7 @@ class SessionPool
 	end
 
 	# backward compatibility
-	alias get_session_addr get_session
+	alias get_session_addr get_session   #:nodoc:
 
 	def close
 		@pool.reject! {|addr, s|

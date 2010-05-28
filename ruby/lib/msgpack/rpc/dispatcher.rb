@@ -19,19 +19,35 @@ module MessagePack
 module RPC
 
 
-class Responder
-	def initialize(sendable, msgid)
-		@sendable = sendable  # send_message method is required
-		@msgid = msgid
+class AsyncResult
+	def initialize
+		@responder = nil
+		@sent = false
 	end
 
 	def result(retval, err = nil)
-		data = [RESPONSE, @msgid, err, retval].to_msgpack
-		@sendable.send_data(data)
+		unless @sent
+			if @responder
+				@responder.result(retval, err)
+			else
+				@result = [retval, err]
+			end
+			@sent = true
+		end
+		nil
 	end
 
-	def error(err, retval = nil)
-		result(retval, err)
+	def error(err)
+		result(nil, err)
+		nil
+	end
+
+	def set_responder(res)  #:nodoc:
+		@responder = res
+		if @sent && @result
+			@responder.result(*@result)
+			@result = nil
+		end
 	end
 end
 
