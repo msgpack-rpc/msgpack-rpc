@@ -75,7 +75,7 @@ class Future
 		@callback_handler = proc || block
 		if @callback_handler.arity == 2
 			# FIXME backward compatibility
-			handler = callback_handler
+			handler = @callback_handler
 			@callback_handler = Proc.new {|future|
 				handler.call(future.error, future.result)
 			}

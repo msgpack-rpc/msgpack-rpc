@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.rubyforge_project = "msgpack"
   s.has_rdoc = true
   s.require_paths = ["lib"]
-  s.add_dependency "msgpack", ">= 0.4.0"
+  s.add_dependency "msgpack", ">= 0.4.1"
   s.add_dependency "rev", ">= 0.3.0"
 	s.test_files = Dir["test/test_*.rb"]
   s.files = Dir["lib/**/*", "ext/**/*", "test/**/*"] + %w[AUTHORS ChangeLog NOTICE README]
