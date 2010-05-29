@@ -1,6 +1,5 @@
 package org.msgpack.rpc.client.netty;
 
-import java.io.IOException;
 import java.util.AbstractList;
 
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -8,6 +7,7 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.frame.FrameDecoder;
 import org.msgpack.Unpacker;
+import org.msgpack.rpc.client.RPCException;
 
 public class RPCResponseDecoder extends FrameDecoder {
     protected Unpacker unpacker;
@@ -32,7 +32,7 @@ public class RPCResponseDecoder extends FrameDecoder {
             unpacker.reset();
             if (data instanceof AbstractList<?>)
                 return data;
-            throw new IOException("invalid MPRPC" + data); // TODO                                                                                                                
+            throw new RPCException("invalid MPRPC" + data);
         }
         return null;
     }

@@ -192,11 +192,11 @@ public abstract class Session {
      */
     public void onMessageReceived(Object replyObject) throws Exception {
         if (!(replyObject instanceof AbstractList<?>))
-            throw new IOException("invalid MPRPC Response"); // FIXME
+            throw new RPCException("invalid MPRPC Response");
         
         AbstractList<?> a = (AbstractList<?>)replyObject;
         if (a.size() != 4)
-            throw new IOException("invalid MPRPC Protocol"); // FIXME
+            throw new RPCException("invalid MPRPC Protocol");
 
         Object objType   = a.get(0);
         Object objMsgID  = a.get(1);
@@ -207,12 +207,12 @@ public abstract class Session {
         if (objMsgID instanceof Number)
             msgid = ((Number)objMsgID).intValue();
         else
-            throw new IOException("invalid msgid");
+            throw new RPCException("invalid msgid");
         
         Future future;
         synchronized (this) {
             if (!reqTable.containsKey(msgid))
-                throw new IOException("not my msgid: msgid=" + msgid);
+                throw new RPCException("not my msgid: msgid=" + msgid);
             future = reqTable.get(msgid);
             reqTable.remove(msgid);
         }

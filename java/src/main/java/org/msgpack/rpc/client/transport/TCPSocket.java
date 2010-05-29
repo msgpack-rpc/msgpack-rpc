@@ -17,6 +17,7 @@ import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.msgpack.rpc.client.Address;
 import org.msgpack.rpc.client.EventLoop;
+import org.msgpack.rpc.client.RPCException;
 import org.msgpack.rpc.client.netty.RPCRequestEncoder;
 import org.msgpack.rpc.client.netty.RPCResponseDecoder;
 
@@ -42,6 +43,10 @@ class TCPClientHandler extends SimpleChannelHandler {
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent ev) {
         try {
             sock.onMessageReceived(ev.getMessage());
+        } catch (RPCException e) {
+            // This is an internal error, don't propagate the exception to
+            // the upper layers.
+            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
             sock.onFailed(e);
@@ -51,10 +56,15 @@ class TCPClientHandler extends SimpleChannelHandler {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent ev) {
         Throwable e = ev.getCause();
-        if (e instanceof ConnectException)
+        if (e instanceof ConnectException) {
             sock.onConnectFailed();
-        else
+        } else if (e instanceof RPCException) {
+            // This is an internal error, don't propagate the exception to
+            // the upper layers.
+            e.printStackTrace();
+        } else {
             sock.onFailed(new IOException(e.getMessage()));
+        }
     }
 }
 
