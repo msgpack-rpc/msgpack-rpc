@@ -9,7 +9,7 @@ import java.io.IOException;
 public class Future {
     protected Exception error;
     protected Object result;
-    protected boolean isSet;
+    protected boolean isFinished;
     protected boolean isJoined;
     protected long expireMills;
     protected boolean isTimeouted;
@@ -17,7 +17,7 @@ public class Future {
     public Future(double timeoutSec) {
         this.error = null;
         this.result = null;
-        this.isSet = false;
+        this.isFinished = false;
         this.isJoined = false;
         this.expireMills = System.currentTimeMillis() + (long)(timeoutSec * 1000);
         this.isTimeouted = false;
@@ -29,7 +29,7 @@ public class Future {
     public synchronized void join() {
         try {
             while (true) {
-                if (isSet)
+                if (isFinished)
                     break;
                 
                 // check if timeout occurred
@@ -42,9 +42,13 @@ public class Future {
                 this.wait(expireMills - curMills);
             }
         } catch (Exception e) {
-            error = e;
+            setError(e);
         }
         isJoined = true;
+    }
+    
+    public synchronized boolean isFinished() {
+        return isFinished;
     }
 
     /**
@@ -77,7 +81,7 @@ public class Future {
      */
     protected synchronized void set(Exception error, Object result) {
         if (isTimeouted) return;
-        this.isSet = true;
+        this.isFinished = true;
         this.error = error;
         this.result = result;
         this.notifyAll();

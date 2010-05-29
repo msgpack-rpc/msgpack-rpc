@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.Map.Entry;
+import java.util.concurrent.ScheduledFuture;
 
 import org.msgpack.rpc.Constants;
 import org.msgpack.rpc.client.transport.Transport;
@@ -24,19 +26,34 @@ public abstract class Session {
     protected final Address addr;
     protected final EventLoop loop;
 
-    protected double timeoutSec;
     protected HashMap<Integer, Future> reqTable;
     protected Transport transport;
     
     static int msgidCounter = 0;
 
+    protected double timeoutSec;
+    protected ScheduledFuture<?> timeoutCheckTimer;
+    class TimeoutCheckTask implements Runnable {
+        protected final Session session;
+        
+        public TimeoutCheckTask(Session session) {
+            this.session = session;
+        }
+
+        public void run() {
+            session.checkTimeout();
+        }
+    }
+
     public Session(Address addr, EventLoop loop) {
         this.addr = addr;
         this.loop = loop;
-        this.timeoutSec = Constants.DEFAULT_TIMEOUT_SEC;
 
         this.reqTable = new HashMap<Integer, Future>();
         this.transport = null;
+
+        this.timeoutSec = Constants.DEFAULT_TIMEOUT_SEC;
+        this.timeoutCheckTimer = null;
     }
 
     /**
@@ -84,6 +101,10 @@ public abstract class Session {
         int msgid;
         Future future = new Future(getTimeoutSec());
         synchronized(this) {
+            if (timeoutCheckTimer == null) {
+                Runnable task = new TimeoutCheckTask(this);
+                timeoutCheckTimer = loop.registerTimer(task, 1);
+            }
             msgid = generateMessageID();
             reqTable.put(msgid, future);
         }
@@ -133,11 +154,37 @@ public abstract class Session {
      * Try to close this session.
      */
     protected synchronized void tryClose() {
+        for (Entry<Integer, Future> ent : reqTable.entrySet()) {
+            Future f = ent.getValue();
+            f.setError("Connection Closed");
+        }
+        reqTable.clear();
         if (transport != null)
             transport.tryClose();
         transport = null;
+        if (timeoutCheckTimer != null)
+            timeoutCheckTimer.cancel(true);
+        timeoutCheckTimer = null;
     }
 
+    /**
+     * Check the timeout requests, and remove them from reqTable.
+     * @TODO More efficient timeout checking. Currently, this method checks
+     * all the requests hold in reqTable. But if we use TreeMap, we're able
+     * to get the timeouted requests in O(log(n)) where n is a size of the
+     * reqTable.
+     */
+    public synchronized void checkTimeout() {
+        Set<Entry<Integer, Future> > entries = reqTable.entrySet();
+        for (Entry<Integer, Future> e : entries) {
+            int msgid = e.getKey();
+            Future f = e.getValue();
+            if (f == null) continue;
+            if (f.isFinished())
+                reqTable.remove(msgid);
+        }
+    }
+    
     /**
      * The callback called when the message arrives
      * @param replyObject the received object, already unpacked.
@@ -205,11 +252,6 @@ public abstract class Session {
      * The callback called when the connection closed.
      */
     public synchronized void onClosed() {
-        for (Entry<Integer, Future> ent : reqTable.entrySet()) {
-            Future f = ent.getValue();
-            f.setError("Connection Closed");
-        }
-        reqTable.clear();
         tryClose();
     }
 

@@ -2,6 +2,9 @@ package org.msgpack.rpc.client;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
@@ -14,14 +17,14 @@ import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
  * This class wraps the Netty ClientBootstrap and ExecutorService.
  */
 public class EventLoop {
-    protected ExecutorService bossService;
-    protected ExecutorService workerService;
-    protected ClientBootstrap bootstrap;
+    protected final ExecutorService bossService;
+    protected final ExecutorService workerService;
+    protected final ScheduledExecutorService scheduler;
     
     public EventLoop() {
-        // using same ExecutorService across same EventLoop
         bossService = Executors.newCachedThreadPool();
         workerService = Executors.newCachedThreadPool();
+        scheduler = Executors.newScheduledThreadPool(1);
     }
 
     /**
@@ -43,10 +46,23 @@ public class EventLoop {
     }
 
     /**
+     * Register timer for the fixed interval task.
+     * @param intervalSec the interval.
+     * @param task the task.
+     * @return the ScheduledFuture object, to stop the timer.
+     */
+    public ScheduledFuture<?> registerTimer(Runnable task, int intervalSec) {
+        return scheduler.scheduleAtFixedRate(
+            task, 0, intervalSec * 1000, TimeUnit.MILLISECONDS
+        );
+    }
+    
+    /**
      * Shutdown the services, launched by ExecutorServices.
      */
     public synchronized void shutdown() {
         bossService.shutdown();
         workerService.shutdown();
+        scheduler.shutdown();
     }
 }
