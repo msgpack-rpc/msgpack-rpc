@@ -27,8 +27,8 @@ class Client < Session
 	#
 	# Creates a client.
 	def initialize(arg1, arg2, arg3=nil)
-			# 1.
 		if arg1.respond_to?(:build_transport)
+			# 1.
 			builder = arg1
 			address = arg2
 			loop    = arg3 || Loop.new
