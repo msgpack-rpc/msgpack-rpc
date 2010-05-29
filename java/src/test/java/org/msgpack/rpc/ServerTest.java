@@ -11,39 +11,8 @@ import org.msgpack.rpc.client.Client;
 import org.msgpack.rpc.client.EventLoop;
 import org.msgpack.rpc.client.TCPClient;
 import org.msgpack.rpc.client.UDPClient;
-import org.msgpack.rpc.server.Server;
 import org.msgpack.rpc.server.TCPServer;
 import org.msgpack.rpc.server.UDPServer;
-
-class ServerMock {
-    private Thread serverThread;
-    private Server server;
-    
-    public ServerMock(Server s) {
-        this.server = s;
-    }
-
-    public void startServer() throws Exception {
-        serverThread = new Thread() {
-            public void run() {
-                try {
-                    server.serv();
-                } catch (Exception e) {
-                    Assert.fail();
-                }
-            }
-        };
-        serverThread.start();
-        Thread.sleep(1500);
-    }
-    
-    public void stopServer() throws Exception {
-        server.stop();
-        try {
-            serverThread.join();
-        } catch (InterruptedException e) {}
-    }
-}
 
 public class ServerTest extends TestCase {
     @Test    
