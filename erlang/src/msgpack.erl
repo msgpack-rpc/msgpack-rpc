@@ -14,9 +14,6 @@
 %%    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 %%    See the License for the specific language governing permissions and
 %%    limitations under the License.
-%
-% Thanks to id:frsyuki for his sophiscated binary format specification.
-%
 
 -module(msgpack).
 -author('kuenishi+msgpack@gmail.com').
@@ -30,28 +27,12 @@
 % erl> S = <some term>.
 % erl> {S, <<>>} = msgpack:unpack( msgpack:pack(S) ).
 
-%% tuples, atoms are not supported.
-%% lists, integers, double, and so on.
+%% tuples, atoms are not supported.  lists, integers, double, and so on.
 %% see http://msgpack.sourceforge.jp/spec for
 %% supported formats. APIs are almost compatible
 %% for C API (http://msgpack.sourceforge.jp/c:doc)
 %% except buffering functions (both copying and zero-copying).
 -export([
-	 pack_fixnum/1,
-	 pack_nfixnum/1,
-	 pack_uint8/1,
-	 pack_uint16/1,
-	 pack_uint32/1,
-	 pack_uint64/1,
-	 pack_short/1,
-	 pack_int8/1,
-	 pack_int/1,
-	 pack_long/1,
-	 pack_long_long/1,
-	 pack_unsigned_short/1,
-	 pack_unsigned_int/1,
-	 pack_unsigned_long/1,
-	 pack_unsigned_long_long/1,
 	 pack_nil/0,
 	 pack_bool/1,
 	 pack_float/1,
@@ -61,55 +42,39 @@
 	 pack_map/1,
 	 pack_object/1	]).
 
-
-%  packing functions
-
-pack_short(N) when is_integer(N)->
-    pack_int16(N).
-pack_int(N) when is_integer(N)->
-    pack_int32(N).
-pack_long(N) when is_integer(N)->
-    pack_int32(N).
-pack_long_long(N) when is_integer(N)->
-    pack_int64(N).
-pack_unsigned_short(N) when is_integer(N)->
-    pack_uint16(N).
-pack_unsigned_int(N) when is_integer(N)->
-    pack_uint32(N).
-pack_unsigned_long(N) when is_integer(N)->
-    pack_uint32(N).
-pack_unsigned_long_long(N) when is_integer(N)->
-    pack_uint64(N).
-
 % positive fixnum
-pack_fixnum( N ) when is_integer( N ) and  N >= 0 ,  N < 128 ->  
-    << 2#0:1, N:7 >>.
-% negative fixnum
-pack_nfixnum( N ) when is_integer( N ) and N >= -32 , N < 0 ->
-    << 2#111:3, N:5 >>.
+pack_uint_(N) when is_integer( N ) , N < 128 ->  
+    << 2#0:1, N:7 >>;
 % uint 8
-pack_uint8( N ) when is_integer( N )->
-    << 16#CC:8, N:8 >>.
+pack_uint_( N ) when is_integer( N ) andalso N < 256 ->
+    << 16#CC:8, N:8 >>;
+
 % uint 16
-pack_uint16( N ) when is_integer( N )->
-    << 16#CD:8, N:16/big-unsigned-integer-unit:1 >>.
+pack_uint_( N ) when is_integer( N ) andalso N < 65536 ->
+    << 16#CD:8, N:16/big-unsigned-integer-unit:1 >>;
+
 % uint 32
-pack_uint32( N ) when is_integer( N )->
-    << 16#CE:8, N:32/big-unsigned-integer-unit:1 >>.
+pack_uint_( N ) when is_integer( N ) andalso N < 16#FFFFFFFF->
+    << 16#CE:8, N:32/big-unsigned-integer-unit:1 >>;
+
 % uint 64
-pack_uint64( N ) when is_integer( N )->
+pack_uint_( N ) when is_integer( N )->
     << 16#CF:8, N:64/big-unsigned-integer-unit:1 >>.
+
+% negative fixnum
+pack_int_( N ) when is_integer( N ) , N >= -32->
+    << 2#111:3, N:5 >>;
 % int 8
-pack_int8( N ) when is_integer( N )->
-    << 16#D0:8, N:8 >>.
+pack_int_( N ) when is_integer( N ) , N >= -256 ->
+    << 16#D0:8, N:8 >>;
 % int 16
-pack_int16( N ) when is_integer( N )->
-    << 16#D1:8, N:16/big-signed-integer-unit:1 >>.
+pack_int_( N ) when is_integer( N ), N >= -65536 ->
+    << 16#D1:8, N:16/big-signed-integer-unit:1 >>;
 % int 32
-pack_int32( N ) when is_integer( N )->
-    << 16#D2:8, N:32/big-signed-integer-unit:1 >>.
+pack_int_( N ) when is_integer( N ), N >= -16#FFFFFFFF ->
+    << 16#D2:8, N:32/big-signed-integer-unit:1 >>;
 % int 64
-pack_int64( N ) when is_integer( N )->
+pack_int_( N ) when is_integer( N )->
     << 16#D3:8, N:64/big-signed-integer-unit:1 >>.
 
 % nil
@@ -185,8 +150,10 @@ unpack_map_(Bin, Len) when is_binary(Bin) and is_integer(Len) ->
     { Value, Rest2 } = unpack(Rest),
     [{Key,Value}|unpack_map_(Rest2,Len-1)].
 
-pack_object(O) when is_integer(O)->
-    pack_long_long(O);
+pack_object(O) when is_integer(O) andalso O < 0 ->
+    pack_int_(O);
+pack_object(O) when is_integer(O) ->
+    pack_uint_(O);
 pack_object(O) when is_float(O)->
     pack_double(O);
 pack_object(nil) ->
@@ -220,6 +187,7 @@ unpack(Bin) when bit_size(Bin) >= 8 ->
 	    {false, Payload};
 	16#C3 ->
 	    {true, Payload};
+
 	16#CA -> % 32bit float
 	    << Return:32/float-unit:1, Rest/binary >> = Payload,
 	    {Return, Rest};
@@ -299,6 +267,12 @@ unpack(Bin) when bit_size(Bin) >= 8 ->
 		    {dict:from_list(Return), Remain}
 	    end;
 
+	% positive fixnum
+	Code when Code >= 2#00000000, Code < 2#10000000->
+	    {Code, Payload};
+
+	% FIXME!! more integer deserializer should be added.
+
 	Code when Code >= 2#10100000 , Code < 2#11000000 ->
 %	 101XXXXX for FixRaw 
 	    Len = Code rem 2#10100000,
@@ -346,7 +320,7 @@ unpack_all(Data)->
 
 test()->
     Tests = [0, 1, 2, 123, 123.123, [23, 234, 0.23], "hogehoge", <<"hoasfdafdas][">>,
-	     [0,42,"sum", [1,2]]
+	     [0,42,"sum", [1,2]], [1,42, nil, [3]]
 	    ],
     Passed = test_(Tests),
     Passed = length(Tests).
@@ -362,9 +336,9 @@ test()->
 
 test_([]) -> 0;
 test_([S|Rest])->
-%    io:format("testing: ~p~n", [S]),
-    {S, <<>>} = msgpack:unpack( msgpack:pack(S) ),
+    Pack = msgpack:pack(S),
+    io:format("testing: ~p => ~p~n", [S, Pack]),
+    {S, <<>>} = msgpack:unpack( Pack ),
     test_(Rest) + 1.
-     
 
 -endif.
