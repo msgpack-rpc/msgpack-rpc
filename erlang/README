@@ -1,0 +1,8 @@
+the code is under construction. don't use.
+
+design 
+
+ - mp_session -+- client 
+               +- sessionpool - server
+
+ 
