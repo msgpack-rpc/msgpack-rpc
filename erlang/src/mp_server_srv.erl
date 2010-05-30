@@ -1,37 +1,22 @@
 %%%-------------------------------------------------------------------
-%%% File    : mp_client.erl
+%%% File    : mp_server_srv.erl
 %%% Author  : UENISHI Kota <kuenishi@gmail.com>
-%%% Description : MessagePack client
+%%% Description : 
 %%%
 %%% Created : 30 May 2010 by UENISHI Kota <kuenishi@gmail.com>
 %%%-------------------------------------------------------------------
--module(mp_client).
+-module(mp_server_srv).
 
 -behaviour(gen_server).
 
--define(SERVER, ?MODULE).
-
-%% external API
--export([start_link/0, connect/2]).
-
-% -> {ok, Pid}
-connect(Address, Port)->
-    gen_server:start_link({local,?SERVER}, ?MODULE, [{address,Address},{port,Port}], []).
-
-% synchronous -> {ok, result()}
-call(Method, Argv)->
-    gen_server:call(?SERVER, {Method,Argv}).
-
-close()->
-    gen_server:call(?SERVER, stop).
+%% API
+-export([start_link/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
-
-
--record(state, {socket, addr, port}).
+-record(state, {}).
 
 %%====================================================================
 %% API
@@ -54,12 +39,6 @@ start_link() ->
 %%                         {stop, Reason}
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
-init(Config)->
-    Address = proplists:get_value(Config, address, localhost),
-    Port = proplists:get_value(Config, port, 65500),
-    {ok, S}=gen_tcp:connect(Address, Port, [binary, {active,false},{packet, raw}]),
-    {ok, #state{socket=S, addr=Address, port=Port}};
-
 init([]) ->
     {ok, #state{}}.
 
@@ -72,12 +51,7 @@ init([]) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
-handle_call({Method, Argv}, _From, State)->
-    Reply = gen_tcp:send(State#state.socket, term_to_binary({Method, Argv})),
-    {reply, Reply, State};
-handle_call(stop, _From, State)->
-    {stop, normal, ok, State};
-handle_call(_oRequest, _From, State) ->
+handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
 
@@ -106,8 +80,7 @@ handle_info(_Info, State) ->
 %% cleaning up. When it returns, the gen_server terminates with Reason.
 %% The return value is ignored.
 %%--------------------------------------------------------------------
-terminate(_Reason, State) ->
-    gen_tcp:close(State#state.port),
+terminate(_Reason, _State) ->
     ok.
 
 %%--------------------------------------------------------------------
