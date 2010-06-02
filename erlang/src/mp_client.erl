@@ -35,20 +35,27 @@ connect(Address, Port)->
     gen_server:start_link({local,?SERVER}, ?MODULE, [{address,Address},{port,Port}], []).
 
 % synchronous call -> {ok, result()} | {error, reason()}
-call(Method, Argv) when is_list(Argv) ->
-    Pack = msgpack:pack([0,42,Method,Argv]),
-    {Hoge, <<>>} = msgpack:unpack(Pack),
-    io:format("sending ~p => ~p.. ~n", [Pack,Hoge]),
-    {ok, ResPack}=gen_server:call(?SERVER, {call,Pack}),
-    io:format("recv: ~p~n", [binary_to_list(ResPack)]),
+
+-spec call(Method::atom(), Argv::list()) -> {ok, any()} | {error, {atom(), any()}}.
+call(Method, Argv) ->
+    call(?SERVER, Method, Argv).
+
+call(Client, Method, Argv) when is_atom(Method), is_list(Argv) ->
+    Meth = <<(atom_to_binary(Method,latin1))/binary>>,
+    Pack = msgpack:pack([0,42,Meth,Argv]),
+%    {Hoge, <<>>} = msgpack:unpack(Pack),
+%    io:format("sending ~p => ~p.. ~n", [Pack,Hoge]),
+    {ok, ResPack}=gen_server:call(Client, {call,Pack}),
+%    io:format("recv: ~p~n", [binary_to_list(ResPack)]),
     case msgpack:unpack(ResPack) of
-	{error, Reason} -> {error, Reason};
+	{error, Reason} -> {error, {unpack_fail, Reason}};
 	{Reply, <<>>} ->
-	    io:format("recv: ~p~n", [Reply]),
+%	    io:format("recv: ~p~n", [Reply]),
 	    case Reply of 
-		[1,42,nil,Result]->   {ok,Result};
-		[1,42,_,Result] ->   {error,Result};
-		_ -> {error, unknown}
+		[1,42,nil,Result]->      {ok, Result};
+		[1,42,ResCode,Result] -> {error,{ResCode, Result}};
+%		    io:format("~p~n", [binary_to_list(ResCode)]),
+		_Other -> {error, {unknown, _Other}}
 	    end
     end.
 
@@ -150,7 +157,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 my_test()->
     {ok,Pid}=mp_client:connect(localhost,65500),
-    {ok,Reply}=mp_client:call(hoge, []),
+    {ok,Reply}=mp_client:call(Pid, hoge, []),
     elrang:display(Reply),
     mp_client:close().
 
