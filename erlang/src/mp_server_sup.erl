@@ -40,9 +40,12 @@ start_link() ->
 %% specifications.
 %%--------------------------------------------------------------------
 init([]) ->
-    AChild = {'AName',{'AModule',start_link,[]},
-	      permanent,2000,worker,['AModule']},
-    {ok,{{one_for_all,0,1}, [AChild]}}.
+    Children = [{mp_server_sup2,{ mp_server_sup2,start_link,[]},
+		 permanent,2000,supervisor,[mp_server_sup2]},
+		{mp_server_srv,{mp_server_srv,start_link,[]},
+		 permanent,2000,worker,[mp_server_srv]}],
+    ok=supervisor:check_childspecs(Children),
+    {ok,{{one_for_all,0,1}, Children}}.
 
 %%====================================================================
 %% Internal functions

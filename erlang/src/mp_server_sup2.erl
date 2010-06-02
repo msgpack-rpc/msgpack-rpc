@@ -40,9 +40,9 @@ start_link() ->
 %% specifications.
 %%--------------------------------------------------------------------
 init([]) ->
-    AChild = {'AName',{'AModule',start_link,[]},
-	      permanent,2000,worker,['AModule']},
-    {ok,{{one_for_all,0,1}, [AChild]}}.
+    AChild = {mp_session,{ mp_session,start_link,[]},
+	      permanent,2000,worker,[mp_session]},
+    {ok,{{simple_one_for_one,0,1}, [AChild]}}.
 
 %%====================================================================
 %% Internal functions
