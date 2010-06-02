@@ -23,7 +23,7 @@
 %% supported formats. APIs are almost compatible
 %% for C API (http://msgpack.sourceforge.jp/c:doc)
 %% except buffering functions (both copying and zero-copying).
--export([pack/1, unpack/1, unpack_all/1, test/0]).
+-export([pack/1, unpack/1, unpack_all/1]).
 
 -include_lib("eunit/include/eunit.hrl").
 
