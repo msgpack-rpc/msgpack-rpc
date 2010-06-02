@@ -1,0 +1,30 @@
+Name:                msgpack-rpc
+Version:             0.1
+Synopsis:            A MessagePack-RPC Implementation
+
+Description:
+  A MessagePack-RPC Implementation <http://msgpack.sourceforge.net/>
+
+License:             BSD3
+License-file:        LICENSE
+
+Author:              Hideyuki Tanaka
+Maintainer:          tanaka.hideyuki@gmail.com
+
+Copyright:           Copyright (c) 2010, Hideyuki Tanaka
+
+Category:            Network
+
+Build-type:          Simple
+
+Cabal-version:       >=1.2
+
+Library
+  Exposed-modules:
+    Network.MessagePackRpc.Server
+    Network.MessagePackRpc.Client
+
+  Hs-source-dirs:      src
+  
+  Build-depends:       base>=4 && <5, network, random, mtl, msgpack
+  Ghc-options:	       -O2 -Wall
