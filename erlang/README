@@ -1,8 +1,22 @@
 the code is under construction. don't use.
 
-design 
+## design
 
- - mp_session -+- client 
-               +- sessionpool - server
+## client
 
- 
+  gen_server - mp_client
+
+1. connect to server with specifying address and port.
+2-1. append mp_client after some supervisor if you want to
+     keep connection.
+2-2. close it after RPC call ends.
+
+## server
+
+mp_server_app -+- mp_server_sup - mp_server_srv
+               +- mp_server_sup2 -+- mp_session
+
+1. set callbacks by inheriting mp_session.
+2. use application:start(mp_server) to start the server.
+
+see mp_server.erl for detailed usages.

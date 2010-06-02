@@ -29,8 +29,9 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
+-type address() :: string()|atom()|inet:ip_address().
 
-% -> {ok, Pid}
+-spec connect(Address::address(), Port::(0..65535))-> {ok, pid()}.
 connect(Address, Port)->
     gen_server:start_link({local,?SERVER}, ?MODULE, [{address,Address},{port,Port}], []).
 
@@ -40,21 +41,17 @@ connect(Address, Port)->
 call(Method, Argv) ->
     call(?SERVER, Method, Argv).
 
+-spec call(Client::(atom()|pid()), Method::atom(), Argv::list()) -> {ok, any()} | {error, {atom(), any()}}.
 call(Client, Method, Argv) when is_atom(Method), is_list(Argv) ->
     Meth = <<(atom_to_binary(Method,latin1))/binary>>,
     Pack = msgpack:pack([0,42,Meth,Argv]),
-%    {Hoge, <<>>} = msgpack:unpack(Pack),
-%    io:format("sending ~p => ~p.. ~n", [Pack,Hoge]),
     {ok, ResPack}=gen_server:call(Client, {call,Pack}),
-%    io:format("recv: ~p~n", [binary_to_list(ResPack)]),
     case msgpack:unpack(ResPack) of
 	{error, Reason} -> {error, {unpack_fail, Reason}};
 	{Reply, <<>>} ->
-%	    io:format("recv: ~p~n", [Reply]),
 	    case Reply of 
 		[1,42,nil,Result]->      {ok, Result};
 		[1,42,ResCode,Result] -> {error,{ResCode, Result}};
-%		    io:format("~p~n", [binary_to_list(ResCode)]),
 		_Other -> {error, {unknown, _Other}}
 	    end
     end.
