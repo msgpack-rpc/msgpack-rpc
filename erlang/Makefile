@@ -2,13 +2,13 @@ ERLC_FLAGS=-D UNITTEST
 # DEBUG=-DDEBUG
 SOURCES=$(wildcard src/*.erl)
 HEADERS=$(wildcard src/*.hrl)
-OBJECTS=$(SOURCES:src/%.erl=ebin/%.beam)
+BEAMS=$(SOURCES:src/%.erl=ebin/%.beam)
 
-all: $(EBIN_FILES) build
+all:  build
 
-build: $(OBJECTS) 
+build: $(BEAMS) 
 
-ebin/%.beam: src/%.erl $(HEADERS) watchdog Makefile
+ebin/%.beam: src/%.erl $(HEADERS) Makefile
 	erlc $(ERLC_FLAGS) -o ebin/ $<
 
 test: build
@@ -16,4 +16,4 @@ test: build
 	  -eval 'eunit:test("ebin", [verbose])' -s init stop
 
 clean:
-	-rm $(OBJECTS)
+	-rm $(BEAMS)
