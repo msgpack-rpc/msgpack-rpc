@@ -10,14 +10,14 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0]).
+-export([start_link/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE).
--record(state, {}).
+-record(state, {listener, acceptor, module}).
 
 %%====================================================================
 %% API
@@ -26,8 +26,8 @@
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
 %%--------------------------------------------------------------------
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start_link(Argv) ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, Argv, []).
 
 %%====================================================================
 %% gen_server callbacks
@@ -40,8 +40,22 @@ start_link() ->
 %%                         {stop, Reason}
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
-init([]) ->
-    {ok, #state{}}.
+init(Argv) ->
+    _Addr = proplists:get_value(addr, Argv, localhost), % FIXME! use this!
+    Port = proplists:get_value(port, Argv, 65500),
+    Opts = [binary, {packet, raw}, {reuseaddr, true},
+            {keepalive, true}, {backlog, 30}, {active, false}],
+
+    process_flag(trap_exit, true),
+    case gen_tcp:listen(Port, Opts) of
+    {ok, ListenSocket} ->
+        %%Create first accepting process
+	    {ok, Ref} = prim_inet:async_accept(ListenSocket, -1),
+	    {ok, #state{listener = ListenSocket,
+			acceptor = Ref}};
+    {error, Reason} ->
+        {stop, Reason}
+    end.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -52,9 +66,8 @@ init([]) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
-handle_call(_Request, _From, State) ->
-    Reply = ok,
-    {reply, Reply, State}.
+handle_call(Request, _From, State) ->
+    {stop, {unknown_call, Request}, State}.
 
 %%--------------------------------------------------------------------
 %% Function: handle_cast(Msg, State) -> {noreply, State} |
@@ -71,7 +84,34 @@ handle_cast(_Msg, State) ->
 %%                                       {stop, Reason, State}
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
-handle_info(_Info, State) ->
+handle_info({inet_async, ListSock, Ref, {ok, CliSocket}},
+            #state{listener=ListSock, acceptor=Ref} = State) ->
+    try
+        case set_sockopt(ListSock, CliSocket) of
+	    ok              -> ok;
+	    {error, Reason} -> exit({set_sockopt, Reason})
+        end,
+
+        %% New client connected - spawn a new process using the simple_one_for_one
+        %% supervisor.
+        {ok, Pid} = mp_server_sup:start_client(CliSocket),
+        gen_tcp:controlling_process(CliSocket, Pid),
+
+        %% Signal the network driver that we are ready to accept another connection
+        case prim_inet:async_accept(ListSock, -1) of
+        {ok,    NewRef} -> ok;
+        {error, NewRef} -> exit({async_accept, inet:format_error(NewRef)})
+        end,
+
+        {noreply, State#state{acceptor=NewRef}}
+    catch exit:Why ->
+        error_logger:error_msg("Error in async accept: ~p.\n", [Why]),
+        {stop, Why, State}
+    end;
+
+handle_info({inet_async, ListSock, Ref, Error}, #state{listener=ListSock, acceptor=Ref} = State) ->
+    error_logger:error_msg("Error in socket acceptor: ~p.\n", [Error]),
+    {stop, Error, State};handle_info(_Info, State) ->
     {noreply, State}.
 
 %%--------------------------------------------------------------------
@@ -81,7 +121,8 @@ handle_info(_Info, State) ->
 %% cleaning up. When it returns, the gen_server terminates with Reason.
 %% The return value is ignored.
 %%--------------------------------------------------------------------
-terminate(_Reason, _State) ->
+terminate(_Reason, State) ->
+    gen_tcp:close(State#state.listener),
     ok.
 
 %%--------------------------------------------------------------------
@@ -94,3 +135,16 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
+%% Taken from prim_inet.  We are merely copying some socket options from the
+%% listening socket to the new client socket.
+set_sockopt(ListSock, CliSocket) ->
+    true = inet_db:register_socket(CliSocket, inet_tcp),
+    case prim_inet:getopts(ListSock, [active, nodelay, keepalive, delay_send, priority, tos]) of
+    {ok, Opts} ->
+        case prim_inet:setopts(CliSocket, Opts) of
+        ok    -> ok;
+        Error -> gen_tcp:close(CliSocket), Error
+        end;
+    Error ->
+        gen_tcp:close(CliSocket), Error
+    end.

@@ -40,8 +40,8 @@ start_link() ->
 %% specifications.
 %%--------------------------------------------------------------------
 init([]) ->
-    AChild = {mp_session,{ mp_session,start_link,[]},
-	      permanent,2000,worker,[mp_session]},
+    AChild = {undefined,{ mp_session,start_link,[]},
+	      temporary,2000,worker,[mp_session]},
     {ok,{{simple_one_for_one,0,1}, [AChild]}}.
 
 %%====================================================================

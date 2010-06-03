@@ -13,10 +13,10 @@ the code is under construction. don't use.
 
 ## server
 
-mp_server_app -+- mp_server_sup -+- mp_server_srv
-                                 +- mp_server_sup2 -+- mp_session
+mp_server -+- mp_server_sup -+- mp_server_srv
+                             +- mp_server_sup2 -+- mp_session
 
-1. set callbacks by inheriting mp_session.
-2. use application:start(mp_server) to start the server.
+1. set callbacks by passing Module into mp_server.
+2. set mp_server under your application.
 
 see mp_server.erl for detailed usages.
