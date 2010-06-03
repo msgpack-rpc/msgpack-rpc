@@ -1,11 +1,11 @@
 %%%-------------------------------------------------------------------
-%%% File    : mp_server_app.erl
+%%% File    : mp_test_app.erl
 %%% Author  : UENISHI Kota <kuenishi@gmail.com>
 %%% Description : 
 %%%
 %%% Created : 30 May 2010 by UENISHI Kota <kuenishi@gmail.com>
 %%%-------------------------------------------------------------------
--module(mp_server_app).
+-module(mp_test_app).
 
 -behaviour(application).
 
