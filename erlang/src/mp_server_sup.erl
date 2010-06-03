@@ -51,11 +51,12 @@ init(StartProps) when is_list(StartProps)->
     Mod = proplists:get_value(module, StartProps, undefined),
 
     Children = [{mp_server_sup2,{ mp_server_sup2,start_link,[Mod]},
-		 permanent,2000,supervisor,[mp_server_sup2]},
-		{mp_server_srv,{mp_server_srv,start_link,[{addr,Addr},{port,Port}]},
-		 permanent,2000,worker,[mp_server_srv]}],
-
+		 permanent,2000,supervisor,[]},
+		{mp_server_srv,{mp_server_srv,start_link,[[{addr,Addr},{port,Port}]]},
+		 permanent,2000,worker,[]}
+		],
     ok=supervisor:check_childspecs(Children),
+%    io:format("~p~p: ~p~n", [?FILE, ?LINE, Children]),
     {ok,{{one_for_all,0,1}, Children}}.
 
 %%====================================================================

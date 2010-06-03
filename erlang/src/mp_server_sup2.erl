@@ -40,9 +40,12 @@ start_link(Module) when is_atom(Module) ->
 %% specifications.
 %%--------------------------------------------------------------------
 init([Module|_]) ->
-    AChild = {undefined,{ mp_session,start_link,[Module]},
-	      temporary,2000,worker,[mp_session]},
+    AChild = {mp_session,{mp_session,start_link,[Module]},
+	      temporary,brutal_kill,worker,[mp_session]},
+
     ok=supervisor:check_childspecs([AChild]),
+    io:format("~p~p: ~p~n", [?FILE, ?LINE, AChild]),
+
     {ok,{{simple_one_for_one,0,1}, [AChild]}}.
 
 %%====================================================================

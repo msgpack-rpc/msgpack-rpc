@@ -10,7 +10,10 @@
 -behaviour(application).
 
 %% Application callbacks
--export([start/2, stop/1]).
+-export([start/2, stop/1, start/0, stop/0]).
+
+start()->  application:start(mp_testapp).
+stop()->   application:stop(mp_testapp).
 
 %%====================================================================
 %% Application callbacks
@@ -26,7 +29,7 @@
 %% top supervisor of the tree.
 %%--------------------------------------------------------------------
 start(_Type, StartArgs) ->
-    case mp_server_sup:start_link(StartArgs) of
+    case mp_server_sup:start_link(testcallback, localhost, 65500) of
 	{ok, Pid} -> 
 	    {ok, Pid};
 	Error ->

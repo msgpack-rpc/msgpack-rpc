@@ -18,7 +18,8 @@ the code is under construction. don't use.
 mp_server -+- mp_server_sup -+- mp_server_srv
                              +- mp_server_sup2 -+- mp_session
 
-1. set callbacks by passing Module into mp_server.
-2. set mp_server under your application.
+1. set callbacks by passing Module into mp_server_sup:start_link/3.
+2. set mp_server_sup under your application.
+   (you can set multiple mp_server_sup)
 
 see mp_server.erl for detailed usages.
