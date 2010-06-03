@@ -10,7 +10,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/1, start_client/1]).
+-export([start_link/3, start_client/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -48,8 +48,9 @@ start_link(Module,Addr,Port)->
 init(StartProps) when is_list(StartProps)->
     Addr = proplists:get_value(addr, StartProps, localhost),
     Port = proplists:get_value(port, StartProps, 65500),
+    Mod = proplists:get_value(module, StartProps, undefined),
 
-    Children = [{mp_server_sup2,{ mp_server_sup2,start_link,[]},
+    Children = [{mp_server_sup2,{ mp_server_sup2,start_link,[Mod]},
 		 permanent,2000,supervisor,[mp_server_sup2]},
 		{mp_server_srv,{mp_server_srv,start_link,[{addr,Addr},{port,Port}]},
 		 permanent,2000,worker,[mp_server_srv]}],
