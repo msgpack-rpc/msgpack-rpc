@@ -8,6 +8,7 @@
 -module(mp_session).
 
 -behaviour(gen_server).
+-include("mp_rpc.hrl").
 
 %% API
 -export([start_link/2]).
@@ -16,7 +17,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
--record(state, {socket, module}).
+-record(state, {socket, module, context}).
 
 %%====================================================================
 %% API
@@ -44,9 +45,15 @@ init([]) ->
     io:format("~p~p: ~p~n", [?FILE, ?LINE, ?MODULE]),
     {stop, {error,badarg}};
 init([Module,Socket]) when is_atom(Module), is_port(Socket)->
+    %[active, nodelay, keepalive, delay_send, priority, tos]) of
+    ok=inet:setopts(Socket, [{active,once},{packet,raw}]),
     io:format("~p~p: ~p~n", [?FILE, ?LINE, self()]),
-%    {ok, State}=Module:init(Socket).
-    {ok, #state{module=Module, socket=Socket}}. %, data=State}}.
+    case Module:init(Socket) of
+	{ok, Context}->
+	    {ok, #state{module=Module, socket=Socket, context=Context}};
+	Error ->
+	    {stop, Error}
+    end.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -77,12 +84,24 @@ handle_cast(Msg, State) ->
 %%                                       {stop, Reason, State}
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
-handle_info({tcp, Socket, Bin}, #state{socket=Socket} = State) ->
-    % Flow control: enable forwarding of next TCP message
-    inet:setopts(Socket, [{active, once}]),
-    io:format("~p~p: ~p~n", [?FILE, ?LINE, ?MODULE]),
-    % ?MODULE:StateName({data, Bin}, StateData);
-    {noreply, State};
+handle_info({tcp, Socket, Bin}, #state{socket=Socket,module=Module,context=Context} = State) ->
+    io:format("~p~p: ~p~n", [?FILE, ?LINE, msgpack:unpack(Bin)]),
+    try
+	{[Req,CallID,M,Argv],<<>>}=msgpack:unpack(Bin),
+	case handle_request(Req,CallID,Module,M,Argv,Socket,Context) of
+	    {ok, NextState}->
+	    % Flow control: enable forwarding of next TCP message
+		ok=inet:setopts(Socket, [{active,once},{packet,raw}]),
+
+		{noreply, NextState};
+	    {stop, Reason}->
+		{stop, Reason};
+	    _Other->
+		error_logger:error("failed unpack: ~p  result: ~p~n", [Bin, _Other])
+	end
+    catch _:What -> 
+	    error_logger:failed("failed: ~p~n", [What])
+    end;
 
 handle_info({tcp_closed, Socket}, #state{socket=Socket} = State) ->
     error_logger:info_msg("~p Client ~p disconnected.\n", [self(), hoge]),
@@ -112,3 +131,31 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
+
+handle_request(?MP_TYPE_REQUEST, CallID, Module, M, Argv,Socket, Context) when is_integer(CallID), is_binary(M) ->
+    Method = binary_to_atom(M, latin1),
+    case erlang:apply(Module,Method,Argv) of
+	{reply, Result, NextState}->
+	    ReplyBin = msgpack:pack([?MP_TYPE_RESPONSE, CallID, nil, Result]),
+	    ok=gen_tcp:send(Socket,ReplyBin),
+	    {ok, NextState};
+
+	{noreply, _Result, NextState}-> 
+	    {noreply, NextState};
+
+	{stop_reply, Result, Reason}->
+	    ReplyBin = msgpack:pack([?MP_TYPE_RESPONSE, CallID, nil, Result]),
+	    ok=gen_tcp:send(Socket,ReplyBin),
+	    {stop, Reason};
+
+	{stop, Reason}->
+	    {stop, Reason};
+
+	{error, Reason}->
+	    ReplyBin = msgpack:pack([?MP_TYPE_RESPONSE, CallID, Reason, nil]),
+	    ok=gen_tcp:send(Socket,ReplyBin),
+	    {ok,Context}
+
+    end.
+
+

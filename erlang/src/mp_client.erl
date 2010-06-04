@@ -19,11 +19,12 @@
 
 -behaviour(gen_server).
 -include_lib("eunit/include/eunit.hrl").
+-include("mp_rpc.hrl").
 
 -define(SERVER, ?MODULE).
 
 %% external API
--export([start_link/0, connect/2, call/2, close/0]).
+-export([connect/2, call/3, call/4, close/0]).
 
 %% internal: gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -31,28 +32,39 @@
 
 -type address() :: string()|atom()|inet:ip_address().
 
+%%====================================================================
+%% API
+%%====================================================================
+% Starts the server
 -spec connect(Address::address(), Port::(0..65535))-> {ok, pid()}.
 connect(Address, Port)->
     gen_server:start_link({local,?SERVER}, ?MODULE, [{address,Address},{port,Port}], []).
 
-% synchronous call -> {ok, result()} | {error, reason()}
+% synchronous calls
+-spec call(CallID::non_neg_integer(), Method::atom(), Argv::list()) -> 
+    {ok, any()} | {error, {atom(), any()}}.
 
--spec call(Method::atom(), Argv::list()) -> {ok, any()} | {error, {atom(), any()}}.
-call(Method, Argv) ->
-    call(?SERVER, Method, Argv).
+call(CallID, Method, Argv) ->
+    call(?SERVER, CallID, Method, Argv).
 
--spec call(Client::(atom()|pid()), Method::atom(), Argv::list()) -> {ok, any()} | {error, {atom(), any()}}.
-call(Client, Method, Argv) when is_atom(Method), is_list(Argv) ->
+
+-spec call(Client::(atom()|pid()), CallID::non_neg_integer(), Method::atom(), Argv::list()) -> 
+    {ok, any()} | {error, {atom(), any()}}.
+
+call(Client, CallID, Method, Argv) when is_atom(Method), is_list(Argv) ->
     Meth = <<(atom_to_binary(Method,latin1))/binary>>,
-    Pack = msgpack:pack([0,42,Meth,Argv]),
+    Pack = msgpack:pack([?MP_TYPE_REQUEST,CallID,Meth,Argv]),
     {ok, ResPack}=gen_server:call(Client, {call,Pack}),
     case msgpack:unpack(ResPack) of
 	{error, Reason} -> {error, {unpack_fail, Reason}};
 	{Reply, <<>>} ->
 	    case Reply of 
-		[1,42,nil,Result]->      {ok, Result};
-		[1,42,ResCode,Result] -> {error,{ResCode, Result}};
-		_Other -> {error, {unknown, _Other}}
+		[?MP_TYPE_RESPONSE,CallID,nil,Result]->
+		    {ok, Result};
+		[?MP_TYPE_RESPONSE,CallID,ResCode,Result] ->
+		    {error,{ResCode, Result}};
+		_Other ->
+		    {error, {unknown, _Other}}
 	    end
     end.
 
@@ -60,23 +72,10 @@ close()->
     gen_server:call(?SERVER, stop).
 
 
-
--record(state, {socket, addr, port}).
-
-%%====================================================================
-%% API
-%%====================================================================
-%%--------------------------------------------------------------------
-%% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
-%% Description: Starts the server
-%%--------------------------------------------------------------------
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
-
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
-
+-record(state, {socket, addr, port}).
 %%--------------------------------------------------------------------
 %% Function: init(Args) -> {ok, State} |
 %%                         {ok, State, Timeout} |

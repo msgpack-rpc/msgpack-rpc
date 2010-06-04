@@ -27,7 +27,7 @@
 %% Description: Starts the server
 %%--------------------------------------------------------------------
 start_link(Argv) ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [Argv], []).
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [Argv], [{debug,[trace,log,statistics]}]).
 
 %%====================================================================
 %% gen_server callbacks
@@ -96,7 +96,7 @@ handle_info({inet_async, ListSock, Ref, {ok, CliSocket}},
         %% supervisor.
         {ok, Pid} = mp_server_sup:start_client(CliSocket),
         gen_tcp:controlling_process(CliSocket, Pid),
-	set_sockopt(ListSock, CliSocket),
+%	set_sockopt(ListSock, CliSocket),
 
         %% Signal the network driver that we are ready to accept another connection
         case prim_inet:async_accept(ListSock, -1) of
