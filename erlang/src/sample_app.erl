@@ -1,19 +1,19 @@
 %%%-------------------------------------------------------------------
-%%% File    : mp_test_app.erl
+%%% File    : sample_app.erl
 %%% Author  : UENISHI Kota <kuenishi@gmail.com>
 %%% Description : 
 %%%
 %%% Created : 30 May 2010 by UENISHI Kota <kuenishi@gmail.com>
 %%%-------------------------------------------------------------------
--module(mp_test_app).
+-module(sample_app).
 
 -behaviour(application).
 
 %% Application callbacks
 -export([start/2, stop/1, start/0, stop/0]).
 
-start()->  application:start(mp_testapp).
-stop()->   application:stop(mp_testapp).
+start()->  application:start(sample_app).
+stop()->   application:stop(sample_app).
 
 %%====================================================================
 %% Application callbacks
@@ -28,8 +28,9 @@ stop()->   application:stop(mp_testapp).
 %% OTP design principles as a supervision tree, this means starting the
 %% top supervisor of the tree.
 %%--------------------------------------------------------------------
-start(_Type, StartArgs) ->
-    case mp_server_sup:start_link(testcallback, localhost, 65500) of
+start(_Type, _StartArgs) ->
+    % FIXME: identifier should be passed to the supervision tree
+    case mp_server_sup:start_link(sample_srv, localhost, 65500) of
 	{ok, Pid} -> 
 	    {ok, Pid};
 	Error ->
@@ -44,8 +45,3 @@ start(_Type, StartArgs) ->
 %%--------------------------------------------------------------------
 stop(_State) ->
     ok.
-
-%%====================================================================
-%% Internal functions
-%%====================================================================
-

@@ -9,7 +9,7 @@ all:  build
 build: $(BEAMS) 
 
 ebin/%.beam: src/%.erl $(HEADERS) Makefile
-	erlc $(ERLC_FLAGS) -o ebin/ $<
+	erlc -pa ebin $(ERLC_FLAGS) -o ebin/ $<
 
 test: build
 	erl -noshell -pa ebin \
