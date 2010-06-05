@@ -1,6 +1,6 @@
 MessagePack-RPC Erlang
 
-the code is under construction. don't use.
+the code is under construction. it works in test environment.
 
 ## design
 

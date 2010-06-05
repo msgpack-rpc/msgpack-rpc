@@ -1,7 +1,7 @@
 %%
 %% MessagePack for Erlang
 %%
-%% Copyright (C) 2009 UENISHI Kota
+%% Copyright (C) 2010 UENISHI Kota
 %%
 %%    Licensed under the Apache License, Version 2.0 (the "License");
 %%    you may not use this file except in compliance with the License.
