@@ -30,7 +30,7 @@ stop()->   application:stop(sample_app).
 %%--------------------------------------------------------------------
 start(_Type, _StartArgs) ->
     % FIXME: identifier should be passed to the supervision tree
-    case mp_server_sup:start_link(sample_srv, localhost, 65500) of
+    case mp_server:start([{module,sample_srv}, {addr,localhost}, {port,65500}]) of
 	{ok, Pid} -> 
 	    {ok, Pid};
 	Error ->

@@ -138,7 +138,7 @@ handle_info(_Info, State) ->
 %% The return value is ignored.
 %%--------------------------------------------------------------------
 terminate(_Reason, State) ->
-    gen_tcp:close(State#state.port),
+    gen_tcp:close(State#state.socket),
     ok.
 
 %%--------------------------------------------------------------------

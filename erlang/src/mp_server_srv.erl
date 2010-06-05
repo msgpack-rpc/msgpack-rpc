@@ -104,10 +104,11 @@ handle_cast(_Msg, State) ->
 handle_info({inet_async, ListSock, Ref, {ok, CliSocket}},
             #state{listener=ListSock, acceptor=Ref} = State) ->
     try
-        case set_sockopt(ListSock, CliSocket) of
+%	inet:setsockopts(ListSock, [{active,once}]),
+	case set_sockopt(ListSock, CliSocket) of
 	    ok              -> ok;
 	    {error, Reason} -> exit({set_sockopt, Reason})
-        end,
+	end,
 
         %% New client connected - spawn a new process using the simple_one_for_one
         %% supervisor.
