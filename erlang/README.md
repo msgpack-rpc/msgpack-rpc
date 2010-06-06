@@ -1,25 +1,51 @@
 MessagePack-RPC Erlang
+======================
 
-the code is under construction. it works in test environment.
+This code is still under construction. It works 
+in test environment (synchronous RPC only). and your
+contributions and discussions will be welcomed.
 
-## design
+# client
 
-## client
-
-  gen_server - mp_client
+## usage
 
 1. connect to server with specifying address and port.
-2-1. append mp_client after some supervisor if you want to
-     keep connection.
-2-2. close it after RPC call ends.
+2. append mp_client after some supervisor if you want to
+   keep connection.
+3. close it after RPC call ends.
 
-## server
+## supervision tree
 
-mp_server -+- mp_server_sup -+- mp_server_srv
-                             +- mp_server_sup2 -+- mp_session
+  (your supervisor) - mp_client
 
-1. set callbacks by passing Module into mp_server_sup:start_link/3.
-2. set mp_server_sup under your application.
-   (you can set multiple mp_server_sup)
+mp_client is implemented over gen_server, so you can
+link mp_client under your supervisor
 
-see mp_server.erl for detailed usages.
+# server
+
+## usage
+
+1. write a module that behaves as a mp_session.
+2. call mp_server:start/1 with your setting:
+
+   [{module, Mod}, {addr, Address}, {port, Port}].
+
+
+## supervision tree
+
+   (your supervisor) - mp_server_sup -+- mp_server_srv
+                                      +- mp_server_sup2 -+- mp_session
+
+
+see sample_app.erl and sample_srv.erl for detailed usages.
+the latter is a sample implementation of RPC callbacks.
+
+
+## TODO
+
+- add automated tests enough to ensure its stability
+- (client) automatic random session-id generator
+- more sample app?
+- (server) multiple identifier (is it needed?)
+- (server) more sophisticated error-handling in mp_session
+- asynchronous-RPC

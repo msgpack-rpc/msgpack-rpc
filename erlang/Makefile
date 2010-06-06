@@ -1,4 +1,4 @@
-ERLC_FLAGS=-D UNITTEST
+ERLC_FLAGS=-D UNITTEST +debug_info
 # DEBUG=-DDEBUG
 SOURCES=$(wildcard src/*.erl)
 HEADERS=$(wildcard src/*.hrl)
