@@ -1,7 +1,9 @@
 MessagePack-RPC Erlang
 ======================
 
-the code is under construction. it works in test environment.
+This code is still under construction. It works 
+in test environment (synchronous RPC only). and your
+contributions and discussions will be welcomed.
 
 # client
 
@@ -37,3 +39,13 @@ link mp_client under your supervisor
 
 see sample_app.erl and sample_srv.erl for detailed usages.
 the latter is a sample implementation of RPC callbacks.
+
+
+## TODO
+
+- add automated tests enough to ensure its stability
+- (client) automatic random session-id generator
+- more sample app?
+- (server) multiple identifier (is it needed?)
+- (server) more sophisticated error-handling in mp_session
+- asynchronous-RPC

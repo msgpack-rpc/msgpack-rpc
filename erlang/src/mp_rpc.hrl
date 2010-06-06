@@ -21,4 +21,10 @@
 -define(MP_TYPE_RESPONSE, 1).
 -define(MP_TYPE_NOTIFICATION, 2).
 
+-type name() :: atom().
+-type global_name() :: term().
+
+-type server_name() :: {local, name()} | {global, global_name()}.
+-type server_ref() :: pid() | name() | { name(), node() } | {global, global_name()}.
+ 
 -endif.

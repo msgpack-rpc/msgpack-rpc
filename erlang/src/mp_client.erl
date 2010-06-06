@@ -24,7 +24,7 @@
 -define(SERVER, ?MODULE).
 
 %% external API
--export([connect/2, call/3, call/4, close/0]).
+-export([connect/2, connect/3, call/3, call/4, close/0]).
 
 %% internal: gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -40,16 +40,19 @@
 connect(Address, Port)->
     gen_server:start_link({local,?SERVER}, ?MODULE, [{address,Address},{port,Port}], []).
 
+% users can set any identifier to the connection
+-spec connect(Identifier::server_name(),  Address::address(), Port::(0..65535)) ->  {ok, pid()}.
+connect(Identifier, Address, Port)->
+    gen_server:start_link(Identifier, ?MODULE, [{address,Address},{port,Port}], []).
+
 % synchronous calls
 -spec call(CallID::non_neg_integer(), Method::atom(), Argv::list()) -> 
     {ok, any()} | {error, {atom(), any()}}.
+call(CallID, Method, Argv) ->   call(?SERVER, CallID, Method, Argv).
 
-call(CallID, Method, Argv) ->
-    call(?SERVER, CallID, Method, Argv).
-
--spec call(Client::(atom()|pid()), CallID::non_neg_integer(), Method::atom(), Argv::list()) -> 
-    {ok, any()} | {error, {atom(), any()}}.
-
+-spec call(Client::server_ref(), CallID::non_neg_integer(), 
+	   Method::atom(), Argv::list()) -> 
+		  {ok, any()} | {error, {atom(), any()}}.
 call(Client, CallID, Method, Argv) when is_atom(Method), is_list(Argv) ->
     Meth = <<(atom_to_binary(Method,latin1))/binary>>,
     Pack = msgpack:pack([?MP_TYPE_REQUEST,CallID,Meth,Argv]),
@@ -70,6 +73,7 @@ call(Client, CallID, Method, Argv) when is_atom(Method), is_list(Argv) ->
 	{error, Reason}-> {error, Reason}
     end.
 
+-spec close() -> any().		    
 close()->
     gen_server:call(?SERVER, stop).
 
