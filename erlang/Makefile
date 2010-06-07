@@ -26,7 +26,7 @@ test: build
 	@mkdir -p test/log
 	sh ${RUN_TEST_CMD} -dir ${ROOT}/test -logdir ${ROOT}/test/log \
 	  -I ${ROOT}/include -I ${ROOT}/src  \
-	  -cover ${ROOT}/test/yatce.coverspec  -pa ${ROOT}/ebin
+	  -cover ${ROOT}/test/my.coverspec  -pa ${ROOT}/ebin
 	@echo "automated test done. see test/log/index.html."
 
 #test: build
