@@ -73,13 +73,6 @@ class Future
 	# Attaches a callback method that is called when the result of remote method is received.
 	def attach_callback(proc = nil, &block)
 		@callback_handler = proc || block
-		if @callback_handler.arity == 2
-			# FIXME backward compatibility
-			handler = @callback_handler
-			@callback_handler = Proc.new {|future|
-				handler.call(future.error, future.result)
-			}
-		end
 	end
 
 	# For IDL
@@ -96,7 +89,12 @@ class Future
 		@error  = err
 		@result = res
 		if @callback_handler
-			@callback_handler.call(self)
+			if @callback_handler.arity == 2
+				# FIXME backward compatibility
+				@callback_handler.call(error, result)
+			else
+				@callback_handler.call(self)
+			end
 		end
 		@set = true
 	end

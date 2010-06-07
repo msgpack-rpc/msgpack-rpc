@@ -49,20 +49,20 @@ session_impl::~session_impl() { }
 future session_impl::send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone z)
 {
 	shared_future f(new future_impl(shared_from_this(), m_loop));
+	m_reqtable.insert(msgid, f);
 
 	m_tran->send_data(vbuf, z);
 
-	m_reqtable.insert(msgid, f);
 	return future(f);
 }
 
 future session_impl::send_request_impl(msgid_t msgid, sbuffer* sbuf)
 {
 	shared_future f(new future_impl(shared_from_this(), m_loop));
+	m_reqtable.insert(msgid, f);
 
 	m_tran->send_data(sbuf);
 
-	m_reqtable.insert(msgid, f);
 	return future(f);
 }
 
@@ -147,7 +147,10 @@ void session_impl::on_response(
 {
 	LOG_TRACE("response result=",result," error=",error);
 	shared_future f = m_reqtable.take(msgid);
-	if(!f) { return; }
+	if(!f) {
+		LOG_DEBUG("no entry on request table for msgid=",msgid);
+		return;
+	}
 	f->set_result(result, error, z);
 }
 
