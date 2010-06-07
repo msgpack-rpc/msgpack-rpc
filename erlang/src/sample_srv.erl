@@ -11,7 +11,7 @@
 -behaviour(mp_session).
 
 %% rpc methods
--export([hello/0]).
+-export([hello/0, add/2]).
 
 %% API
 -export([init/1, handle_call/3, terminate/2, code_change/3]).
@@ -25,6 +25,9 @@ init(_Argv)->
 
 hello()->
     {reply, "hello, msgpack!"}.
+
+add(I, J) when is_integer(I) andalso is_integer(J)->
+    {reply, I+J}.
 
 handle_call(_Request, _From, State)->
     Reply=ok,

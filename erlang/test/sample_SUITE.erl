@@ -85,7 +85,7 @@ end_per_testcase(_TestCase, _Config) ->
 %% N = integer() | forever
 %%--------------------------------------------------------------------
 groups() ->
-    [].
+    [{add, [parallel], [case_add]}].
 
 %%--------------------------------------------------------------------
 %% Function: all() -> GroupsAndTestCases | {skip,Reason}
@@ -95,14 +95,7 @@ groups() ->
 %% Reason = term()
 %%--------------------------------------------------------------------
 all() -> 
-    [my_test_case].
-
-%%--------------------------------------------------------------------
-%% Function: TestCase() -> Info
-%% Info = [tuple()]
-%%--------------------------------------------------------------------
-my_test_case() -> 
-    [].
+    [my_first_case, my_second_case, {group, add}].
 
 %%--------------------------------------------------------------------
 %% Function: TestCase(Config0) ->
@@ -112,9 +105,24 @@ my_test_case() ->
 %% Reason = term()
 %% Comment = term()
 %%--------------------------------------------------------------------
-my_test_case(_Config) ->
-    {ok, Pid}=mp_client:connect(localhost,65500),
+my_first_case(_Config) ->
+    {ok, _Pid}=mp_client:connect(localhost,65500),
     {ok, Result}=mp_client:call(42, hello, []),
     true=is_list(Result),
-    mp_client:close(),
-    ok.
+    ok=mp_client:close().
+
+my_second_case(_)->
+    {ok, _}=mp_client:connect({local, hoge}, localhost,65500),
+    {ok, Result}=mp_client:call(hoge,42, hello, []),
+    true=is_list(Result),
+    {ok, 7}=mp_client:call(hoge,43, add, [3,4]),
+    ok=mp_client:close(hoge).
+
+case_add(Config)->
+    Pairs=[{5,5}, {0,0}, {234, 2}, {213456789, -3}, {234, -23}, {-1,1}, {1,-1}, {-1,-1},
+	  {-2000, 2000}, {2000, -2000}], %FIXME: bug case {234, -234}],
+    {ok, _Pid}=mp_client:connect({local,add}, localhost,65500),
+    {ok, _Result}=mp_client:call(add, 42, hello, []),
+    lists:map( fun({L,R})-> S=L+R, {ok,S}=mp_client:call(add, (L+42), add, [L,R])  end, Pairs ),
+    mp_client:close(add),
+    Config.

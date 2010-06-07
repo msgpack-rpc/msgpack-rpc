@@ -43,9 +43,9 @@ the latter is a sample implementation of RPC callbacks.
 
 ## TODO
 
-- add automated tests enough to ensure its stability
+- error handling 
+-- (server) more sophisticated error-handling in mp_session
+-- what if happens when badarg/noproc/bad_clause, and exceptions.
 - (client) automatic random session-id generator
-- more sample app?
 - (server) multiple identifier (is it needed?)
-- (server) more sophisticated error-handling in mp_session
 - asynchronous-RPC

@@ -71,7 +71,6 @@ init([]) ->
 init([Module,Socket]) when is_atom(Module), is_port(Socket)->
     %[active, nodelay, keepalive, delay_send, priority, tos]) of
     ok=inet:setopts(Socket, [{active,once},{packet,raw}]),
-    io:format("~p~p: ~p~n", [?FILE, ?LINE, self()]),
     case Module:init(Socket) of
 	{ok, Context}->
 	    {ok, #state{module=Module, socket=Socket, context=Context}};
@@ -119,7 +118,6 @@ handle_cast(Msg, #state{context=Context,module=Module}=State) ->
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
 handle_info({tcp, Socket, Bin}, #state{socket=Socket,module=Module,context=Context} = State) ->
-    io:format("~p~p: ~p~n", [?FILE, ?LINE, msgpack:unpack(Bin)]),
     try
 	{[Req,CallID,M,Argv],<<>>}=msgpack:unpack(Bin),
 	case handle_request(Req,CallID,Module,M,Argv,Socket,Context) of

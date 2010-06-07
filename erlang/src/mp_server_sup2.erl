@@ -61,7 +61,6 @@ init([Module|_]) ->
 	      temporary,brutal_kill,worker,[mp_session]},
 
     ok=supervisor:check_childspecs([AChild]),
-    io:format("~p~p: ~p~n", [?FILE, ?LINE, AChild]),
 
     {ok,{{simple_one_for_one,0,1}, [AChild]}}.
 
