@@ -1,4 +1,5 @@
-package {{nss.join('.')}};  %>if nss = namespace(:java)
+%nss = doc.namespace(:java)
+package {{nss.join('.')}}; %>unless nss.empty?
 
 import java.io.IOException;
 import org.msgpack.Packer;

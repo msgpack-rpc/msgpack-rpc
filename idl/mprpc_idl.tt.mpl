@@ -270,12 +270,12 @@ grammar MessagePackIDL
 
 	rule field_type
 		builtin_type
+		/ k_void { def type; AST::Type.new(text); end }
 		/ id { def type; AST::Type.new(text); end }
 	end
 
 	rule return_type
 		field_type
-		/ k_void { def type; Type.new(text); end }
 	end
 
 	rule base_type

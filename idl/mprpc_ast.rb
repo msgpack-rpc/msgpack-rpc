@@ -16,32 +16,34 @@ class Document < Array
 	attr_accessor :data
 
 	def consts
-		select {|x| x.class == Const }
+		Array[ select {|x| x.class == Const } ]
 	end
 
 	def typedefs
-		select {|x| x.class == Typedef }
+		Array[ select {|x| x.class == Typedef } ]
 	end
 
 	def enums
-		select {|x| x.class == Enum }
+		Array[ select {|x| x.class == Enum } ]
 	end
 
 	def structs
-		select {|x| x.class == Struct }
+		Array[ select {|x| x.class == Struct } ]
 	end
 
 	def exceptions
-		select {|x| x.class == Exception }
+		Array[ select {|x| x.class == Exception } ]
 	end
 
 	def services
-		select {|x| x.class == Service }
+		Array[ select {|x| x.class == Service } ]
 	end
 
 	def namespace(scope)
-		select {|x| x.class == Namespace &&
-			(x.scope.to_s == scope.to_s || x.scope.to_s == "*") }.last
+		Array[
+			select {|x| x.class == Namespace &&
+				(x.scope.to_s == scope.to_s || x.scope.to_s == "*") }.last
+		].compact
 	end
 
 	def cpp_includes
@@ -140,52 +142,33 @@ class Exception < Struct
 	end
 end
 
-# FieldList is an array of Field
-class FieldList < Array
+# FieldList is a map of Field
+class FieldList < Hash
 	include Util
 
-	def get_id(id)
-		find {|f| f.id == id }
-	end
-
 	def optionals
-		select {|f| f.required? }
+		Hash[ select {|i,f| f.required? } ]
 	end
 
 	def requireds
-		select {|f| f.required? }
+		Hash[ select {|i,f| f.required? } ]
 	end
 
-	def min_id
-		if minf = last
-			minf.id
-		else
-			nil
-		end
-	end
-
-	def max_id
-		if maxf = last
-			maxf.id
-		else
-			nil
-		end
-	end
+	attr_reader :min_id, :max_id
 
 	def min_required_id
-		if min = requireds.first
-			min.id
-		else
-			nil
-		end
+		required_id(:first)
 	end
 
 	def max_required_id
-		if max = requireds.last
-			max.id
-		else
-			nil
-		end
+		required_id(:last)
+	end
+
+	private
+	def required_id(method)
+		array = select {|i,f| f.required? }
+		return 0 if array.empty?
+		array.send(method)[0]
 	end
 end
 
@@ -193,16 +176,17 @@ class Field
 	include Util
 
 	# id is a always Fixnum, not null.
-	# qualifier is "required" or "optional", not null.
-	# default is a Value, nullable.
-	attr_accessor :id, :qualifier, :type, :name, :default
+	# type is a Type, describes the type of this field.
+	# name is a String, describes the name of this field.
+	# default describes the default value, not null
+	attr_accessor :id, :type, :name, :default
 
 	def required?
-		qualifier == "required"
+		@required
 	end
 
 	def optional?
-		qualifier == "optional"
+		!required?
 	end
 end
 
@@ -228,8 +212,8 @@ class Function
 end
 
 
-# ThrowsList is an array of ThrowsClass
-class ThrowsList < Array
+# ThrowsList is a map of ThrowsClass
+class ThrowsList < Hash
 	include Util
 end
 
@@ -277,6 +261,10 @@ class Type
 		false
 	end
 
+	def void?
+		@name == 'void'
+	end
+
 	def base_type?
 		TYPE_BASE_TYPES.include?(@name)
 	end
@@ -287,6 +275,10 @@ class Type
 
 	def builtin_type?
 		container_type? || base_type?
+	end
+
+	def user_type?
+		!builtin_type?
 	end
 
 	TYPE_BASE_TYPES = [
@@ -359,6 +351,10 @@ class Value
 		type == :const
 	end
 
+	def bytes?
+		type == :bytes
+	end
+
 	def string?
 		type == :string
 	end
@@ -412,6 +408,12 @@ end
 class BoolValue < Value
 	def type
 		:bool
+	end
+end
+
+class BytesValue < Value
+	def type
+		:bytes
 	end
 end
 

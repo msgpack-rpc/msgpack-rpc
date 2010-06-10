@@ -12,16 +12,16 @@ end
 
 module IDNormalizable
 	# Struct, Exception, ThrowsList
-	def normalize_id(fields)
+	def normalize_id(array, hash)
 		used = []
-		fields.each do |f|
+		array.each do |f|
 			if id = f.id
-				used<< id
+				used << id
 			end
 		end
 
 		n = 1
-		fields.each do |f|
+		array.each do |f|
 			if id = f.id
 				n = id+1
 			else
@@ -32,6 +32,16 @@ module IDNormalizable
 				used << n
 				n += 1
 			end
+		end
+
+		array.each do |f|
+			hash[f.id] = f
+		end
+
+		if used.empty?
+			return 0, 0
+		else
+			return used.first, used.last
 		end
 	end
 end
@@ -155,17 +165,18 @@ class Exception < Struct
 	end
 end
 
-class FieldList < Array
+class FieldList < Hash
 	def initialize(fields)
 		initialize_util
-		super(fields)
+		@list = fields
+		super()
 	end
 
 	include IDNormalizable
 	def normalize!(conf)
-		normalize_id(self)
-		each {|f| f.normalize!(conf) }
-		sort! {|a,b| a.id <=> b.id }
+		@list.reject! {|f| f.type.void? }
+		@min_id, @max_id = normalize_id(@list, self)
+		each_value {|f| f.normalize!(conf) }
 	end
 end
 
@@ -180,10 +191,21 @@ class Field
 	end
 
 	def normalize!(conf)
-		unless @qualifier
-			@qualifier = "required"
+		if !@default.nil? || @qualifier == "required"
+			@required = true
+		else
+			@required = false
 		end
 		@type.normalize!(conf)
+		if @default.nil?
+			@default = @type.default_value
+		end
+		if @type.double? && @default.int?
+			@default = FloatValue.new(@default.value.to_f)
+		end
+		if @type.bool? && @default.int?
+			@default = BoolValue.new(@default.value != 0)
+		end
 	end
 end
 
@@ -218,15 +240,16 @@ class Function
 end
 
 
-class ThrowsList
+class ThrowsList < Hash
 	def initialize(list)
 		initialize_util
-		super(list)
+		@list = list
+		super()
 	end
 
 	include IDNormalizable
 	def normalize!(conf)
-		normalize_id(self)
+		normalize_id(@list, self)
 	end
 end
 
@@ -243,6 +266,31 @@ class Type
 	def initialize(name)
 		initialize_util
 		@name = name
+	end
+
+	def default_value
+		case @name
+		when 'int8',  'int16',  'int32',  'int64'
+			IntValue.new(0)
+		when 'uint8', 'uint16', 'uint32', 'uint64'
+			IntValue.new(0)
+		when 'bool'
+			BoolValue.new(false)
+		when 'double'
+			FloatValue.new(false)
+		when 'bytes'
+			BytesValue.new("")
+		when 'string'
+			StringValue.new("")
+		when 'list'
+			ListValue.new([])
+		when 'set'
+			ListValue.new([])
+		when 'map'
+			MapValue.new({})
+		else
+			ConstValue.new(@name.to_sym)
+		end
 	end
 
 	TYPE_NORMALIZE_MAP = {
@@ -336,6 +384,12 @@ class FloatValue < Value
 end
 
 class BoolValue < Value
+	def initialize(value)
+		super(value)
+	end
+end
+
+class BytesValue < Value
 	def initialize(value)
 		super(value)
 	end

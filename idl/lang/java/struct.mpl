@@ -1,6 +1,5 @@
-%if nss = doc.namespace(:java)
-package {{nss.join('.')}};
-%end
+%nss = doc.namespace(:java)
+package {{nss.join('.')}}; %>unless nss.empty?
 
 import java.util.List;
 import java.util.Set;
@@ -10,204 +9,232 @@ import java.util.HashSet;
 import java.util.HashMap;
 import java.io.IOException;
 import org.msgpack.Packer;
-import org.msgpack.Unacker;
+import org.msgpack.Unpacker;
 import org.msgpack.MessagePackable;
-import org.msgpack.MessageUnackable;
+import org.msgpack.MessageUnpackable;
 import org.msgpack.MessageConvertable;
 import org.msgpack.MessageTypeException;
+import org.msgpack.Schema;
+import org.msgpack.schema.*;
 
 %$anon_seqid = 0
 %def next_anon
 %	"_A#{$anon_seqid+=1}"
 %end
 
-%def expand_literal(typename, val, name = nil)
-%unless name
-	%name = next_anon
-	%anon = true
+%def default_field(f)
+	%gen_literal(f.type, f.default, "this.#{f.name}")
 %end
-%if !val.container?
-	%if anon
-		{{typename}} {{name}} = {{val}};
+
+%def gen_literal(type, val, name = nil)
+	%if name
+		%decl = "#{name}"
 	%else
-		{{name}} = {{val}};
+		%name = next_anon
+		%decl = "#{type} #{name}"
 	%end
-%else
-	%if anon
-		{{typename}} {{name}} = new {{typename}}();
-	%else
-		{{name}} = new {{typename}}();
-	%end
-	%if val.list?
-		%val.value.each {|v|
-%vname = expand_literal(v)
-		{{name}}.add({{vname}});
+	%if type.bytes?
+		{{decl}} = new byte[{{val.value.length}}];
+	%elsif type.string?
+		{{decl}} = {{val.value.dump}};
+	%elsif type.base_type?
+		{{decl}} = {{val.value}};
+	%elsif type.list?
+		{{decl}} = new ArrayList();
+		%val.value.each {|e|
+			%ename = gen_literal(type.element_type, e)
+			{{name}}.add({{ename}});
 		%}
-	%else  # map
+	%elsif type.set?
+		{{decl}} = new HashSet();
+		%val.value.each {|e|
+			%ename = gen_literal(type.element_type, e)
+			{{name}}.add({{ename}});
+		%}
+	%elsif type.map?
+		{{decl}} = new HashMap();
 		%val.value.each_pair {|k,v|
-%kname = expand_literal(k.typename, k)
-%vname = expand_literal(v.typename, v)
-		{{name}}.put({{kname}}, {{vname}});
+			kname = gen_literal(type.key_type, k)
+			vname = gen_literal(type.value_type, v)
+			{{name}}.put({{kname}}, {{vname}});
 		%}
+	%else
+		{{decl}} = new {{val.value}}();
 	%end
-%end
-%return name
-%end  # def expand_literal
-
-%def unpack_builtin_type(type)
-%case type.name
-%when 'int8';   '_Pac.unpackByte()'
-%when 'int16';  '_Pac.unpackShort()'
-%when 'int32';  '_Pac.unpackInt()'
-%when 'int64';  '_Pac.unpacklong()'
-%when 'uint8';  '_Pac.unpackByte()'
-%when 'uint16'; '_Pac.unpackShort()'
-%when 'uint32'; '_Pac.unpackInt()'
-%when 'uint64'; '_Pac.unpackLong()'
-%when 'bool';   '_Pac.unpackBoolean()'
-%when 'bytes';  '_Pac.unpackByteArray()'
-%when 'string'; '_Pac.unpackString()'
-%end
-%end
-
-%def expand_unpack_container(type)
-%length = next_anon
-%name   = next_anon
-%if type.list? || type.set?
-	%element_type = type.element_type
-	int {{length}} = _Pac.unpackArray();
-	List {{name}} = new ArrayList({{length}});  %>if type.list?
-	Set {{name}} = new HashSet({{length}});     %>if type.set?
-	for(int _I=0; _I < {{length}}; _I++) {
-		%if element_type.base_type?
-			{{name}}.add({{unpack_builtin_type(element_type)}});
-		%elsif element_type.container_type?
-			%vname = expand_unpack_container(element_type)
-			{{name}}.add({{vname}});
-		%else
-			%vname = next_anon
-			{{element_type}} {{vname}} = new {{element_type}}();
-			_Pac.unpack({{vname}});
-			{{name}}.add({{vname}});
-		%end
-	}
-%elsif type.map?
-	%key_type = type.key_type
-	%value_type = type.value_type
-	int {{length}} = _Pac.unpackArray();
-	Map {{name}} = new HashMap({{length}});
-	for(int _I=0; _I < {{length}}; _I++) {
-		%kname, vname = [key_type, value_type].map {|t|
-		%if t.base_type?
-			%n = next_anon
-			{{t}} {{n}} = {{unpack_builtin_type(t)}};
-		%elsif t.container_type?
-			%n = expand_unpack_container(t)
-		%else
-			%n = next_anon
-			{{t}} {{n}} = new {{t}}();
-			_Pac.unpack({{n}});
-		%end
-		%n}
-		{{name}}.put({{kname}}, {{vname}});
-	}
-%end
-%return name
 %end
 
 %def unpack_field(f)
-	%if f.type.base_type?
-		{{f.name}} = {{unpack_builtin_type(f.type)}};
-	%elsif f.type.container_type?
-		%anon = expand_unpack_container(f.type);
-		{{f.name}} = {{anon}};
-	%else
-		{{f.name}} = new {{f.type}}();
-		_Pac.unpack({{f.name}});
-	%end
+	%gen_unpack(f.type, "this.#{f.name}")
 %end
 
-%def default_field(f)
-	%if f.default
-	%expand_literal(f.type.to_s, f.default, "this.#{f.name}")
-	%elsif f.type.integer?
-	%#this.{{f.name}} = 0;
-	%elsif f.type.double?
-	%#this.{{f.name}} = 0.0;
-	%elsif f.type.bool?
-	%#this.{{f.name}} = true;
-	%elsif f.type.bytes?
-	this.{{f.name}} = new byte[0];
+%def gen_unpack(type, name = nil)
+	%if name.nil?
+		%name = next_anon
+		%decl = "#{type} #{name}"
 	%else
-	this.{{f.name}} = new {{f.type.to_s}}();
+		%decl = "#{name}"
 	%end
+	%if type.base_type?
+		%case type.name
+		%when 'int8'
+			{{decl}} = _Pac.unpackByte();
+		%when 'int16'
+			{{decl}} = _Pac.unpackShort();
+		%when 'int32'
+			{{decl}} = _Pac.unpackInt();
+		%when 'int64'
+			{{decl}} = _Pac.unpackLong();
+		%when 'uint8'
+			{{decl}} = _Pac.unpackByte();
+		%when 'uint16'
+			{{decl}} = _Pac.unpackShort();
+		%when 'uint32'
+			{{decl}} = _Pac.unpackInt();
+		%when 'uint64'
+			{{decl}} = _Pac.unpackLong();
+		%when 'double'
+			{{decl}} = _Pac.unpackDouble();
+		%when 'bool'
+			{{decl}} = _Pac.unpackBoolean();
+		%when 'bytes'
+			{{decl}} = _Pac.unpackByteArray();
+		%when 'string'
+			{{decl}} = _Pac.unpackString();
+		%end
+	%elsif type.user_type?
+		{{decl}} = new {{type}}();
+		{{name}}.messageUnpack(_Pac);
+	%elsif type.list? || type.set?
+		%length = next_anon
+		%element_type = type.element_type
+		int {{length}} = _Pac.unpackArray();
+		{{decl}} = new ArrayList({{length}});  %>if type.list?
+		{{decl}} = new HashSet({{length}});    %>if type.set?
+		%i = next_anon
+		for(int {{i}}=0; {{i}} < {{length}}; {{i}}++) {
+			%vname = gen_unpack(element_type)
+			{{name}}.add({{vname}});
+		}
+	%else
+		%length = next_anon
+		%key_type = type.key_type
+		%value_type = type.value_type
+		int {{length}} = _Pac.unpackArray();
+		{{decl}} = new HashMap({{length}});
+		%i = next_anon
+		for(int {{i}}=0; {{i}} < {{length}}; {{i}}++) {
+			%kname = gen_unpack(key_type)
+			%vname = gen_unpack(value_type)
+			{{name}}.put({{kname}}, {{vname}});
+		}
+	%end
+	%return name
 %end
 
-class {{name}} implements MessagePackable, MessageUnackable, MessageConvertable {
-	%fields.each do |f|
+
+public class {{name}} implements MessagePackable, MessageUnpackable, MessageConvertable {
+	%fields.each_value do |f|
 	public {{f.type}} {{f.name}};
 	%end
 
+	public static {{name}} createDefault() {
+		{{name}} obj = new {{name}}();
+		obj._Default();
+		return obj;
+	}
+
+	public static {{name}} unpack(Unpacker _Pac) throws IOException {
+		{{name}} obj = new {{name}}();
+		obj.messageUnpack(_Pac);
+		return obj;
+	}
+
+	public static {{name}} convert(Object deserialized) {
+		{{name}} obj = new {{name}}();
+		obj.messageConvert(deserialized);
+		return obj;
+	}
+
 	private void _Default() {
-	%fields.each do |f|
-		%default_field(f)
-	%end
+		%fields.each_value do |f|
+			%default_field(f)
+		%end
 	}
 
 	public void messagePack(Packer _Pk) throws IOException {
-		%max_id = fields.max_id || 0
-		_Pk.packArray({{max_id}});
-		%1.upto(max_id) do |i|
-			%if f = fields.get_id(i)
+		_Pk.packArray({{fields.max_id}});
+		%1.upto(fields.max_id) do |i|
+		%if f = fields[i]
 		_Pk.pack({{f.name}});
-			%else
+		%else
 		_Pk.packNil();
-			%end
+		%end
 		%end
 	}
 
 	public void messageUnpack(Unpacker _Pac) throws IOException, MessageTypeException {
 		int _Length = _Pac.unpackArray();
-	%max_id = fields.max_id || 0
-	%max_required_id = fields.max_required_id || 0
-		if(_Length < {{max_required_id}}) { throw new MessageTypeException(); }   %>if max_required_id > 0
-	%n = 0
-	%1.upto(max_required_id) do |i|
-		%if f = fields.get_id(i)
-			%if f.optional?
-	if(!_Pk.tryUnpackNull()) {
-		%unpack_field(f)
-	} else {
-		%default_field(f)
-	}
-			%else
-		%unpack_field(f)
-			%end
-		%else
-		_Pac.unpackObject();
-		%end
-		%n += 1
-	%end
-	%(n+1).upto(max_id) do |i|
-		if(_Length < {{n+1}}) { return; }
-		%if f = fields.get_id(i)
-		if(!_Pk.tryUnpackNull()) {
-			%unpack_field(f)
-		} else {
-			%default_field(f)
+		%max_required_id = fields.max_required_id
+		%if max_required_id > 0
+		if(_Length < {{max_required_id}}) {
+			throw new MessageTypeException();
 		}
-		%else
-		_Pac.unpackObject();
 		%end
-		%n += 1
-	%end
-	%(n+1).upto(max_id) do |i|
-		_Pac.unpackObject();
-	%end
+		%1.upto(fields.max_id) do |i|
+			%f = fields[i]
+			%unless f
+				_Pac.unpackObject();
+				%next
+			%end
+			%if f.required?
+				%unpack_field(f)
+			%elsif i <= max_required_id
+				if(_Pac.tryUnpackNull()) {
+					%default_field(f)
+				} else {
+					%unpack_field(f)
+				}
+			%else
+				if(_Length < {{i}}) {
+					%default_field(f)
+				} else {
+					%unpack_field(f)
+				}
+			%end
+		%end
+		for(int i={{fields.max_id}}; i < _Length; i++) {
+			_Pac.unpackObject();
+		}
 	}
 
 	public void messageConvert(Object _Obj) throws MessageTypeException {
-		// FIXME
+		Map<Integer,Object> _Fields;
+		if(_Obj instanceof Map) {
+			_Fields = (Map<Integer,Object>)_Obj;
+		} else if(_Obj instanceof List) {
+			// FIXME wrap instead of copy
+			List list = (List)_Obj;
+			_Fields = new HashMap(list.size());
+			int i = 1;
+			for(Object obj : list) {
+				_Fields.put(i++, obj);
+			}
+		} else {
+			throw new MessageTypeException();
+		}
+		%fields.each_pair do |i,f|
+			%if f.required?
+			{{f.type.convert_schema(f, "_Fields.get(#{i})")}}
+			%else
+			%name = next_anon
+			Object {{name}} = _Fields.get({{i}});
+			if({{name}} == null) {
+				%default_field(f)
+			} else {
+				{{f.type.convert_schema(f, name)}}
+			}
+			%end
+		%end
 	}
 }
 
