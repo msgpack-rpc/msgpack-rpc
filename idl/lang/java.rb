@@ -5,25 +5,32 @@ def generate(doc, outdir, langdir)
 	nspath = File.join(outdir, *nss)
 	FileUtils.mkdir_p(nspath)
 
+	const = []
+
+	require "#{langdir}/java/field.rb"
+
 	doc.each do |d|
+		d.extend(FieldFunctions)
 		case d
 		when AST::Const
-			#FIXME
-			#Mplex.write("#{langdir}/java/const.mpl", "#{nspath}/#{d.name}.java", doc)
+			const << d
 		when AST::Typedef
 			#FIXME
-			#Mplex.write("#{langdir}/java/typedef.mpl", "#{nspath}/#{d.name}.java", doc)
+			#Mplex.write("#{langdir}/java/typedef.mpl", "#{nspath}/#{d.name}.mpl", doc)
 		when AST::Enum
-			#FIXME
-			#Mplex.write("#{langdir}/java/enum.mpl", "#{nspath}/#{d.name}.java", doc)
-		when AST::Struct
+			Mplex.write("#{langdir}/java/enum.mpl", "#{nspath}/#{d.name}.java", d)
+		when AST::Struct, AST::Exception
 			Mplex.write("#{langdir}/java/struct.mpl", "#{nspath}/#{d.name}.java", d)
-		when AST::Exception
-			#Mplex.write("#{langdir}/java/exception.mpl", "#{nspath}/#{d.name}.java", doc)
 		when AST::Service
 			#Mplex.write("#{langdir}/java/server.mpl", "#{nspath}/#{d.name}Server.java", doc)
 			#Mplex.write("#{langdir}/java/client.mpl", "#{nspath}/#{d.name}Client.java", doc)
 		end
+	end
+
+	unless const.empty?
+		d = doc.create_data(const)
+		d.extend(FieldFunctions)
+		Mplex.write("#{langdir}/java/const.mpl", "#{nspath}/Constants.java", d)
 	end
 end
 
@@ -79,8 +86,8 @@ class AST::Type
 		'uint64' => 'LongSchema.convertLong',
 		'bool'   => 'BooleanSchema.convertBoolean',
 		'double' => 'DoubleSchema.convertDouble',
-		'bytes'  => 'BytesSchema.convertBytes',
-		'string' => 'StringSchema.convertStrong',
+		'bytes'  => 'ByteArraySchema.convertByteArray',
+		'string' => 'StringSchema.convertString',
 		'list'   => 'ArraySchema.convertList',
 		'set'    => 'ArraySchema.convertSet',
 		'map'    => 'MapSchema.convertMap',
@@ -101,29 +108,11 @@ class AST::Type
 		'uint64' => 'LongSchema',
 		'bool'   => 'BooleanSchema',
 		'double' => 'DoubleSchema',
-		'bytes'  => 'BytesSchema',
+		'bytes'  => 'ByteArraySchema',
 		'string' => 'StringSchema',
 		'list'   => 'ArraySchema',
 		'set'    => 'ArraySchema',
 		'map'    => 'MapSchema',
-	}
-
-	@@convertmap = {
-		'int8'   => 'convertByte',
-		'int16'  => 'convertShort',
-		'int32'  => 'convertInt',
-		'int64'  => 'convertLong',
-		'uint8'  => 'convertByte',
-		'uint16' => 'convertShort',
-		'uint32' => 'convertInt',
-		'uint64' => 'convertLong',
-		'bool'   => 'convertBoolean',
-		'double' => 'convertDouble',
-		'bytes'  => 'convertBytes',
-		'string' => 'convertString',
-		'list'   => 'convertArray',
-		'set'    => 'convertArray',
-		'map'    => 'convertMap',
 	}
 
 	def new_schema
@@ -136,7 +125,7 @@ class AST::Type
 		elsif schema = @@schemamap[@name]
 			"new #{schema}()"
 		else
-			"new ConvertableSchema(new #{@name}())"
+			"new UserClassSchema(new #{@name}())"
 		end
 	end
 
@@ -148,7 +137,7 @@ class AST::Type
 		elsif map?
 			"this.#{f.name} = MapSchema.convertMap(#{obj}, #{key_type.new_schema}, #{value_type.new_schema}, null);"
 		elsif schema = @@schemamap[@name]
-			"this.#{f.name} = #{schema}.#{@@convertmap[@name]}(#{obj});"
+			"this.#{f.name} = #{@@convertmap[@name]}(#{obj});"
 		else
 			"this.#{f.name} = new #{f.type}();\n"+
 			"this.#{f.name}.messageConvert(#{obj});"

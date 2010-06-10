@@ -49,6 +49,24 @@ class Document < Array
 	def cpp_includes
 		select {|x| x.class == CppInclude }
 	end
+
+	def create_data(obj)
+		Data.new(self, obj)
+	end
+end
+
+
+class Data
+	def initialize(doc, obj = nil)
+		@document = doc
+		@data = obj
+	end
+	attr_accessor :data
+
+	include Util
+
+	attr_accessor :document
+	alias doc document
 end
 
 

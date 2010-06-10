@@ -17,122 +17,20 @@ import org.msgpack.MessageTypeException;
 import org.msgpack.Schema;
 import org.msgpack.schema.*;
 
-%$anon_seqid = 0
-%def next_anon
-%	"_A#{$anon_seqid+=1}"
-%end
-
-%def default_field(f)
-	%gen_literal(f.type, f.default, "this.#{f.name}")
-%end
-
-%def gen_literal(type, val, name = nil)
-	%if name
-		%decl = "#{name}"
-	%else
-		%name = next_anon
-		%decl = "#{type} #{name}"
-	%end
-	%if type.bytes?
-		{{decl}} = new byte[{{val.value.length}}];
-	%elsif type.string?
-		{{decl}} = {{val.value.dump}};
-	%elsif type.base_type?
-		{{decl}} = {{val.value}};
-	%elsif type.list?
-		{{decl}} = new ArrayList();
-		%val.value.each {|e|
-			%ename = gen_literal(type.element_type, e)
-			{{name}}.add({{ename}});
-		%}
-	%elsif type.set?
-		{{decl}} = new HashSet();
-		%val.value.each {|e|
-			%ename = gen_literal(type.element_type, e)
-			{{name}}.add({{ename}});
-		%}
-	%elsif type.map?
-		{{decl}} = new HashMap();
-		%val.value.each_pair {|k,v|
-			kname = gen_literal(type.key_type, k)
-			vname = gen_literal(type.value_type, v)
-			{{name}}.put({{kname}}, {{vname}});
-		%}
-	%else
-		{{decl}} = new {{val.value}}();
-	%end
-%end
-
-%def unpack_field(f)
-	%gen_unpack(f.type, "this.#{f.name}")
-%end
-
-%def gen_unpack(type, name = nil)
-	%if name.nil?
-		%name = next_anon
-		%decl = "#{type} #{name}"
-	%else
-		%decl = "#{name}"
-	%end
-	%if type.base_type?
-		%case type.name
-		%when 'int8'
-			{{decl}} = _Pac.unpackByte();
-		%when 'int16'
-			{{decl}} = _Pac.unpackShort();
-		%when 'int32'
-			{{decl}} = _Pac.unpackInt();
-		%when 'int64'
-			{{decl}} = _Pac.unpackLong();
-		%when 'uint8'
-			{{decl}} = _Pac.unpackByte();
-		%when 'uint16'
-			{{decl}} = _Pac.unpackShort();
-		%when 'uint32'
-			{{decl}} = _Pac.unpackInt();
-		%when 'uint64'
-			{{decl}} = _Pac.unpackLong();
-		%when 'double'
-			{{decl}} = _Pac.unpackDouble();
-		%when 'bool'
-			{{decl}} = _Pac.unpackBoolean();
-		%when 'bytes'
-			{{decl}} = _Pac.unpackByteArray();
-		%when 'string'
-			{{decl}} = _Pac.unpackString();
-		%end
-	%elsif type.user_type?
-		{{decl}} = new {{type}}();
-		{{name}}.messageUnpack(_Pac);
-	%elsif type.list? || type.set?
-		%length = next_anon
-		%element_type = type.element_type
-		int {{length}} = _Pac.unpackArray();
-		{{decl}} = new ArrayList({{length}});  %>if type.list?
-		{{decl}} = new HashSet({{length}});    %>if type.set?
-		%i = next_anon
-		for(int {{i}}=0; {{i}} < {{length}}; {{i}}++) {
-			%vname = gen_unpack(element_type)
-			{{name}}.add({{vname}});
-		}
-	%else
-		%length = next_anon
-		%key_type = type.key_type
-		%value_type = type.value_type
-		int {{length}} = _Pac.unpackArray();
-		{{decl}} = new HashMap({{length}});
-		%i = next_anon
-		for(int {{i}}=0; {{i}} < {{length}}; {{i}}++) {
-			%kname = gen_unpack(key_type)
-			%vname = gen_unpack(value_type)
-			{{name}}.put({{kname}}, {{vname}});
-		}
-	%end
-	%return name
-%end
-
-
 public class {{name}} implements MessagePackable, MessageUnpackable, MessageConvertable {
+	%if exception?
+	// FIXME extends org.msgpack.rpc.RPCException
+	// FIXME pack func
+	private int code;
+	private String message;
+	public int getCode() {
+		return code;
+	}
+	public String getMessage() {
+		return message;
+	}
+	%end
+
 	%fields.each_value do |f|
 	public {{f.type}} {{f.name}};
 	%end

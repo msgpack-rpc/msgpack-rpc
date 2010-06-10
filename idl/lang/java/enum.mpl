@@ -3,19 +3,19 @@ package {{nss.join('.')}}; %>unless nss.empty?
 
 import java.io.IOException;
 import org.msgpack.Packer;
-import org.msgpack.Unacker;
+import org.msgpack.Unpacker;
 import org.msgpack.MessagePackable;
-import org.msgpack.MessageUnackable;
+import org.msgpack.MessageUnpackable;
 import org.msgpack.MessageConvertable;
 import org.msgpack.MessageTypeException;
 
-public enum {{name}} implements MessagePackable, MessageUnackable, MessageConvertable {
-	%d.fields.each do |f|
+public enum {{name}} implements MessagePackable, MessageUnpackable, MessageConvertable {
+	%fields.each do |f|
 	{{f.name}}({{f.value}}),
 	%end
 	;
 
-	private final int value;
+	private int value;
 
 	private {{name}}() {
 		value = 0;
@@ -35,7 +35,7 @@ public enum {{name}} implements MessagePackable, MessageUnackable, MessageConver
 
 	public void messageUnpack(Unpacker pac) throws IOException, MessageTypeException {
 		switch(pac.unpackInt()) {
-		%d.fields.each do |f|
+		%fields.each do |f|
 		case {{f.value}}:
 			this.value = {{f.value}};
 		%end
@@ -45,11 +45,11 @@ public enum {{name}} implements MessagePackable, MessageUnackable, MessageConver
 	}
 
 	public void messageConvert(Object obj) throws MessageTypeException {
-		if(!obj instanceof Number) {
+		if(!(obj instanceof Number)) {
 			throw new MessageTypeException();
 		}
 		switch(((Number)obj).intValue()) {
-		%d.fields.each do |f|
+		%fields.each do |f|
 		case {{f.value}}:
 			this.value = {{f.value}};
 		%end
