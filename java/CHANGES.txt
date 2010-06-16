@@ -1,3 +1,17 @@
+Release 0.4 - 2010/06/16
+  NEW FEATURES
+    Added timer-based client-side timeout. This prevents reqTable not to get
+    fat, when the server doesn't respond with a RPC request.
+
+    Added RPCException class for the internal error.
+
+  BUG FIXES
+    Fixed the client bug of receiving multiple messages in one connnection.
+    It only deserialized the first message.
+
+    Fixed the server bug of receiving multiple messages in one connection.
+    It only deserialized the first message.
+
 Release 0.3 - 2010/05/23
   NEW FEATURES
     Added UDP Support. And the API was slightly changed from 0.2.
