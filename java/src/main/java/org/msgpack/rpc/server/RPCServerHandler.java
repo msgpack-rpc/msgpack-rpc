@@ -36,7 +36,9 @@ public class RPCServerHandler extends SimpleChannelHandler {
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        List<Object> list = (List<Object>)e.getMessage();
+        Object obj = e.getMessage();
+        if (obj == null) return;
+        List<Object> list = (List<Object>)obj;
         for (Object o: list)
             processOneMessage(e, o);
     }

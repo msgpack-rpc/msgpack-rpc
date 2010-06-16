@@ -195,7 +195,6 @@ public abstract class Session {
         if (!(replyObjects instanceof AbstractList<?>))
             throw new RPCException("invalid decoder");
         List<Object> lists = (List<Object>)replyObjects;
-        System.out.println("lists: " + lists.size());
         for (Object o: lists)
             onMessageReceivedOne(o);
     }
