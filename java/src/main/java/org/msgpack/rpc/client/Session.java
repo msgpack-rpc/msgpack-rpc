@@ -3,6 +3,7 @@ package org.msgpack.rpc.client;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.ScheduledFuture;
@@ -189,7 +190,17 @@ public abstract class Session {
      * @param replyObject the received object, already unpacked.
      * @throws Exception
      */
-    public void onMessageReceived(Object replyObject) throws Exception {
+    public void onMessageReceived(Object replyObjects) throws Exception {
+        if (replyObjects == null) return;
+        if (!(replyObjects instanceof AbstractList<?>))
+            throw new RPCException("invalid decoder");
+        List<Object> lists = (List<Object>)replyObjects;
+        System.out.println("lists: " + lists.size());
+        for (Object o: lists)
+            onMessageReceivedOne(o);
+    }
+
+    protected void onMessageReceivedOne(Object replyObject) throws Exception {
         if (!(replyObject instanceof AbstractList<?>))
             throw new RPCException("invalid MPRPC Response");
         

@@ -94,8 +94,8 @@ public class TCPTransport extends Transport {
      * @param replyObject the received object, already unpacked.
      * @throws Exception
      */
-    public void onMessageReceived(Object replyObject) throws Exception {
-        session.onMessageReceived(replyObject);
+    public void onMessageReceived(Object replyObjects) throws Exception {
+        session.onMessageReceived(replyObjects);
     }
 
     /**
