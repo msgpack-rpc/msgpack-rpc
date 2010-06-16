@@ -46,6 +46,11 @@ public class RPCResponseDecoder extends FrameDecoder {
         buffer.readBytes(unpacker_buf, unpacker.getBufferOffset(), len);
         unpacker.bufferConsumed(len);
 
+        // 2010/06/16 Kazuki Ohta <kazuki.ohta@gmail.com>
+        // This function is called when netty receives some data. If multiple
+        // messages are sent through one connection, the buffer contains all of
+        // them. Therefore, we need to continue unpack until unpacker.execute()
+        // returns the false.
         List<Object> ret = new ArrayList<Object>();
         while (unpacker.execute()) {
             Object data = unpacker.getData();

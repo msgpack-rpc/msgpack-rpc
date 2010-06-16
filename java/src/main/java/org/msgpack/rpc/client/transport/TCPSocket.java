@@ -38,8 +38,13 @@ import org.msgpack.rpc.client.RPCException;
 import org.msgpack.rpc.client.netty.RPCRequestEncoder;
 import org.msgpack.rpc.client.netty.RPCResponseDecoder;
 
+/**
+ * The netty ChannelHandler class. When some network events are occurred, the
+ * methods of this class are called (e,g. connection establishment, message
+ * receipt, etc.).
+ */
 class TCPClientHandler extends SimpleChannelHandler {
-    protected TCPSocket sock;
+    protected final TCPSocket sock;
     
     public TCPClientHandler(TCPSocket sock) {
         super();
@@ -85,8 +90,12 @@ class TCPClientHandler extends SimpleChannelHandler {
     }
 }
 
+/**
+ * The netty PipelineFactory class. The methods of this class is called, when
+ * some network events are occurred.
+ */
 class TCPClientPipelineFactory implements ChannelPipelineFactory {
-    protected TCPSocket sock;
+    protected final TCPSocket sock;
     
     public TCPClientPipelineFactory(TCPSocket sock) {
         this.sock = sock;
@@ -109,7 +118,7 @@ public class TCPSocket {
     protected final EventLoop loop;
     protected final TCPTransport transport;
     
-    // netty-specific
+    // netty-specific members
     protected ClientBootstrap bootstrap;
     protected ChannelFuture connectFuture;
     protected Channel channel;

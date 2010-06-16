@@ -36,7 +36,7 @@ import org.msgpack.rpc.client.netty.RPCRequestEncoder;
 import org.msgpack.rpc.client.netty.RPCResponseDecoder;
 
 class DatagramClientHandler extends SimpleChannelHandler {
-    protected UDPSocket sock;
+    protected final UDPSocket sock;
     
     public DatagramClientHandler(UDPSocket sock) {
         super();
@@ -61,7 +61,7 @@ class DatagramClientHandler extends SimpleChannelHandler {
 }
 
 class UDPClientPipelineFactory implements ChannelPipelineFactory {
-    protected UDPSocket sock;
+    protected final UDPSocket sock;
     
     public UDPClientPipelineFactory(UDPSocket sock) {
         this.sock = sock;

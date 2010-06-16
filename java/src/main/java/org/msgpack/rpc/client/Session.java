@@ -204,7 +204,8 @@ public abstract class Session {
     
     /**
      * The callback called when the message arrives
-     * @param replyObject the received object, already unpacked.
+     * @param replyObjects the array of the received objects, which are
+     * already unpacked.
      * @throws Exception
      */
     public void onMessageReceived(Object replyObjects) throws Exception {
@@ -216,6 +217,12 @@ public abstract class Session {
             onMessageReceivedOne(o);
     }
 
+    /**
+     * Process one reply object. Set it to the corresponding Future object,
+     * by looking up the reqTable.
+     * @param replyObject the received object to handle.
+     * @throws Exception
+     */
     protected void onMessageReceivedOne(Object replyObject) throws Exception {
         if (!(replyObject instanceof AbstractList<?>))
             throw new RPCException("invalid MPRPC Response");
