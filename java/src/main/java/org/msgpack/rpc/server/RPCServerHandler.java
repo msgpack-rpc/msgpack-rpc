@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import java.nio.channels.Channel;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ExceptionEvent;
@@ -35,7 +36,13 @@ public class RPCServerHandler extends SimpleChannelHandler {
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        AbstractList<?> a = (AbstractList<?>)e.getMessage();
+        List<Object> list = (List<Object>)e.getMessage();
+        for (Object o: list)
+            processOneMessage(e, o);
+    }
+    
+    protected void processOneMessage(MessageEvent e, Object o) throws Exception {
+        AbstractList<?> a = (AbstractList<?>)o;
         if (a.size() != 4)
             throw new IOException("Invalid MPRPC"); // TODO
 

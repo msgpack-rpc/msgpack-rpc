@@ -2,6 +2,8 @@ package org.msgpack.rpc.server;
 
 import java.io.IOException;
 import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
@@ -33,13 +35,16 @@ public class RPCRequestDecoder extends FrameDecoder {
         buffer.readBytes(unpacker_buf, unpacker.getBufferOffset(), len);
         unpacker.bufferConsumed(len);
 
-        if (unpacker.execute()) {
+        List<Object> ret = new ArrayList<Object>();
+        while (unpacker.execute()) {
             Object data = unpacker.getData();
             unpacker.reset();
-            if (data instanceof AbstractList<?>)
-                return data;
-            throw new IOException("invalid MPRPC" + data); // TODO                                                                                                                
+            if (data instanceof AbstractList<?>) {
+                ret.add(data);
+            } else {
+                throw new IOException("invalid MPRPC" + data); // TODO
+            }
         }
-        return null;
+        return ret;
     }
 }
