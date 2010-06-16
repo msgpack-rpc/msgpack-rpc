@@ -56,23 +56,26 @@ public class MultiThreadServerTest extends TestCase {
         }
     }
     
-    /*
     @Test
     public void testUDP() throws Exception{
         EventLoop loop = new EventLoop();
         try {
-            ServerMock s = new ServerMock(new UDPServer("0.0.0.0", 19850, this));
-            Client c = new UDPClient("localhost", 19850, loop);
+            ServerMock s = new ServerMock(new UDPServer("0.0.0.0", 19851, this));
+            Client c = new UDPClient("localhost", 19851, loop);
+            s.startServer();
             try {
-                testRPC(c, s);
+                try {
+                    testRPC(c, s);
+                } finally {
+                    c.close();
+                }
             } finally {
-                c.close();
+                s.stopServer();
             }
         } finally {
             loop.shutdown();
         }
     }
-    */
     
     class ClientTask implements Runnable {
         protected final Client c;
