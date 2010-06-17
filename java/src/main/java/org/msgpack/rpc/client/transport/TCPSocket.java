@@ -168,17 +168,21 @@ public class TCPSocket {
      * The callback function, called when the connection is established.
      * @throws Exception
      */
-    public synchronized void onConnected() throws Exception {
-        // connected, but onConnected() called
-        if (channel != null)
-            throw new IOException("already connected");
-        // onConnected() called without tryConnect
-        if (connectFuture == null)
-            throw new IOException("tryConnect was not called");
+    public void onConnected() throws Exception {
+        boolean isSuccess = false;
+        synchronized(this) {
+            // connected, but onConnected() called
+            if (channel != null)
+                throw new IOException("already connected");
+            // onConnected() called without tryConnect
+            if (connectFuture == null)
+                throw new IOException("tryConnect was not called");
 
-        // set channel
-        channel = connectFuture.awaitUninterruptibly().getChannel();
-        if (connectFuture.isSuccess())
+            // set channel
+            channel = connectFuture.awaitUninterruptibly().getChannel();
+            isSuccess = connectFuture.isSuccess();
+        }
+        if (isSuccess)
             transport.onConnected();
         else
             onConnectFailed();
@@ -213,7 +217,7 @@ public class TCPSocket {
      * The callback called when the error occurred.
      * @param e occurred exception.
      */
-    public synchronized void onFailed(Exception e) {
+    public void onFailed(Exception e) {
         transport.onFailed(e);
         tryClose();
     }
