@@ -6,6 +6,8 @@ Release 0.4 - 2010/06/16
     Added RPCException class for the internal error.
 
   BUG FIXES
+    Fixed some deadlock possibilities around TCPTransport/TCPSocket.
+
     Fixed the client bug of receiving multiple messages in one connnection.
     It only deserialized the first message.
 
