@@ -21,7 +21,7 @@ import org.msgpack.rpc.client.EventLoop;
 import org.msgpack.rpc.client.Session;
 
 public class UDPTransport extends Transport {
-    protected UDPSocket socket;
+    protected final UDPSocket socket;
 
     public UDPTransport(Session session, EventLoop loop) {
         super(session, loop);
@@ -41,7 +41,7 @@ public class UDPTransport extends Transport {
      * @throws Exception
      */
     @Override
-    public synchronized void sendMessage(Object msg) throws Exception {
+    public void sendMessage(Object msg) throws Exception {
         socket.trySend(msg);
     }
 
@@ -49,7 +49,7 @@ public class UDPTransport extends Transport {
      * Close the connection associated with this transport.
      */
     @Override
-    public synchronized void tryClose() {
+    public void tryClose() {
         socket.tryClose();
     }
     
