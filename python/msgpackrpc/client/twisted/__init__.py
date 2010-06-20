@@ -1,5 +1,4 @@
-from msgpackrpc.client.address import Address
-from msgpackrpc.client.twisted import session, loop
+from msgpackrpc.client.twisted import session, loop, address
 
 __all__ = ['Client']
 
