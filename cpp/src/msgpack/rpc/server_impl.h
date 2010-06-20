@@ -15,55 +15,43 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-#ifndef MSGPACK_RPC_SERVER_H__
-#define MSGPACK_RPC_SERVER_H__
+#ifndef MSGPACK_RPC_SERVER_IMPL_H__
+#define MSGPACK_RPC_SERVER_IMPL_H__
 
-#include "session_pool.h"
-#include "request.h"
+#include "server.h"
+#include "session_pool_impl.h"
+#include <mp/utilize.h>
 
 namespace msgpack {
 namespace rpc {
 
 
-class dispatcher {
+class server_impl : public session_pool_impl {
 public:
-	virtual void dispatch(request req) = 0;
-};
-
-
-class server : public session_pool {
-public:
-	server(loop lo = loop());
-	server(const builder& b, loop lo = loop());
-
-	~server();
+	server_impl(const builder&, loop lo);
+	~server_impl();
 
 	void serve(dispatcher* dp);
 
 	void listen(const listener& l);
-	void listen(const address& addr);
-	void listen(const std::string& host, uint16_t port);
 
 	void close();
 
-	class base;
+public:
+	void on_request(
+			shared_message_sendable ms, msgid_t msgid,
+			object method, object params, auto_zone z);
+
+	void on_notify(
+			object method, object params, auto_zone z);
 
 private:
-	server(const server&);
-};
+	dispatcher* m_dp;
+	std::auto_ptr<server_transport> m_stran;
 
-
-class server::base : public dispatcher {
-public:
-	base(loop lo = loop()) :
-		instance(lo) { instance.serve(this); }
-
-	base(const builder& b, loop lo = loop()) :
-		instance(b, lo) { instance.serve(this); }
-
-	~base() { }
-
-	rpc::server instance;
+private:
+	server_impl();
+	server_impl(const server_impl&);
 };
 
 

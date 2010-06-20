@@ -20,7 +20,6 @@
 
 #include "types.h"
 #include "future.h"
-#include "option.h"
 #include <string>
 
 namespace msgpack {

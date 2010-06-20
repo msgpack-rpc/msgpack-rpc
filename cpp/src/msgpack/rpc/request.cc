@@ -21,11 +21,6 @@ namespace msgpack {
 namespace rpc {
 
 
-//session request::from()
-//{
-//	return m_pimpl->from();
-//}
-
 object request::method()
 {
 	return m_pimpl->method();
@@ -36,14 +31,14 @@ object request::params()
 	return m_pimpl->params();
 }
 
-bool request::is_active() const
+bool request::is_sent() const
 {
-	return m_pimpl->is_active();
+	return m_pimpl->is_sent();
 }
 
 uint32_t request::get_msgid() const
 {
-	return m_pimpl->msgid();
+	return m_pimpl->get_msgid();
 }
 
 void request::send_data(sbuffer* sbuf)

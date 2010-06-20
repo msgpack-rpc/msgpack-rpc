@@ -20,10 +20,8 @@
 
 #include "session.h"
 #include "reqtable.h"
-#include "message.h"
-#include "dispatcher.h"
-#include "message_sendable.h"
-#include "option.h"
+#include "protocol.h"
+#include "transport_impl.h"
 #include "impl_fwd.h"
 
 namespace msgpack {
@@ -32,10 +30,10 @@ namespace rpc {
 
 class session_impl : public mp::enable_shared_from_this<session_impl> {
 public:
-	session_impl(const address& to_address,
-			const transport_option& topt,
-			const address& self_address,
-			dispatcher* dp, loop lo);
+	session_impl(
+			const builder& b,
+			const address& addr,
+			loop lo);
 
 	~session_impl();
 
@@ -44,17 +42,12 @@ public:
 		return m_addr;
 	}
 
-	const address& get_self_address() const
-	{
-		return m_self_addr;
-	}
-
 	loop get_loop()
 	{
 		return m_loop;
 	}
 
-	loop& get_loop_ref()
+	const loop& get_loop() const
 	{
 		return m_loop;
 	}
@@ -81,21 +74,8 @@ public:
 	void send_notify_impl(sbuffer* sbuf);
 
 public:
-	void on_message(
-			message_sendable* ms,
-			object msg, auto_zone z);
-
-	void on_response(
-			message_sendable* ms, msgid_t msgid,
+	void on_response(msgid_t msgid,
 			object result, object error, auto_zone z);
-
-	void on_request(
-			message_sendable* ms, msgid_t msgid,
-			object method, object param, auto_zone z);
-
-	void on_notify(
-			message_sendable* ms,
-			object method, object param, auto_zone z);
 
 	void on_connect_failed();
 
@@ -103,13 +83,10 @@ public:
 
 private:
 	address m_addr;
-	address m_self_addr;
-
-	shared_transport m_tran;
-
-	dispatcher* m_dp;
 
 	loop m_loop;
+
+	std::auto_ptr<client_transport> m_tran;
 
 	msgid_t m_msgid_rr;
 	reqtable m_reqtable;
@@ -120,12 +97,6 @@ private:
 	session_impl();
 	session_impl(const session_impl&);
 };
-
-
-inline loop& session::get_loop_ref()
-{
-	return m_pimpl->get_loop_ref();
-}
 
 
 }  // namespace rpc

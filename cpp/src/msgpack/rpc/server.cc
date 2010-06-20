@@ -16,59 +16,82 @@
 //    limitations under the License.
 //
 #include "server.h"
-#include "transport/listener.h"
-
+#include "server_impl.h"
+#include "request_impl.h"
+#include "transport.h"
 #include "transport/tcp.h"
 
 namespace msgpack {
 namespace rpc {
 
 
-MP_UTIL_DEF(server) {
-	shared_session create_server_session();
-};
-
-server::server(loop lo) :
-	session_pool(lo)
+server_impl::server_impl(const builder& b, loop lo) :
+	session_pool_impl(b, lo),
+	m_dp(NULL)
 { }
 
-server::~server()
+server_impl::~server_impl()
 {
 	close();
 }
 
-shared_session server::create_session(const address& addr)
-{
-	return shared_session(new session_impl(
-				addr, m_default_opt, address(), m_dp, m_loop));
-}
-
-shared_session MP_UTIL_IMPL(server)::create_server_session()
-{
-	return create_session(address());
-}
-
-void server::serve(dispatcher* dp)
+void server_impl::serve(dispatcher* dp)
 {
 	m_dp = dp;
 }
 
+void server_impl::listen(const listener& l)
+{
+	m_stran = l.listen(mp::static_pointer_cast<server_impl>(shared_from_this()));
+}
+
+void server_impl::close()
+{
+	m_stran.reset();  // FIXME close?
+}
+
+void server_impl::on_request(
+		shared_message_sendable ms, msgid_t msgid,
+		object method, object params, auto_zone z)
+{
+	shared_request sr(new request_impl(
+			ms, msgid,
+			method, params, z));
+	m_dp->dispatch(request(sr));
+}
+
+void server_impl::on_notify(
+		object method, object params, auto_zone z)
+{
+	shared_request sr(new request_impl(
+			shared_message_sendable(), 0,
+			method, params, z));
+	m_dp->dispatch(request(sr));
+}
+
+
+server::server(loop lo) :
+	session_pool(shared_session_pool(new server_impl(tcp_builder(), lo))) { }
+
+server::server(const builder& b, loop lo) :
+	session_pool(shared_session_pool(new server_impl(b, lo))) { }
+
+server::~server() { }
+
+void server::serve(dispatcher* dp)
+	{ static_cast<server_impl*>(m_pimpl.get())->serve(dp); }
+
 void server::close()
-{
-	m_listener.reset();
-}
+	{ static_cast<server_impl*>(m_pimpl.get())->close(); }
 
-void server::listen(address addr)
-{
-	char addrbuf[addr.addrlen()];
-	addr.getaddr((struct sockaddr*)addrbuf);
+void server::listen(const listener& l)
+	{ static_cast<server_impl*>(m_pimpl.get())->listen(l); }
 
-	m_listener.reset( new transport::tcp::listener(
-			AF_INET, SOCK_STREAM, 0,
-			(struct sockaddr*)addrbuf, addr.addrlen(),
-			m_loop,
-			mp::bind(&MP_UTIL_IMPL(server)::create_server_session, &MP_UTIL)) );
-}
+void server::listen(const address& addr)
+	{ listen(tcp_listener(addr)); }
+
+void server::listen(const std::string& host, uint16_t port)
+	{ listen(address(host, port)); }
 
 
 }  // namespace rpc

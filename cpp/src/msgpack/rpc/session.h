@@ -20,7 +20,7 @@
 
 #include "types.h"
 #include "address.h"
-#include "message.h"
+#include "protocol.h"
 #include "exception.h"
 #include "loop.h"
 #include "caller.h"
@@ -37,12 +37,10 @@ public:
 
 	const address& get_address() const;
 
-	const address& get_self_address() const;
-
+	const loop& get_loop() const;
 	loop get_loop();
 
 	void set_timeout(unsigned int sec);
-
 	unsigned int get_timeout() const;
 
 protected:
@@ -66,8 +64,6 @@ protected:
 
 protected:
 	shared_session m_pimpl;
-
-	inline loop& get_loop_ref();
 
 private:
 	msgid_t next_msgid();

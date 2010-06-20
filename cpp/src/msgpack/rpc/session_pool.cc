@@ -15,34 +15,25 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-#include "session_pool.h"
+#include "session_pool_impl.h"
 #include "session_impl.h"
+#include "transport/tcp.h"
 
 namespace msgpack {
 namespace rpc {
 
 
-MP_UTIL_DEF(session_pool) {
-	bool step_timeout();
-};
-
-
-session_pool::session_pool(loop lo) :
-	loop_util(lo)
+session_pool_impl::session_pool_impl(const builder& b, loop lo) :
+	m_loop(lo), m_builder(b.copy())
 {
 	m_loop->add_timer(1.0, 1.0,
-			mp::bind(&MP_UTIL_IMPL(session_pool)::step_timeout, &MP_UTIL));
+			mp::bind(&session_pool_impl::step_timeout, this));
 	// FIXME thisの寿命: weak_ptrのlock()が失敗したらタイマーを終了？
-	//start_timer(&t, &t,
-	//		mp::bind(&session_pool::step_timeout, this,
-	//			mp::weak_ptr<session_pool>(shared_from_this()) ));
 }
 
-session_pool::~session_pool()
-{
-}
+session_pool_impl::~session_pool_impl() { }
 
-session session_pool::get_session(const address& addr)
+session session_pool_impl::get_session(const address& addr)
 {
 	table_ref ref(m_table);
 
@@ -54,18 +45,14 @@ session session_pool::get_session(const address& addr)
 		}
 	}
 
-	shared_session s = create_session(addr);
+	shared_session s(new session_impl(
+				*m_builder, addr, m_loop));
 	ref->insert( table_t::value_type(addr, weak_session(s)) );
+
 	return session(s);
 }
 
-shared_session session_pool::create_session(const address& addr)
-{
-	return shared_session(new session_impl(
-				addr, m_default_opt, address(), NULL, m_loop));
-}
-
-bool MP_UTIL_IMPL(session_pool)::step_timeout()
+bool session_pool_impl::step_timeout()
 {
 	table_ref ref(m_table);
 	for(table_t::iterator it(ref->begin());
@@ -80,6 +67,27 @@ bool MP_UTIL_IMPL(session_pool)::step_timeout()
 	}
 	return true;
 }
+
+
+session_pool::session_pool(loop lo) :
+	m_pimpl(new session_pool_impl(tcp_builder(), lo)) { }
+
+session_pool::session_pool(const builder& b, loop lo) :
+	m_pimpl(new session_pool_impl(b, lo)) { }
+
+session_pool::session_pool(shared_session_pool pimpl) :
+	m_pimpl(pimpl) { }
+
+session_pool::~session_pool() { }
+
+session session_pool::get_session(const address& addr)
+	{ return m_pimpl->get_session(addr); }
+
+const loop& session_pool::get_loop() const
+	{ return const_cast<const session_pool_impl*>(m_pimpl.get())->get_loop(); }
+
+loop session_pool::get_loop()
+	{ return m_pimpl->get_loop(); }
 
 
 }  // namespace rpc

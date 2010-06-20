@@ -23,19 +23,19 @@ libmsgpack_rpc_include_HEADERS = \
 		address.h \
 		caller.h \
 		client.h \
-		dispatcher.h \
 		exception.h \
 		future.h \
 		impl_fwd.h \
 		loop.h \
 		loop_util.h \
-		message.h \
-		option.h \
+		protocol.h \
 		request.h \
 		server.h \
 		session.h \
 		session_pool.h \
-		types.h
+		types.h \
+		transport.h \
+		transport/tcp.h
 
 noinst_HEADERS = \
 		exception_impl.h \
@@ -44,9 +44,8 @@ noinst_HEADERS = \
 		session_impl.h \
 		reqtable.h \
 		message_sendable.h \
-		transport/base.h \
-		transport/listener.h \
-		transport/tcp.h
+		transport_impl.h
+		transport/base.h
 
 EXTRA_DIST = \
 		caller.hmpl

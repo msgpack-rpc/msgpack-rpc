@@ -28,16 +28,18 @@ class future;
 class future_impl;
 typedef mp::shared_ptr<future_impl> shared_future;
 
-namespace transport {
-	class base;
-	class listener;
-}
-typedef mp::shared_ptr<transport::base> shared_transport;
-
 class session;
 class session_impl;
 typedef mp::shared_ptr<session_impl> shared_session;
 typedef mp::weak_ptr<session_impl> weak_session;
+
+class session_pool;
+class session_pool_impl;
+typedef mp::shared_ptr<session_pool_impl> shared_session_pool;
+
+class server;
+class server_impl;
+typedef mp::shared_ptr<server_impl> shared_server;
 
 class request;
 class request_impl;

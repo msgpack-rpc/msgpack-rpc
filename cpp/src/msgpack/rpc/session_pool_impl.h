@@ -15,49 +15,53 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-#ifndef MSGPACK_RPC_SESSION_POOL_H__
-#define MSGPACK_RPC_SESSION_POOL_H__
+#ifndef MSGPACK_RPC_SESSION_POOL_IMPL_H__
+#define MSGPACK_RPC_SESSION_POOL_IMPL_H__
 
-#include "session.h"
-#include "loop_util.h"
-#include "address.h"
-#include "transport.h"
-#include "impl_fwd.h"
-#include "types.h"
-#include <string>
+#include "session_pool.h"
+#include "transport_impl.h"
+#include <mp/sync.h>
+#include <mp/unordered_map.h>
 
 namespace msgpack {
 namespace rpc {
 
 
-class session_pool : public loop_util<session_pool> {
+class session_pool_impl : public mp::enable_shared_from_this<session_pool_impl> {
 public:
-	session_pool(loop lo = loop());
-	session_pool(const builder& b, loop lo = loop());
-
-	~session_pool();
+	session_pool_impl(const builder& b, loop lo);
+	~session_pool_impl();
 
 	session get_session(const address& addr);
 
 	session get_session(const std::string& host, uint16_t port)
 		{ return get_session(address(host, port)); }
 
-	const loop& get_loop() const;
-	loop get_loop();
+	const loop& get_loop() const
+		{ return m_loop; }
 
-	// FIXME close
-
-protected:
-	session_pool(shared_session_pool pimpl);
-	shared_session_pool m_pimpl;
+	loop get_loop()
+		{ return m_loop; }
 
 private:
-	session_pool(const session_pool&);
+	typedef mp::unordered_map<address, weak_session, address::hash> table_t;
+	typedef mp::sync<table_t>::ref table_ref;
+	mp::sync<table_t> m_table;
+
+	loop m_loop;
+
+	std::auto_ptr<builder> m_builder;
+
+protected:
+	bool step_timeout();
+
+private:
+	session_pool_impl(const session_pool_impl&);
 };
 
 
 }  // namespace rpc
 }  // namespace msgpack
 
-#endif /* msgpack/rpc/session_pool.h */
+#endif /* msgpack/rpc/session_pool_impl.h */
 

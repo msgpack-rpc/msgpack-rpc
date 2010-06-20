@@ -1,5 +1,5 @@
 //
-// msgpack::rpc::message - MessagePack-RPC for C++
+// msgpack::rpc::protocol - MessagePack-RPC for C++
 //
 // Copyright (C) 2009-2010 FURUHASHI Sadayuki
 //
@@ -15,8 +15,8 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-#ifndef MSGPACK_RPC_MESSAGE_H__
-#define MSGPACK_RPC_MESSAGE_H__
+#ifndef MSGPACK_RPC_PROTOCOL_H__
+#define MSGPACK_RPC_PROTOCOL_H__
 
 #include <msgpack.hpp>
 
@@ -119,5 +119,5 @@ struct msg_notify {
 }  // namespace rpc
 }  // namespace msgpack
 
-#endif /* msgpack/rpc/message.h */
+#endif /* msgpack/rpc/protocol.h */
 

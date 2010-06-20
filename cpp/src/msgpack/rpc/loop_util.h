@@ -19,31 +19,34 @@
 #define MSGPACK_RPC_LOOP_UTIL_H__
 
 #include "loop.h"
-#include <mp/functional.h>
 
 namespace msgpack {
 namespace rpc {
 
 
+template <typename MixIn>
 class loop_util {
 public:
-	loop_util(loop lo) :
-		m_loop(lo) { }
+	void start(size_t num)
+		{ static_cast<MixIn*>(this)->get_loop()->start(num); }
 
-	~loop_util() { }
+	void run(size_t num)
+		{ static_cast<MixIn*>(this)->get_loop()->run(num); }
 
-	loop get_loop() { return m_loop; }
+	void run_once()
+		{ static_cast<MixIn*>(this)->get_loop()->run_once(); }
 
-	void start(size_t num)  { m_loop->start(num); }
-	void run(size_t num)    { m_loop->run(num);   }
-	void run_once()         { m_loop->run_once(); }
-	void end()              { m_loop->end();      }
-	void join()             { m_loop->join();     }
-	bool is_running() const { return m_loop->is_running(); }
-	bool is_end()     const { return m_loop->is_end();     }
+	void end()
+		{ static_cast<MixIn*>(this)->get_loop()->end(); }
 
-protected:
-	loop m_loop;
+	void join()
+		{ static_cast<MixIn*>(this)->get_loop()->join(); }
+
+	bool is_running() const
+		{ return static_cast<MixIn*>(this)->get_loop()->is_running(); }
+
+	bool is_end() const
+		{ return static_cast<MixIn*>(this)->get_loop()->is_end(); }
 };
 
 

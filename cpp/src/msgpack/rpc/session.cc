@@ -20,34 +20,29 @@
 #include "future_impl.h"
 #include "request_impl.h"
 #include "exception_impl.h"
-#include "message_sendable.h"
 #include "cclog/cclog.h"
-
-#include "transport/base.h"
-#include "transport/tcp.h"
 
 namespace msgpack {
 namespace rpc {
 
 
-session_impl::session_impl(const address& to_address,
-		const transport_option& topt,
-		const address& self_address,
-		dispatcher* dp, loop lo) :
-	m_addr(to_address),
-	m_self_addr(self_address),
-	m_tran(new transport::tcp(this, topt)),
-	m_dp(dp),
+session_impl::session_impl(
+		const builder& b,
+		const address& addr, loop lo) :
+	m_addr(addr),
 	m_loop(lo),
 	m_msgid_rr(0),  // FIXME rand()?
 	m_timeout(5)  // FIXME
-{ }
+{
+	m_tran = b.build(this, addr);
+}
 
 session_impl::~session_impl() { }
 
 
 future session_impl::send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone z)
 {
+	LOG_DEBUG("sending... msgid=",msgid);
 	shared_future f(new future_impl(shared_from_this(), m_loop));
 	m_reqtable.insert(msgid, f);
 
@@ -58,6 +53,7 @@ future session_impl::send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_z
 
 future session_impl::send_request_impl(msgid_t msgid, sbuffer* sbuf)
 {
+	LOG_DEBUG("sending... msgid=",msgid);
 	shared_future f(new future_impl(shared_from_this(), m_loop));
 	m_reqtable.insert(msgid, f);
 
@@ -107,42 +103,7 @@ void session_impl::on_connect_failed()
 	}
 }
 
-void session_impl::on_message(
-		message_sendable* ms,
-		object msg, auto_zone z)
-{
-	msg_rpc rpc;
-	msg.convert(&rpc);
-
-	switch(rpc.type) {
-	case REQUEST: {
-			msg_request<object, object> req;
-			msg.convert(&req);
-			on_request(ms, req.msgid, req.method, req.param, z);
-		}
-		break;
-
-	case RESPONSE: {
-			msg_response<object, object> res;
-			msg.convert(&res);
-			on_response(ms, res.msgid, res.result, res.error, z);
-		}
-		break;
-
-	case NOTIFY: {
-			msg_notify<object, object> req;
-			msg.convert(&req);
-			on_notify(ms, req.method, req.param, z);
-		}
-		break;
-
-	default:
-		throw msgpack::type_error();
-	}
-}
-
-void session_impl::on_response(
-		message_sendable* ms, msgid_t msgid,
+void session_impl::on_response(msgid_t msgid,
 		object result, object error, auto_zone z)
 {
 	LOG_TRACE("response result=",result," error=",error);
@@ -154,36 +115,12 @@ void session_impl::on_response(
 	f->set_result(result, error, z);
 }
 
-void session_impl::on_request(
-		message_sendable* ms, msgid_t msgid,
-		object method, object param, auto_zone z)
-{
-	LOG_TRACE("request method=",method," msgid=",msgid);
-	shared_request sreq(new request_impl(
-			ms->shared_from_this(), msgid,
-			session(shared_from_this()),
-			method, param, z));
-	m_dp->dispatch(request(sreq));
-}
-
-void session_impl::on_notify(
-		message_sendable* ms,
-		object method, object param, auto_zone z)
-{
-	LOG_TRACE("notify method=",method);
-	shared_request sreq(new request_impl(
-			shared_message_sendable(), 0,
-			session(shared_from_this()),
-			method, param, z));
-	m_dp->dispatch(request(sreq));
-}
-
 
 const address& session::get_address() const
 	{ return m_pimpl->get_address(); }
 
-const address& session::get_self_address() const
-	{ return m_pimpl->get_self_address(); }
+const loop& session::get_loop() const
+	{ return const_cast<const session_impl*>(m_pimpl.get())->get_loop(); }
 
 loop session::get_loop()
 	{ return m_pimpl->get_loop(); }

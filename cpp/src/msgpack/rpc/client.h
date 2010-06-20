@@ -20,6 +20,8 @@
 
 #include "types.h"
 #include "session.h"
+#include "loop_util.h"
+#include "transport.h"
 #include "address.h"
 #include <mp/utilize.h>
 #include <string>
@@ -28,15 +30,13 @@ namespace msgpack {
 namespace rpc {
 
 
-class client : public session {
+class client : public session, public loop_util<client> {
 public:
-	client(const address& addr, loop lo = loop());
-
 	client(const std::string& host, uint16_t port, loop lo = loop());
+	client(const address& addr, loop lo = loop());
+	client(const builder& b, const address& addr, loop lo = loop());
 
 	~client();
-
-	void close();
 
 	class base;
 
@@ -55,6 +55,9 @@ public:
 
 	base(const std::string& host, uint16_t port, loop lo = loop()) :
 		instance(host, port, lo) { }
+
+	base(const builder& b, const address& addr, loop lo = loop()) :
+		instance(b, addr, lo) { }
 
 	rpc::client instance;
 

@@ -16,7 +16,7 @@
 //    limitations under the License.
 //
 #include "exception_impl.h"
-#include "message.h"
+#include "protocol.h"
 #include <sstream>
 #include <string.h>
 

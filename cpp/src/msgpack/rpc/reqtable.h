@@ -18,7 +18,7 @@
 #ifndef MSGPACK_RPC_REQTABLE_H__
 #define MSGPACK_RPC_REQTABLE_H__
 
-#include "message.h"
+#include "protocol.h"
 #include "impl_fwd.h"
 #include <vector>
 #include <mp/unordered_map.h>
@@ -29,6 +29,10 @@ namespace rpc {
 
 
 class reqtable {
+public:
+	reqtable() { }
+	~reqtable() { }
+
 public:
 	void insert(msgid_t msgid, shared_future f);
 

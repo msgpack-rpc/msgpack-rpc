@@ -18,54 +18,84 @@
 #ifndef MSGPACK_RPC_TRANSPORT_BASE_H__
 #define MSGPACK_RPC_TRANSPORT_BASE_H__
 
-#include "message_sendable.h"
-#include "loop.h"
-#include "session_impl.h"
-#include "impl_fwd.h"
-#include "option.h"
+#include "../types.h"
+#include "../protocol.h"
+#include "../session_impl.h"
+#include "../server_impl.h"
+#include "../transport_impl.h"
 
 namespace msgpack {
 namespace rpc {
 namespace transport {
 
 
-class base : public message_sendable {
+template <typename MixIn>
+class protocol_handler {
 public:
-	base(session_impl* s, const transport_option& topt) :
-		m_session(s), m_option(topt) { }
+	// FIXME wavy::event& e; e.next();
+	void on_message(object msg, auto_zone z);
 
-	virtual ~base() { }
-
-	//// message_sendable interface
-	//void send_data(msgpack::vrefbuffer* vbuf, auto_zone z);
-	//void send_data(msgpack::sbuffer* sbuf);
-	//shared_message_sendable shared_from_this();
-
-protected:
-	const address& get_address() const
+	void on_request(
+			msgid_t msgid,
+			object method, object params, auto_zone z)
 	{
-		return m_session->get_address();
+		throw msgpack::type_error();  // FIXME
 	}
 
-	loop get_loop()
+	void on_notify(
+			object method, object params, auto_zone z)
 	{
-		return m_session->get_loop();
+		throw msgpack::type_error();  // FIXME
 	}
 
-	session_impl& get_session()
+	void on_response(msgid_t msgid,
+			object result, object error, auto_zone z)
 	{
-		return *m_session;
+		throw msgpack::type_error();  // FIXME
 	}
-
-private:
-	session_impl* m_session;
-	transport_option m_option;
 };
+
+
+template <typename MixIn>
+void protocol_handler<MixIn>::on_message(object msg, auto_zone z)
+{
+	msg_rpc rpc;
+	msg.convert(&rpc);
+
+	switch(rpc.type) {
+	case REQUEST: {
+			msg_request<object, object> req;
+			msg.convert(&req);
+			static_cast<MixIn*>(this)->on_request(
+					req.msgid, req.method, req.param, z);
+		}
+		break;
+
+	case RESPONSE: {
+			msg_response<object, object> res;
+			msg.convert(&res);
+			static_cast<MixIn*>(this)->on_response(
+					res.msgid, res.result, res.error, z);
+		}
+		break;
+
+	case NOTIFY: {
+			msg_notify<object, object> req;
+			msg.convert(&req);
+			static_cast<MixIn*>(this)->on_notify(
+					req.method, req.param, z);
+		}
+		break;
+
+	default:
+		throw msgpack::type_error();
+	}
+}
 
 
 }  // namespace transport
 }  // namespace rpc
 }  // namespace msgpack
 
-#endif /* msgpack/rpc/transport/base.h */
+#endif /* transport/base.h */
 

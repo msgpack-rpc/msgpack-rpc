@@ -18,8 +18,9 @@
 #ifndef MSGPACK_RPC_REQUEST_H__
 #define MSGPACK_RPC_REQUEST_H__
 
-#include "session.h"
+#include "protocol.h"
 #include "impl_fwd.h"
+#include "types.h"
 
 namespace msgpack {
 namespace rpc {
@@ -30,7 +31,6 @@ public:
 	request(shared_request pimpl) : m_pimpl(pimpl) { }
 	~request() { }
 
-	//session from();  // FIXME design
 	object method();
 	object params();
 	auto_zone& zone();
@@ -66,7 +66,8 @@ private:
 	void call(Result& res, Error& err, shared_zone z);
 
 private:
-	bool is_active() const;
+	bool is_sent() const;  // FIXME public?
+
 	uint32_t get_msgid() const;
 	void send_data(sbuffer* sbuf);
 	void send_data(vrefbuffer* vbuf, shared_zone life);
@@ -106,7 +107,7 @@ public:
 template <typename Result, typename Error>
 inline void request::call(Result& res, Error& err)
 {
-	if(!is_active()) { return; }
+	if(is_sent()) { return; }
 
 	msgpack::sbuffer sbuf;
 	msg_response<Result&, Error> msgres(res, err, get_msgid());
@@ -118,7 +119,7 @@ inline void request::call(Result& res, Error& err)
 template <typename Result, typename Error>
 inline void request::call(Result& res, Error& err, shared_zone z)
 {
-	if(!is_active()) { return; }
+	if(is_sent()) { return; }
 
 	msgpack::vrefbuffer* vbuf = z->template allocate<msgpack::vrefbuffer>();
 	msg_response<Result&, Error> msgres(res, err, get_msgid());
