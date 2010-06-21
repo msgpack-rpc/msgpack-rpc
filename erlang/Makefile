@@ -29,6 +29,9 @@ test: build
 	  -cover ${ROOT}/test/my.coverspec  -pa ${ROOT}/ebin
 	@echo "automated test done. see test/log/index.html."
 
+install: build
+	./scripts/setup.es install
+
 #test: build
 #	erl -noshell -pa ebin \
 #	  -eval 'eunit:test("ebin", [verbose])' -s init stop
