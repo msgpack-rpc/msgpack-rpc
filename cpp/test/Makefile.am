@@ -16,7 +16,8 @@ check_PROGRAMS = \
 		callback \
 		notify \
 		async_server \
-		error
+		error \
+		udp
 
 TESTS = $(check_PROGRAMS)
 
@@ -31,4 +32,6 @@ notify_SOURCES = notify.cc
 async_server_SOURCES = async_server.cc
 
 error_SOURCES = error.cc
+
+udp_SOURCES = udp.cc
 

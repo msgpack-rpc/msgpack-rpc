@@ -19,6 +19,11 @@ function preprocess() {
 	fi
 }
 
-preprocess src/msgpack/rpc/caller.hmpl
-preprocess src/cclog/cclog.hmpl
+if [ "$1" == "clean" ];then
+	rm -f src/msgpack/rpc/caller.h
+	rm -f src/cclog/cclog.h
+else
+	preprocess src/msgpack/rpc/caller.hmpl
+	preprocess src/cclog/cclog.hmpl
+fi
 

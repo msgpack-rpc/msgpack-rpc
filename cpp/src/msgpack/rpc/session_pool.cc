@@ -45,7 +45,7 @@ session session_pool_impl::get_session(const address& addr)
 		}
 	}
 
-	shared_session s(new session_impl(
+	shared_session s(session_impl::create(
 				*m_builder, addr, m_loop));
 	ref->insert( table_t::value_type(addr, weak_session(s)) );
 

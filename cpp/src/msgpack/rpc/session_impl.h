@@ -30,13 +30,15 @@ namespace rpc {
 
 class session_impl : public mp::enable_shared_from_this<session_impl> {
 public:
-	session_impl(
-			const builder& b,
-			const address& addr,
-			loop lo);
+	static shared_session create(const builder& b, const address addr, loop lo);
 
 	~session_impl();
 
+private:
+	session_impl(const address& addr, loop lo);
+	void build(const builder& b);
+
+public:
 	const address& get_address() const
 	{
 		return m_addr;

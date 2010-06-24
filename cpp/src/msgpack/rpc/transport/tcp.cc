@@ -95,7 +95,7 @@ private:
 
 class client_transport : public rpc::client_transport {
 public:
-	client_transport(session_impl* s, const address& addr, const tcp_builder& b);
+	client_transport(shared_session s, const address& addr, const tcp_builder& b);
 	~client_transport();
 
 public:
@@ -116,7 +116,7 @@ private:
 	typedef mp::sync<sync_t>::ref sync_ref;
 	mp::sync<sync_t> m_sync;
 
-	session_impl* m_session;
+	shared_session m_session;
 
 	double m_connect_timeout;
 	unsigned int m_reconnect_limit;
@@ -245,7 +245,7 @@ void client_socket::on_response(msgid_t msgid,
 }
 
 
-client_transport::client_transport(session_impl* s, const address& addr, const tcp_builder& b) :
+client_transport::client_transport(shared_session s, const address& addr, const tcp_builder& b) :
 	m_session(s),
 	m_connect_timeout(b.connect_timeout()),
 	m_reconnect_limit(b.reconnect_limit())
@@ -259,7 +259,7 @@ void client_transport::on_connect(int fd, sync_ref& ref)
 
 	mp::shared_ptr<client_socket> cs =
 		m_session->get_loop()->add_handler<client_socket>(
-				fd, this, m_session->shared_from_this());
+				fd, this, m_session);
 
 	ref->sockpool.push_back(cs.get());
 
@@ -322,7 +322,7 @@ void client_transport::try_connect(sync_ref& lk_ref)
 			m_connect_timeout,
 			mp::bind(
 				&client_transport::connect_callback, this,
-				_1, _2, m_session->shared_from_this()));
+				_1, _2, m_session));
 }
 
 void client_transport::on_close(client_socket* sock)
@@ -414,7 +414,7 @@ server_transport::~server_transport()
 void server_transport::close()
 {
 	if(m_lsock >= 0) {
-		::close(m_lsock);
+		::close(m_lsock);  // FIXME shutdown? invalidate fd without releasing fd number
 		m_lsock = -1;
 	}
 }
@@ -450,7 +450,7 @@ tcp_builder::tcp_builder() :
 
 tcp_builder::~tcp_builder() { }
 
-std::auto_ptr<client_transport> tcp_builder::build(session_impl* s, const address& addr) const
+std::auto_ptr<client_transport> tcp_builder::build(shared_session s, const address& addr) const
 {
 	return std::auto_ptr<client_transport>(new transport::tcp::client_transport(s, addr, *this));
 }

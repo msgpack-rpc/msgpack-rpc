@@ -26,19 +26,26 @@ namespace msgpack {
 namespace rpc {
 
 
-session_impl::session_impl(
-		const builder& b,
-		const address& addr, loop lo) :
+session_impl::session_impl(const address& addr, loop lo) :
 	m_addr(addr),
 	m_loop(lo),
 	m_msgid_rr(0),  // FIXME rand()?
 	m_timeout(5)  // FIXME
-{
-	m_tran = b.build(this, addr);
-}
+{ }
 
 session_impl::~session_impl() { }
 
+void session_impl::build(const builder& b)
+{
+	m_tran = b.build(shared_from_this(), m_addr);
+}
+
+shared_session session_impl::create(const builder& b, const address addr, loop lo)
+{
+	shared_session s(new session_impl(addr, lo));
+	s->build(b);
+	return s;
+}
 
 future session_impl::send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone z)
 {
