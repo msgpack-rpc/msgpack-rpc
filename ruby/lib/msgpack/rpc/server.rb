@@ -84,11 +84,20 @@ class Responder
 	def initialize(sendable, msgid)
 		@sendable = sendable  # send_message method is required
 		@msgid = msgid
+		@sent = false
+	end
+
+	def sent?
+		@sent
 	end
 
 	def result(retval, err = nil)
-		data = [RESPONSE, @msgid, err, retval].to_msgpack
-		@sendable.send_data(data)
+		unless @sent
+			data = [RESPONSE, @msgid, err, retval].to_msgpack
+			@sendable.send_data(data)
+			@sent = true
+		end
+		nil
 	end
 
 	def error(err, retval = nil)
