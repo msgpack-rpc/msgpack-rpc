@@ -294,7 +294,7 @@ void client_socket::on_response(msgid_t msgid,
 
 client_transport::client_transport(shared_session s, const address& addr, const udp_builder& b)
 {
-	int sock = ::socket(AF_INET, SOCK_DGRAM, 0);
+	int sock = ::socket(PF_INET, SOCK_DGRAM, 0);
 	if(sock < 0) {
 		throw mp::system_error(errno, "failed to open UDP socket");
 	}
@@ -389,7 +389,7 @@ server_transport::server_transport(const address& addr, shared_server svr)
 	char addrbuf[addr.addrlen()];
 	addr.getaddr((sockaddr*)addrbuf);
 
-	int sock = ::socket(AF_INET, SOCK_DGRAM, 0);
+	int sock = ::socket(PF_INET, SOCK_DGRAM, 0);
 	if(sock < 0) {
 		throw mp::system_error(errno, "failed to open UDP socket");
 	}
