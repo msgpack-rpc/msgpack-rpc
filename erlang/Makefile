@@ -24,17 +24,13 @@ edoc: $(SOURCES)
 test: build
 	@echo "testing in ${ROOT} .."
 	@mkdir -p test/log
-	sh ${RUN_TEST_CMD} -dir ${ROOT}/test -logdir ${ROOT}/test/log \
-	  -I ${ROOT}/include -I ${ROOT}/src  \
-	  -cover ${ROOT}/test/my.coverspec  -pa ${ROOT}/ebin
+	erl -sname ct -s ct_run script_start -s erlang halt \
+	  -dir $(ROOT)/test -logdir $(ROOT)/test/log \
+	  -I $(ROOT)/include -cover $(ROOT)/test/my.coverspec  -pa $(ROOT)/ebin
 	@echo "automated test done. see test/log/index.html."
 
 install: build
 	./scripts/setup.es install
-
-#test: build
-#	erl -noshell -pa ebin \
-#	  -eval 'eunit:test("ebin", [verbose])' -s init stop
 
 clean:
 	-rm $(BEAMS)
