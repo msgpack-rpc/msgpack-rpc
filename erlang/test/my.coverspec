@@ -16,7 +16,7 @@
 
 %% Directories to include in cover.
 %% Dirs = [string()]
-%% {incl_dirs, ["../ebin"]}.
+%{incl_dirs, ["../ebin"]}.
 
 %% Directories, including subdirectories, to include.
 %{incl_dirs_r, Dirs}.

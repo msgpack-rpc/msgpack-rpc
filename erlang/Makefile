@@ -32,5 +32,8 @@ test: build
 install: build
 	./scripts/setup.es install
 
+uninstall:
+	./scripts/setup.es uninstall
+
 clean:
 	-rm $(BEAMS)

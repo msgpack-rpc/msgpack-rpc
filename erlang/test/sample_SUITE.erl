@@ -124,7 +124,7 @@ my_second_case(_)->
 
 case_add(Config)->
     Pairs=[{5,5}, {0,0}, {234, 2}, {213456789, -3}, {234, -23}, {-1,1}, {1,-1}, {-1,-1},
-	  {-2000, 2000}, {2000, -2000}], %FIXME: bug case {234, -234}],
+	  {-2000, 2000}, {2000, -2000}, {234, -234}],
     {ok, _Pid}=mp_client:connect({local,add}, localhost,65500),
     {ok, _Result}=mp_client:call(add, 42, hello, []),
     lists:map( fun({L,R})-> S=L+R, {ok,S}=mp_client:call(add, (L+42), add, [L,R])  end, Pairs ),
