@@ -10,8 +10,7 @@ contributions and discussions will be welcomed.
 ## usage
 
 1. connect to server with specifying address and port.
-2. append mp_client after some supervisor if you want to
-   keep connection.
+2. append mp_client after some supervisor if you want to keep connection.
 3. close it after RPC call ends.
 
 ## supervision tree
@@ -39,7 +38,6 @@ link mp_client under your supervisor
 
 see sample_app.erl and sample_srv.erl for detailed usages.
 the latter is a sample implementation of RPC callbacks.
-
 
 ## TODO
 
