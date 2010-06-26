@@ -27,7 +27,6 @@
 -behaviour(gen_server).
 -include("mp_rpc.hrl").
 
-
 %% API
 -export([start_link/2, behaviour_info/1]).
 
