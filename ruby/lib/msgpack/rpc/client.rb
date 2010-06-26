@@ -20,7 +20,7 @@ module RPC
 
 
 # Client is usable for RPC client.
-# Note that SessionPool includes LoopUtil.
+# Note that Client includes LoopUtil.
 class Client < Session
 	# 1. initialize(builder, address, loop = Loop.new)
 	# 2. initialize(host, port, loop = Loop.new)
