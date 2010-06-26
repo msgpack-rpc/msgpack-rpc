@@ -2,3 +2,7 @@ MANIFEST
 *.beam
 *~
 test/log
+edoc/*.html
+edoc/*.png
+edoc/*.css
+edoc/edoc-info

@@ -95,7 +95,7 @@ groups() ->
 %% Reason = term()
 %%--------------------------------------------------------------------
 all() -> 
-    [msgpack_test, my_first_case, my_second_case, {group, add}].
+    [my_first_case, my_second_case, {group, add}].
 
 %%--------------------------------------------------------------------
 %% Function: TestCase(Config0) ->
@@ -105,9 +105,6 @@ all() ->
 %% Reason = term()
 %% Comment = term()
 %%--------------------------------------------------------------------
-msgpack_test(_)->
-    msgpack:test().
-
 my_first_case(_Config) ->
     {ok, _Pid}=mp_client:connect(localhost,65500),
     {ok, Result}=mp_client:call(42, hello, []),
@@ -127,5 +124,6 @@ case_add(Config)->
     {ok, _Pid}=mp_client:connect({local,add}, localhost,65500),
     {ok, _Result}=mp_client:call(add, 42, hello, []),
     lists:map( fun({L,R})-> S=L+R, {ok,S}=mp_client:call(add, (L+42), add, [L,R])  end, Pairs ),
+    {error, {false,nil}}=mp_client:call(add, 890, no_such_func, []),
     mp_client:close(add),
     Config.
