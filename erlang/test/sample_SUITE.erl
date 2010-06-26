@@ -124,6 +124,6 @@ case_add(Config)->
     {ok, _Pid}=mp_client:connect({local,add}, localhost,65500),
     {ok, _Result}=mp_client:call(add, 42, hello, []),
     lists:map( fun({L,R})-> S=L+R, {ok,S}=mp_client:call(add, (L+42), add, [L,R])  end, Pairs ),
-    {error, {false,nil}}=mp_client:call(add, 890, no_such_func, []),
+    {error, {<<"no such func">>,nil}}=mp_client:call(add, 890, no_such_func, []),
     mp_client:close(add),
     Config.
