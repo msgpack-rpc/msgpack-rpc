@@ -14,18 +14,12 @@
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE FILE OR
 # THE USE OR OTHER DEALINGS IN THE FILE.
 
-ERL = erl
-ERLC = erlc
-
-
 MakeBeams(names) =
     erl2beam(name) =
 	private.beam = $(EBIN)/$(removesuffix $(basename $(name)))$(BEAM_EXT)
         $(beam): $(name)
-            $(ERLC) -pa $(EBIN) $(INCLUDES) -o $(EBIN) $<
-#        .DEFAULT: $(EBIN)/$(name).beam
-#            $(ERL) -pa $() -noshell -eval '$(name):test().' -s init stop 
-#        eprintln( $(string  $(beam)) )
+            $(ERLC) $(ERLCFLAGS) -pa $(EBIN) $(INCLUDES) -o $(EBIN) $<
+#            $(ERL) -pa $(EBIN) -noshell -eval '$(removesuffix $(basename $(name))):test().' -s init stop 
 	return $(string $(beam))
     private.beams=$(names.map $(erl2beam))
     return $(beams)
@@ -33,16 +27,13 @@ MakeBeams(names) =
 erls=$(glob $(string $(SRCDIR)/*$(ERL_EXT)))
 beams=$(MakeBeams $(erls))
 apps= #$(glob $(string $(EBIN)/*.app))
-eprintln( $(string $(beams)) )
+# eprintln( $(string $(beams)) )
 
 ########################################################################
 # Phony targets are scoped, so you probably want to declare them first.
 #
 .PHONY: ct all clean
 
-# *.app に依存させる
-#ct: $(EBIN)/sample_app.app $(ErlBeam $(EBIN), $(SRCS))
-#	echo $< changed
 ct: $(beams) $(apps)
 	mkdir -p test/log
 	erl -sname ct -s ct_run script_start -s erlang halt \
@@ -50,14 +41,7 @@ ct: $(beams) $(apps)
 	  -I $(ROOT)/include -I $(ROOT)/src -cover $(ROOT)/test/my.coverspec  -pa $(ROOT)/ebin
 
 .DEFAULT:  $(beams) $(apps)
-
-########################################################################
-# Subdirectories.
-# You may want to include some subdirectories in this project.
-# If so, define the subdirectory targets and uncomment this section.
-#
+#        $(ERL) -pa $(EBIN) -noshell -eval 'eunit:test().' -s init stop
 
 clean:
-    rm -rf ebin/*.beam
-
-# .SUBDIRS:
+    rm -rf $(beams)

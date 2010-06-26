@@ -33,11 +33,13 @@ open build/C
 open build/OCaml
 open build/LaTeX
 
-ERLC=$(shell which erlc)
-SRCDIR=src
-EBIN=ebin
-ERLCFLAGS=
-ERL=erl
+# sth like OTP.om
+public.ERLC=$(shell which erlc)
+public.SRCDIR=src
+public.EBIN=ebin
+public.ERLCFLAGS=-DDEBUG
+public.ERL=erl
+public.ROOT=$(shell pwd)
 
 public.BEAM_EXT=.beam
 public.ERL_EXT=.erl
@@ -48,34 +50,10 @@ public.INCLUDES_OPT = -I
 # Add the -I option to the includes lazily.
 # Don't redefine this variable unless you know what you are doing.
 #
-public.PREFIXED_INCLUDES = $`(addprefix $(INCLUDES_OPT), $(INCLUDES))
+#public.PREFIXED_INCLUDES = $`(addprefix $(INCLUDES_OPT), $(INCLUDES))
 
 #%$(BEAM_EXT): %$(ERL_EXT) #:scanner: scan-erl-%$(ERL_EXT)
 #    $(ERLC) $(ERLCFLAGS) $(PREFIXED_INCLUDES) $<
-
-public.OTPapp(name, files) = 
-    private.OFILES = $(addsuffix $(BEAM_EXT), $(files))
-    private.NORMALLIB = ebin/$(file $(name).app)
-    $(NORMALLIB): $(OFILES)
-
-public.MoveFile(filename, srcdir, destdir)=
-    private.DESTFILE = $(file $(destdir)/$(filename))
-    private.SRCFILE = $(file $(srcfile)/$(filename))
-    $(DESTFILE): $(SRCFILE)
-        mv $(SRCFILE) $(DESTFILE)
-
-public.BeamFiles(srcdir)=
-    files=$(file $(addsuffix .beam, $(basename $(removesuffix $(glob $(srcdir)/*.erl)))))
-    return $(files)
-
-%.beam: %.erl
-    $(ERLC) $(ERLCFLAGS) $(PREFIXED_INCLUDES)  $<
-#    $(ERLC) $(ERLCFLAGS) $(PREFIXED_INCLUDES) $(array -o) $`(DESTDIR) $<
-
-
-ROOT=$(shell pwd)
-#global.COMMON_TEST_LIB = $(shell erl -noshell -eval 'io:format("~s~n", [code:lib_dir(common_test)]).' -s init stop)
-#global.RUN_TEST_CMD = $(COMMON_TEST_LIB)/priv/bin/run_test
 
 #
 # The command-line variables are defined *after* the
@@ -87,7 +65,3 @@ DefineCommandVars()
 # Include the OMakefile in this directory.
 #
 .SUBDIRS: .
-
-# MakeBeams($(names))
-# BeamFiles(source_dir, dest_dir)
-# .DEFAULT: $(BeamFiles src, ebin)
