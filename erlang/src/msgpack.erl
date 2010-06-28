@@ -24,14 +24,14 @@
 %% for C API (http://msgpack.sourceforge.jp/c:doc)
 %% except buffering functions (both copying and zero-copying).
 -export([pack/1, unpack/1, unpack_all/1]).
+-export([pack_map/1]).
 
 % compile:
 % erl> c(msgpack).
 % erl> S = <some term>.
 % erl> {S, <<>>} = msgpack:unpack( msgpack:pack(S) ).
 -type reason() ::  enomem | badarg | no_code_matches.
--type map() :: any(). % there's no 'dict' type...
--type msgpack_term() :: [msgpack_term()] | integer() | float() | {dict, map()}.
+-type msgpack_term() :: [msgpack_term()] | {[{msgpack_term(),msgpack_term()}]} | integer() | float().
 
 % ===== external APIs ===== %
 -spec pack(Term::msgpack_term()) -> binary().

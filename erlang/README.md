@@ -1,9 +1,7 @@
 MessagePack-RPC Erlang
 ======================
 
-This code is still under construction. It works 
-in test environment (synchronous RPC only). and your
-contributions and discussions will be welcomed.
+This code is in alpha-release. Synchronous RPC seems working.
 
 # client
 
@@ -37,12 +35,11 @@ link mp_client under your supervisor
 
 
 see sample_app.erl and sample_srv.erl for detailed usages.
-the latter is a sample implementation of RPC callbacks.
+the latter is a sample implementation of RPC callbacks, overriding mp_session
 
 ## TODO
 
 - error handling 
--- (server) more sophisticated error-handling in mp_session
 -- what if happens when badarg/noproc/bad_clause, and exceptions.
 - (client) automatic random session-id generator
 - (server) multiple identifier (is it needed?)
