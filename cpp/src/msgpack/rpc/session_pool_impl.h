@@ -35,7 +35,7 @@ public:
 	session get_session(const address& addr);
 
 	session get_session(const std::string& host, uint16_t port)
-		{ return get_session(address(host, port)); }
+		{ return get_session(ip_address(host, port)); }
 
 	const loop& get_loop() const
 		{ return m_loop; }

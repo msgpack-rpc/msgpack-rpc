@@ -1,7 +1,7 @@
 #include "echo_server.h"
 #include <msgpack/rpc/server.h>
 #include <msgpack/rpc/client.h>
-#include <msgpack/rpc/transport/udp.h>
+#include <msgpack/rpc/transport/unix.h>
 #include <cclog/cclog.h>
 #include <cclog/cclog_tty.h>
 
@@ -15,14 +15,15 @@ int main(void)
 	std::auto_ptr<rpc::dispatcher> dp(new myecho);
 	svr.serve(dp.get());
 
-	svr.listen( msgpack::rpc::udp_listener("0.0.0.0", 8080) );
+	unlink("./unix.sock");
+	svr.listen( msgpack::rpc::unix_listener("./unix.sock") );
 
 	svr.start(4);
 	// }
 
 
 	// create client
-	rpc::client cli(msgpack::rpc::udp_builder(), msgpack::rpc::ip_address("127.0.0.1", 8080));
+	rpc::client cli(msgpack::rpc::unix_builder(), msgpack::rpc::path_address("./unix.sock"));
 
 	// call
 	std::string msg("MessagePack-RPC");

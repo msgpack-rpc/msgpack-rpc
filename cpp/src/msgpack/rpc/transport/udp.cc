@@ -300,8 +300,8 @@ client_transport::client_transport(shared_session s, const address& addr, const 
 	}
 
 	try {
-		char addrbuf[addr.addrlen()];
-		addr.getaddr((sockaddr*)addrbuf);
+		char addrbuf[addr.get_addrlen()];
+		addr.get_addr((sockaddr*)addrbuf);
 
 		if(::connect(sock, (sockaddr*)addrbuf, sizeof(addrbuf)) < 0) {
 			throw mp::system_error(errno, "failed to connect UDP socket");
@@ -386,17 +386,14 @@ void server_socket::close()
 
 server_transport::server_transport(const address& addr, shared_server svr)
 {
-	char addrbuf[addr.addrlen()];
-	addr.getaddr((sockaddr*)addrbuf);
-
 	int sock = ::socket(PF_INET, SOCK_DGRAM, 0);
 	if(sock < 0) {
 		throw mp::system_error(errno, "failed to open UDP socket");
 	}
 
 	try {
-		char addrbuf[addr.addrlen()];
-		addr.getaddr((sockaddr*)addrbuf);
+		char addrbuf[addr.get_addrlen()];
+		addr.get_addr((sockaddr*)addrbuf);
 
 		if(::bind(sock, (sockaddr*)addrbuf, sizeof(addrbuf)) < 0) {
 			throw mp::system_error(errno, "failed to bind UDP socket");
@@ -437,7 +434,7 @@ std::auto_ptr<client_transport> udp_builder::build(shared_session s, const addre
 
 
 udp_listener::udp_listener(const std::string& host, uint16_t port) :
-	m_addr(host, port) { }
+	m_addr(ip_address(host, port)) { }
 
 udp_listener::udp_listener(const address& addr) :
 	m_addr(addr) { }

@@ -91,7 +91,7 @@ void server::listen(const address& addr)
 	{ listen(tcp_listener(addr)); }
 
 void server::listen(const std::string& host, uint16_t port)
-	{ listen(address(host, port)); }
+	{ listen(ip_address(host, port)); }
 
 
 }  // namespace rpc

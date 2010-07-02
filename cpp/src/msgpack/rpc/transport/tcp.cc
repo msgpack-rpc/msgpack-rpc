@@ -307,18 +307,19 @@ void client_transport::connect_callback(int fd, int err, shared_session session_
 void client_transport::try_connect(sync_ref& lk_ref)
 {
 	address addr = m_session->get_address();
-	if(!addr.connectable()) {
-		return;  // FIXME throw?
-	}
+	//// FIXME
+	//if(addr.get_port() == 0) {
+	//	return;  // FIXME throw?
+	//}
 
 	LOG_INFO("connecting to ",addr);
 
-	char addrbuf[addr.addrlen()];
-	addr.getaddr((sockaddr*)addrbuf);
+	char addrbuf[addr.get_addrlen()];
+	addr.get_addr((sockaddr*)addrbuf);
 
 	m_session->get_loop()->connect(
 			PF_INET, SOCK_STREAM, 0,
-			(sockaddr*)addrbuf, addr.addrlen(),
+			(sockaddr*)addrbuf, sizeof(addrbuf),
 			m_connect_timeout,
 			mp::bind(
 				&client_transport::connect_callback, this,
@@ -395,8 +396,8 @@ void server_socket::on_notify(
 server_transport::server_transport(const address& addr, shared_server svr) :
 	m_lsock(-1)
 {
-	char addrbuf[addr.addrlen()];
-	addr.getaddr((sockaddr*)addrbuf);
+	char addrbuf[addr.get_addrlen()];
+	addr.get_addr((sockaddr*)addrbuf);
 
 	loop lo = svr->get_loop();
 
@@ -457,7 +458,7 @@ std::auto_ptr<client_transport> tcp_builder::build(shared_session s, const addre
 
 
 tcp_listener::tcp_listener(const std::string& host, uint16_t port) :
-	m_addr(host, port) { }
+	m_addr(ip_address(host, port)) { }
 
 tcp_listener::tcp_listener(const address& addr) :
 	m_addr(addr) { }

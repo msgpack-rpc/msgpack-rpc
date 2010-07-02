@@ -24,143 +24,239 @@ namespace msgpack {
 namespace rpc {
 
 
-address::address(const struct sockaddr_in& addr)
-{
-#ifdef MSGPACK_RPC_IPV6
-	m_serial_length = 6;
-	memcpy(&m_serial_address[0], &addr.sin_port, 2);
-	memcpy(&m_serial_address[2], &addr.sin_addr.s_addr, 4);
-#else
-	memcpy(&m_serial_address[0], &addr.sin_port, 2);
-	memcpy(&m_serial_address[2], &addr.sin_addr.s_addr, 4);
-	memset(&m_serial_address[6], 0, 2);
-#endif
-}
+//void address::copy_n46(const address& addr)
+//{
+//	char* tmp;
+//
+//	switch(m_type) {
+//	case IPV4:
+//	case IPV6:
+//		break;
+//
+//	case PATH:
+//		tmp = strdup(addr.m.path.str);
+//		if(tmp == NULL) {
+//			throw std::bad_alloc();
+//		}
+//		m.path.str = tmp;
+//		break;
+//
+//	default:
+//		m.ext.size = addr.m.ext.size;
+//		if(m.ext.size > sizeof(m.ext.buffer.stack)) {
+//			m.ext.buffer.heap = (char*)malloc(m.ext.size);
+//			if(m.ext.buffer.heap == NULL) {
+//				throw std::bad_alloc();
+//			}
+//			memcpy(m.ext.buffer.heap, addr.m.ext.buffer.heap, m.ext.size);
+//		} else {
+//			memcpy(m.ext.buffer.stack, addr.m.ext.buffer.stack, m.ext.size);
+//		}
+//		break;
+//	}
+//}
 
-#ifdef MSGPACK_RPC_IPV6
-address::address(const struct sockaddr_in6& addr)
-{
-	m_serial_length = 22;
-	memcpy(&m_serial_address[0], &addr.sin6_port, 2);
-	memcpy(&m_serial_address[2], addr.sin6_addr.s6_addr, 16);
-}
-#endif
+//void address::copy_op_n46(const address& addr)
+//{
+//	uint16_t heap_size = 0;
+//	char* heap = NULL;
+//
+//	switch(m_type) {
+//	case IPV4:
+//	case IPV6:
+//		break;
+//
+//	case PATH:
+//		heap_size = strlen(m.path.str)+1;
+//		heap = m.path.str;
+//		break;
+//
+//	default:
+//		if(m.ext.size > sizeof(m.ext.buffer.stack)) {
+//			heap_size = m.ext.size;
+//			heap = m.ext.buffer.heap;
+//		}
+//		break;
+//	}
+//
+//	switch(addr.m_type) {
+//	case IPV4:
+//	case IPV6:
+//		break;
+//
+//	case PATH: {
+//			uint16_t size = strlen(addr.m.path.str)+1;
+//			if(size <= heap_size) {
+//				m.path.str = heap;
+//				memcpy(m.path.str, addr.m.path.str, size);
+//			} else {
+//				char* tmp = strdup(addr.m.path.str);
+//				if(tmp == NULL) {
+//					throw std::bad_alloc();
+//				}
+//				m.path.str = tmp;
+//				if(heap != NULL) { free(heap); }
+//			}
+//			break;
+//		}
+//
+//	default:
+//		if(addr.m.ext.size <= sizeof(m.ext.buffer.stack)) {
+//			m.ext.size = addr.m.ext.size;
+//			memcpy(m.ext.buffer.stack, addr.m.ext.buffer.stack, m.ext.size);
+//			if(heap != NULL) { free(heap); }
+//
+//		} else if(addr.m.ext.size <= heap_size) {
+//			m.ext.size = addr.m.ext.size;
+//			m.ext.buffer.heap = heap;
+//			memcpy(m.ext.buffer.heap, addr.m.ext.buffer.heap, m.ext.size);
+//
+//		} else {
+//			char* tmp = (char*)malloc(addr.m.ext.size);
+//			if(tmp == NULL) {
+//				throw std::bad_alloc();
+//			}
+//			m.ext.size = addr.m.ext.size;
+//			m.ext.buffer.heap = tmp;
+//			memcpy(m.ext.buffer.heap, addr.m.ext.buffer.heap, m.ext.size);
+//			if(heap != NULL) { free(heap); }
+//		}
+//	}
+//}
 
-address::address(const std::string& host, uint16_t port)
-{
+
+void ip_address::resolve(const char* host, uint16_t port, int v6) {
 	addrinfo hints = {};
-#ifdef MSGPACK_RPC_IPV6
-	hints.ai_family = AF_UNSPEC;
-#else
-	hints.ai_family = AF_INET;
-#endif
+	if(v6 == 0) {
+		hints.ai_family = AF_INET;
+	} else if(v6 == 1) {
+		hints.ai_family = AF_UNSPEC;
+	} else { // v6 == 2
+		hints.ai_family = AF_INET6;
+	}
 	hints.ai_socktype = SOCK_STREAM;  // FIXME
 	hints.ai_flags = AI_ADDRCONFIG;
 
 	addrinfo *res = NULL;
-	if(getaddrinfo(host.c_str(), NULL, &hints, &res) != 0) {
+	if(getaddrinfo(host, NULL, &hints, &res) != 0) {
 		throw std::runtime_error("failed to resolve host name");
 	}
 
-	for(addrinfo* rp=res; rp; rp = rp->ai_next) {
-		if(rp->ai_family == AF_INET &&
-				rp->ai_addrlen >= sizeof(struct sockaddr_in)) {
+	if(v6 != 2) {
+		for(addrinfo* rp=res; rp; rp = rp->ai_next) {
+			if(rp->ai_family != AF_INET || rp->ai_addrlen < sizeof(struct sockaddr_in)) {
+				continue;
+			}
 			struct sockaddr_in* addr = (struct sockaddr_in*)rp->ai_addr;
-			addr->sin_port = htons(port);
-			*this = address(*addr);
+
+			m_type = IPV4;
+			set_port(port);
+			memcpy(&m.ipv4.buffer[2], &addr->sin_addr.s_addr, 4);
+
 			freeaddrinfo(res);
 			return;
 		}
 	}
 
-#ifdef MSGPACK_RPC_IPV6
-	// prefer IPv4 address
-	for(addrinfo* rp=res; rp; rp = rp->ai_next) {
-		if(rp->ai_family == AF_INET6 &&
-				rp->ai_addrlen >= sizeof(struct sockaddr_in6)) {
+	if(v6 != 0) {
+		for(addrinfo* rp=res; rp; rp = rp->ai_next) {
+			if(rp->ai_family != AF_INET6 || rp->ai_addrlen < sizeof(struct sockaddr_in6)) {
+				continue;
+			}
 			struct sockaddr_in6* addr = (struct sockaddr_in6*)rp->ai_addr;
-			addr->sin6_port = htons(port);
-			*this = address(*addr);
+
+			m_type = IPV6;
+			set_port(port);
+			memcpy(&m.ipv6.buffer[2], addr->sin6_addr.s6_addr, 16);
+
 			freeaddrinfo(res);
 			return;
 		}
 	}
-#endif
 
 	freeaddrinfo(res);
 	throw std::runtime_error("failed to resolve host name");
 }
 
-void address::load(address* to, const char* data, size_t len)
+ip_address::ip_address(const std::string& host, uint16_t port) :
+	address(IPV4)
 {
-#ifdef MSGPACK_RPC_IPV6
-	if(len != 6 && len != 22) {
-		throw std::runtime_error("unknown address type");
-	}
-
-	memcpy(to->m_serial_address, data, len);
-	to->m_serial_length = len;
-
-#else
-	if(len != 6) {
-		throw std::runtime_error("unknown address type");
-	}
-
-	memcpy(to->m_serial_address, data, 6);
-	memset(&to->m_serial_address[6], 0, 2);
-#endif
+	resolve(host.c_str(), port, 1);
 }
 
-void address::getaddr(sockaddr* addrbuf) const
+ipv4_address::ipv4_address(const std::string& host, uint16_t port) :
+	ip_address(IPV4)
 {
-#ifdef MSGPACK_RPC_IPV6
-	if(m_serial_length == 6) {
-		sockaddr_in* addr = reinterpret_cast<sockaddr_in*>(addrbuf);
+	resolve(host.c_str(), port, 0);
+}
 
-		memset(addr, 0, sizeof(sockaddr_in));
-		addr->sin_family = AF_INET;
-		addr->sin_port = raw_port();
-		addr->sin_addr.s_addr = *((uint32_t*)&m_serial_address[2]);
-
-	} else {
-		sockaddr_in6* addr = reinterpret_cast<sockaddr_in6*>(addrbuf);
-
-		memset(addr, 0, sizeof(sockaddr_in6));
-		addr->sin6_family = AF_INET6;
-		addr->sin6_port = raw_port();
-		memcpy(addr->sin6_addr.s6_addr, &m_serial_address[2], 16);
-		addr->sin6_scope_id = 0;  // FIXME *((uint32_t*)&m_serial_address[18]);
-	}
-
-#else
-	sockaddr_in* addr = reinterpret_cast<sockaddr_in*>(addrbuf);
-
-	memset(addr, 0, sizeof(sockaddr_in));
-	addr->sin_family = AF_INET;
-	addr->sin_port = raw_port();
-	addr->sin_addr.s_addr = *((uint32_t*)&m_serial_address[2]);
-#endif
+ipv6_address::ipv6_address(const std::string& host, uint16_t port) :
+	ip_address(IPV6)
+{
+	resolve(host.c_str(), port, 2);
 }
 
 
-std::ostream& operator<< (std::ostream& stream, const address& addr)
+void address::get_addr(sockaddr* addrbuf) const
 {
-#ifdef MSGPACK_RPC_IPV6
-	if(addr.m_serial_length == 6) {
-		uint32_t sa = *(uint32_t*)&addr.m_serial_address[2];
-		char buf[16];
-		return stream << ::inet_ntop(AF_INET, &sa, buf, sizeof(buf)) << ':' << ntohs(addr.raw_port());
-	} else {
-		unsigned char sa[16];
-		char buf[41];
-		memcpy(sa, &addr.m_serial_address[2], sizeof(sa));
-		return stream << '[' << ::inet_ntop(AF_INET6, sa, buf, sizeof(buf)) << "]:" << ntohs(addr.raw_port());
+	switch(m_type) {
+	case IPV4: {
+			sockaddr_in* addr = (sockaddr_in*)addrbuf;
+			memset(addr, 0, sizeof(sockaddr_in));
+			addr->sin_family = AF_INET;
+			addr->sin_port = htons(*(uint16_t*)m.ipv4.buffer);
+			memcpy(&addr->sin_addr.s_addr, m.ipv4.buffer+2, 4);
+			break;
+		}
+
+	case IPV6: {
+			sockaddr_in6* addr = (sockaddr_in6*)addrbuf;
+			memset(addr, 0, sizeof(sockaddr_in6));
+			addr->sin6_family = AF_INET6;
+			addr->sin6_port = htons(*(uint16_t*)m.ipv6.buffer);
+			memcpy(addr->sin6_addr.s6_addr, m.ipv6.buffer+2, 16);
+			break;
+		}
+
+	case PATH: {
+			sockaddr_un* addr = (sockaddr_un*)addrbuf;
+			memset(addr, 0, sizeof(sockaddr_un));
+			addr->sun_family = AF_LOCAL;
+			// FIXME check path length
+			strcpy(addr->sun_path, m.path.str);
+			break;
+		}
+
+	default:
+		// FIXME
+		break;
 	}
-#else
-	uint32_t sa = *(uint32_t*)&addr.m_serial_address[2];
-	char buf[16];
-	return stream << ::inet_ntop(AF_INET, &sa, buf, sizeof(buf)) << ':' << ntohs(addr.raw_port());
-#endif
+}
+
+
+std::ostream& operator<< (std::ostream& stream, const address& a)
+{
+	switch(a.m_type) {
+	case address::IPV4: {
+			uint32_t sa = *(uint32_t*)(a.m.ipv4.buffer+2);
+			char buf[16];
+			return stream << inet_ntop(AF_INET, &sa, buf, sizeof(buf)) << ':' << ntohs(*(uint16_t*)a.m.ipv4.buffer);
+		}
+
+	case address::IPV6: {
+			unsigned char sa[16];
+			char buf[41];
+			memcpy(sa, a.m.ipv6.buffer+2, sizeof(sa));
+			return stream << '[' << ::inet_ntop(AF_INET6, sa, buf, sizeof(buf)) << "]:" << ntohs(*(uint16_t*)a.m.ipv6.buffer);
+		}
+
+	case address::PATH:
+		return stream << a.m.path.str;
+
+	default:
+		// FIXME
+		return stream << "<unknown address>" << std::endl;
+	}
 }
 
 

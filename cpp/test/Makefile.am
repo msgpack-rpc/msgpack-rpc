@@ -17,7 +17,8 @@ check_PROGRAMS = \
 		notify \
 		async_server \
 		error \
-		udp
+		udp \
+		unix
 
 TESTS = $(check_PROGRAMS)
 
@@ -34,4 +35,6 @@ async_server_SOURCES = async_server.cc
 error_SOURCES = error.cc
 
 udp_SOURCES = udp.cc
+
+unix_SOURCES = unix.cc
 

@@ -43,7 +43,7 @@ bool MP_UTIL_IMPL(client)::step_timeout()
 
 
 client::client(const std::string& host, uint16_t port, loop lo) :
-	session(session_impl::create(tcp_builder(), address(host,port), lo))
+	session(session_impl::create(tcp_builder(), ip_address(host,port), lo))
 {
 	MP_UTIL.start_timeout(lo);
 }

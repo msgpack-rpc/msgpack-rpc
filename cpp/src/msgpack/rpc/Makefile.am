@@ -18,7 +18,8 @@ libmsgpack_rpc_la_SOURCES = \
 		session.cc \
 		session_pool.cc \
 		transport/tcp.cc \
-		transport/udp.cc
+		transport/udp.cc \
+		transport/unix.cc
 
 libmsgpack_rpc_include_HEADERS = \
 		address.h \
@@ -37,7 +38,8 @@ libmsgpack_rpc_include_HEADERS = \
 		types.h \
 		transport.h \
 		transport/tcp.h \
-		transport/udp.h
+		transport/udp.h \
+		transport/unix.h
 
 noinst_HEADERS = \
 		exception_impl.h \

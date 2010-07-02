@@ -114,7 +114,7 @@ private:
 
 class server_transport : public rpc::server_transport {
 public:
-	server_transport(const std::string& path, shared_server svr);
+	server_transport(const address& addr, shared_server svr);
 	~server_transport();
 
 public:
@@ -223,8 +223,8 @@ client_transport::client_transport(shared_session s, const address& addr, const 
 
 	try {
 		// FIXME UNIX addr
-		char addrbuf[addr.addrlen()];
-		addr.getaddr((sockaddr*)addrbuf);
+		char addrbuf[addr.get_addrlen()];
+		addr.get_addr((sockaddr*)addrbuf);
 
 		if(::connect(sock, (sockaddr*)addrbuf, sizeof(addrbuf)) < 0) {
 			throw mp::system_error(errno, "failed to connect UNIX socket");
@@ -272,19 +272,11 @@ void server_socket::on_notify(
 }
 
 
-server_transport::server_transport(const std::string& path, shared_server svr) :
+server_transport::server_transport(const address& addr, shared_server svr) :
 	m_lsock(-1)
 {
-	// FIXME UNIX_MAX_PATH?
-	//if(path.size() >= UNIX_MAX_PATH) {  // FIXME?
-	//	throw std::runtime_error("path name too long"); // FIXME message
-	//}
-
-	struct sockaddr_un addrbuf;
-	memset(&addrbuf, 0, sizeof(addrbuf));
-	addrbuf.sun_family = AF_UNIX;
-	//addrbuf.sun_len = path.size()+1; FIXME
-	memcpy(addrbuf.sun_path, path.c_str(), path.size()+1);
+	char addrbuf[addr.get_addrlen()];
+	addr.get_addr((sockaddr*)addrbuf);
 
 	loop lo = svr->get_loop();
 
@@ -342,13 +334,16 @@ std::auto_ptr<client_transport> unix_builder::build(shared_session s, const addr
 
 
 unix_listener::unix_listener(const std::string& path) :
-	m_path(path) { }
+	m_addr(path_address(path)) { }
+
+unix_listener::unix_listener(const address& addr) :
+	m_addr(addr) { }
 
 unix_listener::~unix_listener() { }
 
 std::auto_ptr<server_transport> unix_listener::listen(shared_server svr) const
 {
-	return std::auto_ptr<server_transport>(new transport::unix::server_transport(m_path, svr));
+	return std::auto_ptr<server_transport>(new transport::unix::server_transport(m_addr, svr));
 }
 
 
