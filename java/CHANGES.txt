@@ -1,3 +1,9 @@
+Release 0.4.1 - 2010/06/29
+  IMPROVEMENTS
+    Lookup method by Map at server-side, not by linear search.
+
+    Upgrade to netty 3.2.1.Final.
+
 Release 0.4 - 2010/06/16
   NEW FEATURES
     Added timer-based client-side timeout. This prevents reqTable not to get

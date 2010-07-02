@@ -4,7 +4,7 @@
   <groupId>org.msgpack</groupId>
   <artifactId>msgpack-rpc</artifactId>
   <packaging>jar</packaging>
-  <version>0.4.0</version>
+  <version>0.4.1</version>
 
   <name>msgpack-rpc</name>
   <url>http://msgpack.org/</url>
@@ -32,7 +32,7 @@
     <dependency>
       <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
-      <version>3.2.0.CR1</version>
+      <version>3.2.1.Final</version>
       <exclusions>
         <exclusion>
           <groupId>javax.servlet</groupId>
