@@ -66,7 +66,6 @@ public class {{type_name}} implements MessagePackable, MessageUnpackable, Messag
 		%end
 	}
 
-	%#FIXME
 	public void messageUnpack(Unpacker _Pac) throws IOException, MessageTypeException {
 		int _Length = _Pac.unpackArray();
 

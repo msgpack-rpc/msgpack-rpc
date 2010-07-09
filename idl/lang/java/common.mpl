@@ -60,6 +60,24 @@ class AST::Type
 		'map'    => 'MapSchema',
 	}
 
+	@@convertmap = {
+		'int8'   => 'ByteSchema.convertByte',
+		'int16'  => 'ShortSchema.convertShort',
+		'int32'  => 'IntSchema.convertInt',
+		'int64'  => 'LongSchema.convertLong',
+		'uint8'  => 'ByteSchema.convertByte',
+		'uint16' => 'ShortSchema.convertShort',
+		'uint32' => 'IntSchema.convertInt',
+		'uint64' => 'LongSchema.convertLong',
+		'bool'   => 'BooleanSchema.convertBoolean',
+		'double' => 'DoubleSchema.convertDouble',
+		'bytes'  => 'ByteArraySchema.convertByteArray',
+		'string' => 'StringSchema.convertString',
+		'list'   => 'ArraySchema.convertList',
+		'set'    => 'ArraySchema.convertSet',
+		'map'    => 'MapSchema.convertMap',
+	}
+
 	def new_schema
 		if list_type?
 			"new ListSchema(#{element_type.new_schema})"

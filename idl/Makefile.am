@@ -23,9 +23,17 @@ RUBY_DIST = \
 		lang/ruby/types.mpl \
 		lang/ruby.rb
 
+JAVA_DIST = \
+		lang/java/common.mpl \
+		lang/java/const.mpl \
+		lang/java/enum.mpl \
+		lang/java/struct.mpl \
+		lang/java.rb
+
 LANG_DIST = \
 		$(CPP_DIST) \
 		$(RUBY_DIST) \
+		$(JAVA_DIST) \
 		lang/lang.rb
 
 RUBYLIB = \
