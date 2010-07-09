@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.HashMap;
 import java.io.IOException;
@@ -124,6 +125,26 @@ public class {{type_name}} implements MessagePackable, MessageUnpackable, Messag
 
 		%end
 		%end
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if(o instanceof {{type_name}}) {
+			return this.equals(({{type_name}})o);
+		}
+		return false;
+	}
+
+	public boolean equals({{type_name}} o) {
+		if(o == null) {
+			return false;
+		}
+		%fields.each_value do |f|
+		if(!({{gen_equals(f, "o")}})) {
+			return false;
+		}
+		%end
+		return true;
 	}
 }
 

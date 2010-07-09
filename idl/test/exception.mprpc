@@ -6,6 +6,5 @@ exception NotFoundError {
 
 service ExceptionTest {
 	void check() throws (1:NotFoundError)
-	void check() throws (1:NotFoundError x)
 }
 

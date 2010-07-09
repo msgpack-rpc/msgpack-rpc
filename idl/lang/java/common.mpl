@@ -260,6 +260,15 @@ def gen_unpack(type, name = nil)
 	return name
 end
 
+def gen_equals(f, other)
+	if f.type.bytes_type?
+		"Arrays.equals(#{f.field_name}, #{other}.#{f.field_name})"
+	elsif f.type.base_type? && !f.type.string_type?
+		"#{f.field_name} == #{other}.#{f.field_name}"
+	else
+		"#{f.field_name} == null ? (#{other} == null) : #{f.field_name}.equals(#{other}.#{f.field_name})"
+	end
+end
 __END__
 
 
