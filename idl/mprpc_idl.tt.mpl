@@ -87,13 +87,13 @@ grammar MessagePackIDL
 	## Definition
 	##
 	rule definition
-		const / typedef / enum / senum_thrift / struct / exception / service
+		constant / typedef / enum / senum_thrift / struct / exception / service
 	end
 
-	rule const
+	rule constant
 		k_const type:field_type id k_equal literal {
 			def ast
-				AST::Const.new(type.type, id.symbol, literal.value)
+				AST::Constant.new(type.type, id.text, literal.value)
 			end
 		}
 	end
@@ -101,7 +101,7 @@ grammar MessagePackIDL
 	rule typedef
 		k_typedef type:builtin_type id {
 			def ast
-				AST::Typedef.new(type.type, id.symbol)
+				AST::Typedef.new(type.type, id.text)
 			end
 		}
 	end
@@ -110,7 +110,7 @@ grammar MessagePackIDL
 		k_enum id k_lwing fs:enum_field* k_rwing {
 			def ast
 				ffs = fs.elements.map {|f| f.ast }
-				AST::Enum.new(id.symbol, ffs)
+				AST::Enum.new(id.text, ffs)
 			end
 		}
 	end
@@ -119,7 +119,7 @@ grammar MessagePackIDL
 		id val:(k_equal i:literal_int)? list_separator? {
 			def ast
 				n = val.respond_to?(:i) ? val.i.number : nil
-				AST::EnumField.new(id.symbol, n)
+				AST::EnumField.new(id.text, n)
 			end
 		}
 	end
@@ -137,8 +137,8 @@ grammar MessagePackIDL
 		k_struct id k_lwing fs:field* k_rwing {
 			def ast
 				ffs = fs.elements.map {|f| f.ast }
-				ffs = AST::FieldList.new(ffs)
-				AST::Struct.new(id.symbol, ffs)
+				ffs = AST::FieldMap.new(ffs)
+				AST::Struct.new(id.text, ffs)
 			end
 		}
 	end
@@ -146,9 +146,10 @@ grammar MessagePackIDL
 	rule exception
 		k_exception id k_lwing fs:field* k_rwing {
 			def ast
+				# FIXME default message
 				ffs = fs.elements.map {|f| f.ast }
-				ffs = AST::FieldList.new(ffs)
-				AST::Exception.new(id.symbol, ffs)
+				ffs = AST::FieldMap.new(ffs)
+				AST::Exception.new(id.text, ffs)
 			end
 		}
 	end
@@ -160,9 +161,9 @@ grammar MessagePackIDL
 	rule service
 		k_service id ex:extends? k_lwing fs:function* k_rwing {
 			def ast
-				fex = ex.respond_to?(:symbol) ? fex.symbol : nil
+				fex = ex.respond_to?(:text) ? fex.text : nil
 				ffs = fs.elements.map {|f| f.ast }
-				AST::Service.new(id.symbol, fex, ffs)
+				AST::Service.new(id.text, fex, ffs)
 			end
 		}
 	end
@@ -182,11 +183,11 @@ grammar MessagePackIDL
 		return_type id k_lparen fs:field* k_rparen th:throws? eol_mark {
 			def ast
 				frt = return_type.type
-				fid = id.symbol
+				fid = id.text
 				ffs = fs.elements.map {|f| f.ast }
-				ffs = AST::FieldList.new(ffs)
+				ffs = AST::FieldMap.new(ffs)
 				fth = th.respond_to?(:array) ? th.array : []
-				fth = AST::ThrowsList.new(fth)
+				fth = AST::ExceptionFieldMap.new(fth)
 				AST::Function.new(frt, fid, ffs, fth)
 			end
 		}
@@ -205,7 +206,7 @@ grammar MessagePackIDL
 			def ast
 				fnum  = num.respond_to?(:number) ? num.number : nil
 				fname = id.text
-				AST::ThrowsClass.new(fnum, fname)
+				AST::ExceptionField.new(fnum, fname)
 			end
 		}
 		/ throws_class_thrift
@@ -217,7 +218,7 @@ grammar MessagePackIDL
 			def ast
 				fnum  = num.respond_to?(:number) ? num.number : nil
 				fname = id.text
-				AST::ThrowsClass.new(fnum, fname)
+				AST::ExceptionField.new(fnum, fname)
 			end
 		}
 	end
@@ -264,14 +265,14 @@ grammar MessagePackIDL
 	## Type
 	##
 	rule builtin_type
-		base_type { def type; AST::Type.new(text); end }
+		base_type { def type; AST::BuiltInType.new(text); end }
 		/ container_type
 	end
 
 	rule field_type
 		builtin_type
-		/ k_void { def type; AST::Type.new(text); end }
-		/ id { def type; AST::Type.new(text); end }
+		/ k_void { def type; AST::BuiltInType.new(text); end }
+		/ id { def type; AST::ExternalType.new(text); end }
 	end
 
 	rule return_type
@@ -328,7 +329,7 @@ grammar MessagePackIDL
 	rule literal
 		id {
 			def value
-				AST::ConstValue.new(symbol);
+				AST::VarLiteral.new(text);
 			end
 		}
 		/ literal_string / literal_int / literal_float
@@ -341,7 +342,7 @@ grammar MessagePackIDL
 				val.text_value
 			end
 			def value
-				AST::StringValue.new(text)
+				AST::StringLiteral.new(text)
 			end
 		}
 		/
@@ -350,7 +351,7 @@ grammar MessagePackIDL
 				val.text_value
 			end
 			def value
-				AST::StringValue.new(text)
+				AST::StringLiteral.new(text)
 			end
 		}
 	end
@@ -361,7 +362,7 @@ grammar MessagePackIDL
 				val.text_value.to_i
 			end
 			def value
-				AST::IntValue.new(number)
+				AST::IntLiteral.new(number)
 			end
 		}
 	end
@@ -372,7 +373,7 @@ grammar MessagePackIDL
 				val.text_value.to_i
 			end
 			def value
-				AST::IntValue.new(number)
+				AST::IntLiteral.new(number)
 			end
 		}
 	end
@@ -396,21 +397,21 @@ grammar MessagePackIDL
 				text_value.to_f
 			end
 			def value
-				AST::FloatValue.new(number)
+				AST::FloatLiteral.new(number)
 			end
 		}
 	end
 
 	rule literal_bool
-		k_false  { def value; AST::BoolValue.new(false); end }
-		/ k_true { def value; AST::BoolValue.new(true);  end }
+		k_false  { def value; AST::BoolLiteral.new(false); end }
+		/ k_true { def value; AST::BoolLiteral.new(true);  end }
 	end
 
 	rule literal_list
 		k_lbracket ls:(e:literal list_separator?)* k_rbracket {
 			def value
 				fls = ls.elements.map {|n| n.e.value }
-				AST::ListValue.new(fls)
+				AST::ListLiteral.new(fls)
 			end
 		}
 	end
@@ -420,7 +421,7 @@ grammar MessagePackIDL
 			def value
 				fls = {}
 				ls.elements.each {|n| fls[n.k.value] = n.v.value }
-				AST::MapValue.new(fls)
+				AST::MapLiteral.new(fls)
 			end
 		}
 	end

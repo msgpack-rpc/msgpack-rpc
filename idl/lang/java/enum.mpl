@@ -10,8 +10,8 @@ import org.msgpack.MessageConvertable;
 import org.msgpack.MessageTypeException;
 
 public enum {{name}} implements MessagePackable, MessageUnpackable, MessageConvertable {
-	%fields.each do |f|
-	{{f.name}}({{f.value}}),
+	%enum.each do |f|
+	{{f.name}}({{f.num}}),
 	%end
 	;
 
@@ -35,9 +35,9 @@ public enum {{name}} implements MessagePackable, MessageUnpackable, MessageConve
 
 	public void messageUnpack(Unpacker pac) throws IOException, MessageTypeException {
 		switch(pac.unpackInt()) {
-		%fields.each do |f|
-		case {{f.value}}:
-			this.value = {{f.value}};
+		%enum.each do |f|
+		case {{f.num}}:
+			this.value = {{f.num}};
 		%end
 		default:
 			throw new MessageTypeException();
@@ -49,9 +49,9 @@ public enum {{name}} implements MessagePackable, MessageUnpackable, MessageConve
 			throw new MessageTypeException();
 		}
 		switch(((Number)obj).intValue()) {
-		%fields.each do |f|
-		case {{f.value}}:
-			this.value = {{f.value}};
+		%enum.each do |f|
+		case {{f.num}}:
+			this.value = {{f.num}};
 		%end
 		default:
 			throw new MessageTypeException();

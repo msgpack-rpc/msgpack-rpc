@@ -12,7 +12,7 @@ def generate(doc, outdir, langdir)
 	doc.each do |d|
 		d.extend(FieldFunctions)
 		case d
-		when AST::Const
+		when AST::Constant
 			const << d
 		when AST::Typedef
 			#FIXME
@@ -65,6 +65,7 @@ class AST::Type
 		'list'   => 'List',
 		'set'    => 'Set',
 		'map'    => 'Map',
+		'void'   => 'void'
 	}
 
 	def to_s
