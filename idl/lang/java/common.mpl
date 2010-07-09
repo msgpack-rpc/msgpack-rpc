@@ -183,7 +183,7 @@ def gen_literal(type, val, name = nil)
 		}
 
 	else
-		#FIXME mputs %[#{decl} = new #{val.value}();]
+		mputs %[#{decl} = new #{type}();]
 	end
 end
 

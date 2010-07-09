@@ -169,7 +169,7 @@ class CppInclude
 	attr_accessor :name
 
 	def to_s
-		name.to_s
+		@name.to_s
 	end
 
 	include TopLevelDeclaration
