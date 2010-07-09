@@ -59,9 +59,11 @@ class Mplex
 	private
 	def self.with_context(context, output, &block)
 		context ||= Object.new
+		save = context.instance_variable_get(:@_mplexout)
 		context.instance_variable_set(:@_mplexout, output)
 		block.call(context)
-		context.instance_eval { remove_instance_variable(:@_mplexout) }
+		context.instance_variable_set(:@_mplexout, save)
+		output
 	end
 
 	def self.compile(src)
