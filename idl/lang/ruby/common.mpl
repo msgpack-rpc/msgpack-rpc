@@ -45,12 +45,6 @@ class AST::EnumFieldName
 	end
 end
 
-class AST::BoolLiteral
-	def to_s
-		value ? "true" : "false"
-	end
-end
-
 class AST::ListLiteral
 	def to_s
 		"[#{value.map{|e|"#{e}"}.join(',')}]"

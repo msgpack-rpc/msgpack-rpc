@@ -1,6 +1,19 @@
 module AST
 
 
+class Data
+	def initialize(document, data)
+		@document = document
+		@data = data
+	end
+
+	attr_accessor :data
+
+	attr_reader :document
+	alias doc document
+end
+
+
 module IDNormalizable  #:nodoc:
 	# Struct, Exception, ExceptionFieldMap
 	def normalize_id(array, hash)
@@ -138,6 +151,11 @@ class Document < Array
 	def cpp_includes
 		select {|x| x.class == CppInclude }
 	end
+
+	def document
+		self
+	end
+	alias doc document
 end
 
 
@@ -760,6 +778,9 @@ class FloatLiteral < Literal
 end
 
 class BoolLiteral < Literal
+	def to_s
+		@value ? "true" : "false"
+	end
 end
 
 class BytesLiteral < Literal

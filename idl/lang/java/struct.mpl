@@ -1,5 +1,5 @@
-%nss = doc.namespace(:java)
-package {{nss.join('.')}}; %>unless nss.empty?
+%Mplex.file(doc.data[:common_mpl], self)
+%gen_package(doc)
 
 import java.util.List;
 import java.util.Set;
@@ -17,121 +17,113 @@ import org.msgpack.MessageTypeException;
 import org.msgpack.Schema;
 import org.msgpack.schema.*;
 
-public class {{name}} implements MessagePackable, MessageUnpackable, MessageConvertable {
+public class {{type_name}} implements MessagePackable, MessageUnpackable, MessageConvertable {
 	%if exception?
 	// FIXME extends org.msgpack.rpc.RPCException
 	// FIXME pack func
 	private int code;
 	private String message;
+
 	public int getCode() {
 		return code;
 	}
+
 	public String getMessage() {
 		return message;
 	}
 	%end
 
 	%fields.each_value do |f|
-	public {{f.type}} {{f.name}};
+	public {{f.type}} {{f.field_name}};
 	%end
 
-	public static {{name}} createDefault() {
-		{{name}} obj = new {{name}}();
-		obj._Default();
-		return obj;
+	public {{type_name}}() {
+		%fields.each_value do |f|
+		%	default_field(f)
+		%end
 	}
 
-	public static {{name}} unpack(Unpacker _Pac) throws IOException {
-		{{name}} obj = new {{name}}();
+	public static {{type_name}} unpack(Unpacker _Pac) throws IOException {
+		{{type_name}} obj = new {{type_name}}();
 		obj.messageUnpack(_Pac);
 		return obj;
 	}
 
-	public static {{name}} convert(Object deserialized) {
-		{{name}} obj = new {{name}}();
+	public static {{type_name}} convert(Object deserialized) {
+		{{type_name}} obj = new {{type_name}}();
 		obj.messageConvert(deserialized);
 		return obj;
-	}
-
-	private void _Default() {
-		%fields.each_value do |f|
-			%default_field(f)
-		%end
 	}
 
 	public void messagePack(Packer _Pk) throws IOException {
 		_Pk.packArray({{fields.max_id}});
 		%1.upto(fields.max_id) do |i|
 		%if f = fields[i]
-		_Pk.pack({{f.name}});
+		_Pk.pack({{f.field_name}});
 		%else
 		_Pk.packNil();
 		%end
 		%end
 	}
 
+	%#FIXME
 	public void messageUnpack(Unpacker _Pac) throws IOException, MessageTypeException {
 		int _Length = _Pac.unpackArray();
-		%max_required_id = fields.max_required_id
-		%if max_required_id > 0
-		if(_Length < {{max_required_id}}) {
+
+		if(_Length < {{fields.max_required_id}}) {
 			throw new MessageTypeException();
 		}
-		%end
+
 		%1.upto(fields.max_id) do |i|
-			%f = fields[i]
-			%unless f
-				_Pac.unpackObject();
-				%next
-			%end
-			%if f.required?
-				%unpack_field(f)
-			%elsif i <= max_required_id
-				if(_Pac.tryUnpackNull()) {
-					%default_field(f)
-				} else {
-					%unpack_field(f)
-				}
-			%else
-				if(_Length < {{i}}) {
-					%default_field(f)
-				} else {
-					%unpack_field(f)
-				}
-			%end
+		%f = fields[i]
+		%unless f
+			_Pac.unpackObject();
+			%next
 		%end
+		%if f.required?
+			%unpack_field(f)
+		%elsif i <= fields.max_required_id
+			if(!_Pac.tryUnpackNull()) {
+				%unpack_field(f)
+			}
+		%else
+			if(_Length > {{i-1}}) {
+				%unpack_field(f)
+			}
+		%end
+		%end
+
 		for(int i={{fields.max_id}}; i < _Length; i++) {
 			_Pac.unpackObject();
 		}
 	}
 
 	public void messageConvert(Object _Obj) throws MessageTypeException {
-		Map<Integer,Object> _Fields;
-		if(_Obj instanceof Map) {
-			_Fields = (Map<Integer,Object>)_Obj;
-		} else if(_Obj instanceof List) {
-			// FIXME wrap instead of copy
-			List list = (List)_Obj;
-			_Fields = new HashMap(list.size());
-			int i = 1;
-			for(Object obj : list) {
-				_Fields.put(i++, obj);
-			}
-		} else {
+		if(!(_Obj instanceof List)) {
 			throw new MessageTypeException();
 		}
-		%fields.each_pair do |i,f|
-			%if f.required?
-			{{f.type.convert_schema(f, "_Fields.get(#{i})")}}
-			%else
-			%name = next_anon
-			Object {{name}} = _Fields.get({{i}});
-			if({{name}} == null) {
-				%default_field(f)
-			} else {
-				{{f.type.convert_schema(f, name)}}
+		List _Array = (List)_Obj;
+		int _Length = _Array.size();
+
+		if(_Length < {{fields.max_required_id}}) {
+			throw new MessageTypeException();
+		}
+
+		%1.upto(fields.max_id) do |i|
+		%if f = fields[i]
+
+		%if f.required?
+			{{f.type.convert_schema(f, "_Array.get(#{i})")}}
+		%else
+			if(_Length <= {{i-1}}) { return; }  %>if i > fields.max_required_id
+			%anon = next_anon
+			Object {{anon}} = _Array.get({{i}});
+			if({{anon}} != null) {
+				{{f.type.convert_schema(f, anon)}}
 			}
-			%end
+		%end
+
+		%end
 		%end
 	}
 }

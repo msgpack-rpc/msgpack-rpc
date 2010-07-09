@@ -1,5 +1,5 @@
-%nss = doc.namespace(:java)
-package {{nss.join('.')}}; %>unless nss.empty?
+%Mplex.file(doc.data[:common_mpl], self)
+%gen_package(doc)
 
 import java.io.IOException;
 import org.msgpack.Packer;
@@ -9,19 +9,19 @@ import org.msgpack.MessageUnpackable;
 import org.msgpack.MessageConvertable;
 import org.msgpack.MessageTypeException;
 
-public enum {{name}} implements MessagePackable, MessageUnpackable, MessageConvertable {
-	%enum.each do |f|
-	{{f.name}}({{f.num}}),
+public enum {{type_name}} implements MessagePackable, MessageUnpackable, MessageConvertable {
+	%enum.each do |e|
+	{{e.field_name}}({{e.num}}),
 	%end
 	;
 
 	private int value;
 
-	private {{name}}() {
-		value = 0;
+	private {{type_name}}() {
+		this.value = {{enum.first.num}};
 	}
 
-	private {{name}}(int value) {
+	private {{type_name}}(int value) {
 		this.value = value;
 	}
 
@@ -34,11 +34,11 @@ public enum {{name}} implements MessagePackable, MessageUnpackable, MessageConve
 	}
 
 	public void messageUnpack(Unpacker pac) throws IOException, MessageTypeException {
-		switch(pac.unpackInt()) {
-		%enum.each do |f|
-		case {{f.num}}:
-			this.value = {{f.num}};
-		%end
+		int val = pac.unpackInt();
+		switch(val) {
+		case {{e.num}}:  %|e| enum.each
+			this.value = val;
+			break;
 		default:
 			throw new MessageTypeException();
 		}
@@ -48,11 +48,11 @@ public enum {{name}} implements MessagePackable, MessageUnpackable, MessageConve
 		if(!(obj instanceof Number)) {
 			throw new MessageTypeException();
 		}
-		switch(((Number)obj).intValue()) {
-		%enum.each do |f|
-		case {{f.num}}:
-			this.value = {{f.num}};
-		%end
+		int val = ((Number)obj).intValue();
+		switch(val) {
+		case {{e.num}}:  %|e| enum.each
+			this.value = val;
+			break;
 		default:
 			throw new MessageTypeException();
 		}

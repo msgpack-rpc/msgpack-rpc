@@ -51,12 +51,6 @@ class AST::MapType
 	end
 end
 
-class AST::BoolLiteral
-	def to_s
-		value ? "true" : "false"
-	end
-end
-
 class AST::Field
 	def to_s
 		"#{type} #{name}"

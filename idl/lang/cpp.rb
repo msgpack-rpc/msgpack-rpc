@@ -2,7 +2,7 @@
 def generate(doc, outdir, langdir)
 	ldir = "#{langdir}/cpp"
 
-	doc.data[:common_mpl] = "#{langdir}/cpp/common.mpl"
+	doc.data[:common_mpl] = "#{ldir}/common.mpl"
 
 	Mplex.write("#{ldir}/types.mpl", "#{outdir}/types.hpp", doc)
 	doc.services.each do |s|
