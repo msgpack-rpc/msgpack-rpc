@@ -52,7 +52,7 @@ public:
 %end
 %end
 
-%def gen_call_array(ret, name, send_method, lifetype = nil)
+%def gen_call_apply(ret, name, send_method, lifetype = nil)
 	template <typename ArgArray>
 	[%ret%] [%name%](const std::string& name,
 			[%lifetype%] msglife,  %>if lifetype
@@ -75,9 +75,9 @@ public:
 %gen_call("future", "call", "send_request", "auto_zone")
 %gen_call("future", "call", "send_request", "shared_zone")
 %gen_call("future", "call", "send_request")
-%gen_call_array("future", "call_array", "send_request", "auto_zone")
-%gen_call_array("future", "call_array", "send_request", "shared_zone")
-%gen_call_array("future", "call_array", "send_request")
+%gen_call_apply("future", "call_apply", "send_request", "auto_zone")
+%gen_call_apply("future", "call_apply", "send_request", "shared_zone")
+%gen_call_apply("future", "call_apply", "send_request")
 
 	void notify(const std::string& name)
 	{
@@ -88,9 +88,9 @@ public:
 %gen_call("void", "notify", "send_notify", "auto_zone")
 %gen_call("void", "notify", "send_notify", "shared_zone")
 %gen_call("void", "notify", "send_notify")
-%gen_call_array("void", "notify_array", "send_notify", "auto_zone")
-%gen_call_array("void", "notify_array", "send_notify", "shared_zone")
-%gen_call_array("void", "notify_array", "send_notify")
+%gen_call_apply("void", "notify_apply", "send_notify", "auto_zone")
+%gen_call_apply("void", "notify_apply", "send_notify", "shared_zone")
+%gen_call_apply("void", "notify_apply", "send_notify")
 };
 
 

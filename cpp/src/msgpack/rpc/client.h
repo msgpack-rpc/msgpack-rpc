@@ -23,6 +23,7 @@
 #include "loop_util.h"
 #include "transport.h"
 #include "address.h"
+#include "exception.h"
 #include <mp/utilize.h>
 #include <string>
 

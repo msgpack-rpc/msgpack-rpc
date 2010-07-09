@@ -55,7 +55,7 @@ public:
 	template <typename Error>
 	void error(Error err, shared_zone z);
 
-	template <typename T>
+	template <typename Result>
 	class type;
 
 private:
@@ -77,19 +77,19 @@ private:
 };
 
 
-template <typename T>
+template <typename Result>
 class request::type : public request {
 public:
 	type(const request& req) : request(req) { }
 	~type() { }
 
-	void result(T res)
+	void result(Result res)
 		{ request::result(res); }
 
-	void result(T res, auto_zone z)
+	void result(Result res, auto_zone z)
 		{ request::result(res, z); }
 
-	void result(T res, shared_zone z)
+	void result(Result res, shared_zone z)
 		{ request::result(res, z); }
 };
 
