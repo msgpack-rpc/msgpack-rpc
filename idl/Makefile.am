@@ -5,14 +5,27 @@ DOC_FILES = \
 		README.md
 
 CPP_DIST = \
-		lang/cpp/header.mpl \
-		lang/cpp/rpc.mpl \
-		lang/cpp/source.mpl \
+		lang/cpp/common.mpl \
+		lang/cpp/headers.mpl \
+		lang/cpp/service.mpl \
+		lang/cpp/service_client.mpl \
+		lang/cpp/service_server.mpl \
+		lang/cpp/service_source.mpl \
 		lang/cpp/types.mpl \
 		lang/cpp.rb
 
+RUBY_DIST = \
+		lang/ruby/common.mpl \
+		lang/ruby/requires.mpl \
+		lang/ruby/service.mpl \
+		lang/ruby/service_client.mpl \
+		lang/ruby/service_server.mpl \
+		lang/ruby/types.mpl \
+		lang/ruby.rb
+
 LANG_DIST = \
 		$(CPP_DIST) \
+		$(RUBY_DIST) \
 		lang/lang.rb
 
 RUBYLIB = \
@@ -54,7 +67,6 @@ corelibdir = $(pkgdatadir)/rubylib
 corelib_DATA = \
 		mplex.rb \
 		mprpc_ast.rb \
-		mprpc_ast_impl.rb \
 		mprpc_idl.rb
 
 EXTRA_DIST = \
