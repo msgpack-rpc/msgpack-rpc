@@ -1,9 +1,22 @@
 
 def generate(doc, outdir, langdir)
-	doc.data[:common_mpl] = "#{langdir}/ruby/common.mpl"
-	Mplex.write("#{langdir}/ruby/types.mpl", "#{outdir}/types.rb", doc)
+	ldir = "#{langdir}/ruby"
+
+	doc.data[:common_mpl] = "#{ldir}/common.mpl"
+
+	Mplex.write("#{ldir}/types.mpl", "#{outdir}/types.rb", doc)
 	doc.services.each do |s|
-		Mplex.write("#{langdir}/ruby/service.mpl", "#{outdir}/#{s.type_name}.rb", s)
+		obase = "#{outdir}/#{s.name}"
+		Mplex.write("#{ldir}/service.mpl", "#{obase}.rb", s)
+		Mplex.write("#{ldir}/service_client.mpl", "#{obase}_client.rb", s)
+		Mplex.write("#{ldir}/service_server.mpl", "#{obase}_server.rb", s)
 	end
+
+	doc.data[:mode] = :client
+	Mplex.write("#{ldir}/requires.mpl", "#{outdir}/client.rb", doc)
+
+
+	doc.data[:mode] = :server
+	Mplex.write("#{ldir}/requires.mpl", "#{outdir}/server.rb", doc)
 end
 

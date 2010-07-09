@@ -1,7 +1,7 @@
 %doc = self.doc
 %Mplex.file(doc.data[:common_mpl], self)
 
-#include "{{name}}.hpp"
+#include "{{name}}_server.hpp"
 #include <memory>
 #include <mp/unordered_map.h>
 

@@ -1,14 +1,22 @@
 
 def generate(doc, outdir, langdir)
+	ldir = "#{langdir}/cpp"
+
 	doc.data[:common_mpl] = "#{langdir}/cpp/common.mpl"
 
-	Mplex.write("#{langdir}/cpp/types.mpl", "#{outdir}/types.hpp", doc)
-
+	Mplex.write("#{ldir}/types.mpl", "#{outdir}/types.hpp", doc)
 	doc.services.each do |s|
-		Mplex.write("#{langdir}/cpp/header.mpl", "#{outdir}/#{s.name}.hpp", s)
-		Mplex.write("#{langdir}/cpp/source.mpl", "#{outdir}/#{s.name}.cpp", s)
+		obase = "#{outdir}/#{s.name}"
+		Mplex.write("#{ldir}/service.mpl", "#{obase}.hpp", s)
+		Mplex.write("#{ldir}/service_client.mpl", "#{obase}_client.hpp", s)
+		Mplex.write("#{ldir}/service_server.mpl", "#{obase}_server.hpp", s)
+		Mplex.write("#{ldir}/service_source.mpl", "#{obase}.cpp", s)
 	end
 
-	Mplex.write("#{langdir}/cpp/rpc.mpl", "#{outdir}/rpc.hpp", doc)
+	doc.data[:mode] = :client
+	Mplex.write("#{ldir}/headers.mpl", "#{outdir}/client.hpp", doc)
+
+	doc.data[:mode] = :server
+	Mplex.write("#{ldir}/headers.mpl", "#{outdir}/server.hpp", doc)
 end
 
