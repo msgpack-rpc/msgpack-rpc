@@ -1,58 +1,74 @@
-%guard = "MPRPC_TYPES_#{"%08x"%rand(1<<32)}_HPP__"
-#ifndef {{guard}}
-#define {{guard}}
+%doc = self
+%Mplex.file(doc.data[:common_mpl], self)
+%gen_guard("TYPES") do
 
-#include <msgpack.hpp>
+#include <msgpack/rpc/client.h>
+#include <msgpack/rpc/server.h>
+#include <stdexcept>
 
-%if nss = namespace(:cpp)
-namespace [%ns%] {  %|ns| nss.each
-%end
+%gen_package(doc) do
 
 
-%each do |d|
+%doc.each do |d|
 %case d
-%when AST::Const
-static const {{d.type}} {{d.name}} = {{d.value}};
-%# FIXME list, map
+%when AST::Constant
+static const {{d.type}} {{d.const_name}} = {{d.value}};
+%# FIXME MapLiteral, ListLiteral
 
 %when AST::Typedef
-typedef {{d.type}} {{d.name}};
+typedef {{d.type}} {{d.type_name}};
 
 %when AST::Enum
-enum {{d.name}} {
-	%d.fields.each do |f|
-	{{f.name}} = {{f.value}},
+enum {{d.type_name}}_enum {
+	%d.enum.each do |e|
+	{{e.field_name}} = {{e.num}},
 	%end
 };
 
-%when AST::Struct
-struct {{d.name}} {
-	{{d.name}}() { }
-	%d.fields.each do |f|
-	{{f.type}} {{f.name}};
-	%end
-	MSGPACK_DEFINE([%join(d.fields){|f|f.name}%]);
-	%#FIXME id, required, optional
+struct {{d.type_name}} {
+	typedef {{d.type_name}}_enum type;
+
+	{{d.type_name}}() : value({{d.enum.first.field_name}}) { }
+	{{d.type_name}}(type v) : value(v) { }
+
+	type value;
+
+	template <typename Packer>
+	void msgpack_pack(Packer& pk) const {
+		pk.pack((int)value);
+	}
+
+	void msgpack_unpack(msgpack::object obj) {
+		int v = obj.as<int>();
+		switch(v) {
+		%d.enum.each do |e|
+		case {{e.field_name}}:
+		%end
+			value = (type)v;
+			break;
+		default:
+			throw msgpack::type_error();
+		}
+	}
 };
 
 %when AST::Exception
-struct {{d.name}} : public std::exception {
-	{{d.name}}() : std::exception("{{d.name}}") { }
-	%d.fields.each do |f|
-	{{f.type}} {{f.name}};
-	%end
-	MSGPACK_DEFINE([%join(d.fields){|f|f.name}%]);
-	%#FIXME id, required, optional
+struct {{d.name}} {
+	%#FIXME : msgpack::rpc::remote_error
+	%gen_struct(d.type_name, d.fields)
+};
+
+%when AST::Struct
+struct {{d.type_name}} {
+	%gen_struct(d.type_name, d.fields)
 };
 
 %when AST::Service
-	%# do nothing
-%end
-%end
+	%# done in header.mpl and source.mpl
+
+%end  # case
+%end  # doc.each
 
 
-%if nss = namespace(:cpp)
-}  // namespace [%ns%]  %|ns| nss.reverse.each
-%end
-
-#endif
+%end  # gen_package
+%end  # gen_guard
