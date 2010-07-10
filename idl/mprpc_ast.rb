@@ -56,8 +56,7 @@ class ConstName < String
 end
 
 # String class used for
-# Service#extends, ExceptionField#type_name,
-# TypeDeclaration#type_name and Type#type_name.
+# Service#extends, TypeDeclaration#type_name and Type#type_name.
 class TypeName < ConstName
 end
 
@@ -98,6 +97,7 @@ class Document < Array
 	def normalize!(conf)  #:nodoc:
 		@conf = conf
 		compact!
+		conf[:typedef] = {}
 		each {|d| d.document = self }
 		each {|d| d.normalize!(conf) }
 	end
@@ -230,7 +230,7 @@ class Constant
 	attr_accessor :value
 
 	def normalize!(conf)  #:nodoc:
-		@type.normalize!(conf)
+		@type = @type.normalize_type(conf)
 	end
 
 	include TopLevelDeclaration
@@ -267,7 +267,8 @@ class Typedef < TypeDeclaration
 	attr_accessor :type
 
 	def normalize!(conf) #:nodoc:
-		@type.normalize!(conf)
+		@type = @type.normalize_type(conf)
+		conf[:typedef][@name] = @type
 	end
 
 	include TopLevelDeclaration
@@ -358,9 +359,9 @@ class FieldMap < Hash
 	include IDNormalizable  #:nodoc:
 
 	def normalize!(conf)  #:nodoc:
+		@list.each {|f| f.normalize!(conf) }
 		@list.reject! {|f| f.type.void_type? }
 		@min_id, @max_id = normalize_id(@list, self)
-		each_value {|f| f.normalize!(conf) }
 	end
 
 	# Gets all fields declared as `optional`.
@@ -407,7 +408,7 @@ class Field
 		else
 			@required = false
 		end
-		@type.normalize!(conf)
+		@type = @type.normalize_type(conf)
 		if @default.nil?
 			@default = @type.default_value
 		end
@@ -431,8 +432,9 @@ class Field
 	# Gets name. String.
 	attr_reader :name
 
-	# Gets default value. Always Literal, not null.
-	# See also Field#optional?
+	# Gets default value. Literal.
+	# If type of this field is ExternalType, it may be null.
+	# Otherwise not null.
 	attr_accessor :default
 
 	# true if this field is declared as requred.
@@ -494,7 +496,7 @@ class Function
 
 	def normalize!(conf)  #:nodoc:
 		@exception_fields.normalize!(conf)
-		@type.normalize!(conf)
+		@type = @type.normalize_type(conf)
 		@fields.normalize!(conf)
 	end
 end
@@ -508,25 +510,27 @@ class ExceptionFieldMap < Hash
 	include IDNormalizable  #:nodoc:
 
 	def normalize!(conf)  #:nodoc:
+		@list.each {|x| x.normalize!(conf) }
+		@list.reject! {|f| f.type.void_type? }
 		normalize_id(@list, self)
 	end
 end
 
 class ExceptionField
-	def initialize(id, name)  #:nodoc:
+	def initialize(id, type)  #:nodoc:
 		@id = id
-		@name = TypeName.new(name)
-		@type_name = TypeName.new(name)
+		@type = type
 	end
 
 	# Gets ID number. Fixnum.
 	attr_accessor :id
 
-	# Gets name. TypeName.
-	attr_accessor :type_name
+	# Gets type. Type.
+	attr_accessor :type
 
-	# Gets name. String.
-	attr_reader :type_name
+	def normalize!(conf)  #:nodoc:
+		@type = @type.normalize_type(conf)
+	end
 end
 
 
@@ -549,9 +553,6 @@ class Type
 
 	def to_s
 		@type_name.to_s
-	end
-
-	def normalize!(conf)  #:nodoc:
 	end
 
 	def integer_type?
@@ -625,6 +626,11 @@ class BuiltInType < Type
 		end
 	end
 
+	def normalize_type(conf)  #:nodoc:
+		normalize!(conf)
+		self
+	end
+
 	# true if this is a BuiltInType.
 	def builtin_type?
 		true
@@ -667,7 +673,7 @@ class ListType < BuiltInType
 
 	def normalize!(conf)  #:nodoc:
 		super
-		@element_type.normalize!(conf)
+		@element_type = @element_type.normalize_type(conf)
 	end
 end
 
@@ -682,7 +688,7 @@ class SetType < BuiltInType
 
 	def normalize!(conf)  #:nodoc:
 		super
-		@element_type.normalize!(conf)
+		@element_type = @element_type.normalize_type(conf)
 	end
 end
 
@@ -701,8 +707,8 @@ class MapType < BuiltInType
 
 	def normalize!(conf)  #:nodoc:
 		super
-		@key_type.normalize!(conf)
-		@value_type.normalize!(conf)
+		@key_type = @key_type.normalize_type(conf)
+		@value_type = @value_type.normalize_type(conf)
 	end
 end
 
@@ -714,6 +720,17 @@ class ExternalType < Type
 
 	def default_value
 		nil
+	end
+
+	def normalize!(conf)
+	end
+
+	def normalize_type(conf)  #:nodoc:
+		if type = conf[:typedef][@name]
+			type
+		else
+			self
+		end
 	end
 end
 

@@ -99,9 +99,9 @@ grammar MessagePackIDL
 	end
 
 	rule typedef
-		k_typedef type:builtin_type id {
+		k_typedef type:field_type id {
 			def ast
-				AST::Typedef.new(type.type, id.text)
+				AST::Typedef.new(id.text, type.type)
 			end
 		}
 	end
@@ -194,31 +194,31 @@ grammar MessagePackIDL
 	end
 
 	rule throws
-		k_throws k_lparen ls:throws_class* k_rparen {
+		k_throws k_lparen ls:throws_field* k_rparen {
 			def array
 				ls.elements.map {|s| s.ast }
 			end
 		}
 	end
 
-	rule throws_class
-		num:field_id? id eol_mark {
+	rule throws_field
+		num:field_id? t:return_type eol_mark {
 			def ast
 				fnum  = num.respond_to?(:number) ? num.number : nil
-				fname = id.text
-				AST::ExceptionField.new(fnum, fname)
+				ft    = t.type
+				AST::ExceptionField.new(fnum, ft)
 			end
 		}
-		/ throws_class_thrift
+		/ throws_field_thrift
 	end
 
-	rule throws_class_thrift
+	rule throws_field_thrift
 		field {
 			#warn "Thrift style exception is obsolete."
 			def ast
 				fnum  = num.respond_to?(:number) ? num.number : nil
-				fname = id.text
-				AST::ExceptionField.new(fnum, fname)
+				ft    = t.type
+				AST::ExceptionField.new(fnum, ft)
 			end
 		}
 	end
@@ -228,11 +228,11 @@ grammar MessagePackIDL
 	## Messaage
 	##
 	rule field
-		num:field_id? qu:field_qualifier? field_type id val:default_value? eol_mark {
+		num:field_id? qu:field_qualifier? t:return_type id val:default_value? eol_mark {
 			def ast
 				fnum  = num.respond_to?(:number) ? num.number : nil
 				fqu   = qu.respond_to?(:text) ? qu.text : nil
-				ft    = field_type.type
+				ft    = t.type
 				fname = id.text
 				fval  = val.respond_to?(:value) ? val.value : nil
 				AST::Field.new(fnum, fqu, ft, fname, fval)
@@ -264,19 +264,20 @@ grammar MessagePackIDL
 	####
 	## Type
 	##
-	rule builtin_type
-		base_type { def type; AST::BuiltInType.new(text); end }
-		/ container_type
+	rule field_type
+		builtin_type
+		/ id { def type; AST::ExternalType.new(text); end }
 	end
 
-	rule field_type
+	rule return_type
 		builtin_type
 		/ k_void { def type; AST::BuiltInType.new(text); end }
 		/ id { def type; AST::ExternalType.new(text); end }
 	end
 
-	rule return_type
-		field_type
+	rule builtin_type
+		base_type { def type; AST::BuiltInType.new(text); end }
+		/ container_type
 	end
 
 	rule base_type

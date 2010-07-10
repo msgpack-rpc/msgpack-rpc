@@ -11,9 +11,6 @@ require 'msgpack/rpc'
 %when AST::Constant
 {{d.const_name}} = {{d.value}}
 
-%when AST::Typedef
-{{d.type_name}} = {{d.type}}
-
 %when AST::Enum
 %d.enum.each do |e|
 {{e.field_name}} = {{e.num}}

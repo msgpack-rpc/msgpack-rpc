@@ -15,9 +15,6 @@
 static const {{d.type}} {{d.const_name}} = {{d.value}};
 %# FIXME MapLiteral, ListLiteral
 
-%when AST::Typedef
-typedef {{d.type}} {{d.type_name}};
-
 %when AST::Enum
 enum {{d.type_name}}_enum {
 	%d.enum.each do |e|
