@@ -100,6 +100,7 @@ class Document < Array
 		conf[:typedef] = {}
 		each {|d| d.document = self }
 		each {|d| d.normalize!(conf) }
+		reject! {|d| d.class == Typedef }
 	end
 
 	attr_accessor :conf
@@ -110,11 +111,6 @@ class Document < Array
 	# Gets all Constant declarations.
 	def constants
 		select {|x| x.class == Constant }
-	end
-
-	# Gets all Typedef declarations.
-	def typedefs
-		select {|x| x.class == Typedef }
 	end
 
 	# Gets all Enum declarations.
