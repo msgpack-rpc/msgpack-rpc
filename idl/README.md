@@ -18,7 +18,7 @@ Configure and install in the usual way:
 
 ## Usage
 
-    Usage: mprpcgen [options] <input>
+    Usage: msgpack-idl [options] <input>
         -o, --output DIR
         -g, --gen LANG
         -v, --verbose

@@ -44,8 +44,8 @@ end
 
 require 'rubygems'
 require 'treetop'
-require 'mprpc_idl'
-require 'mprpc_ast'
+require 'parser'
+require 'ast'
 require 'mplex'
 
 begin

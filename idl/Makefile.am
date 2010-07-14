@@ -52,35 +52,35 @@ RUBYLIB = \
 		rubylib/treetop/runtime/interval_skip_list/node.rb \
 		rubylib/rubygems
 
-mprpcgen:
+msgpack-idl:
 	echo '#!$(RUBY_PATH)' > $@
 	echo '$$LOAD_PATH.unshift("$(pkgdatadir)/rubylib")' >> $@
 	echo '$$LOAD_PATH.unshift("$(pkgdatadir)/lang")' >> $@
-	echo 'load "$(pkgdatadir)/mprpcgen.rb"' >> $@
+	echo 'load "$(pkgdatadir)/command.rb"' >> $@
 	chmod 755 $@
 
-bin_SCRIPTS = mprpcgen
+bin_SCRIPTS = msgpack-idl
 
-MOSTLYCLEANFILES = mprpcgen
+MOSTLYCLEANFILES = msgpack-idl
 
-mprpcgendir = $(pkgdatadir)
+msgpack_idldir = $(pkgdatadir)
 
-nobase_mprpcgen_DATA = \
+nobase_msgpack_idl_DATA = \
 		$(LANG_DIST) \
 		$(RUBYLIB) \
-		mprpcgen.rb
+		command.rb
 
 corelibdir = $(pkgdatadir)/rubylib
 
 corelib_DATA = \
 		mplex.rb \
-		mprpc_ast.rb \
-		mprpc_idl.rb
+		ast.rb \
+		parser.rb
 
 EXTRA_DIST = \
 		$(LANG_DIST) \
 		$(RUBYLIB) \
 		$(DOC_FILES) \
 		$(corelib_DATA) \
-		mprpcgen.rb
+		command.rb
 
