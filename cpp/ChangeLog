@@ -1,0 +1,12 @@
+
+XXXX-XX-XX version 0.2.0
+
+  * underlying transport layer is redesigned
+  * supports UDP
+  * supports UNIX socket
+  * bug fix: inserts a future in reqtable before sending data
+
+2010-05-07 version 0.1.0
+
+  * first release
+

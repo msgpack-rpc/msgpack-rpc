@@ -1,7 +1,7 @@
 AC_INIT(lang/lang.rb)
 AC_CONFIG_AUX_DIR(ac)
 
-AM_INIT_AUTOMAKE(msgpack-idl, 0.0.2)
+AM_INIT_AUTOMAKE(msgpack-idl, 0.1.0)
 
 AC_CHECK_PROG(RUBY, ruby, ruby)
 if test "x$RUBY" = x; then
