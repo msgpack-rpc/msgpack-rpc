@@ -28,6 +28,7 @@ Configure and install in the usual way:
         -o, --output DIR
         -g, --gen LANG
         -v, --verbose
+        --devel  # generates RPC interface (EXPERIMENTAL)
 
 Currently, **ruby**, **cpp** and **java** are supported for *LANG*.
 

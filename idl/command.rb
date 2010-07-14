@@ -6,12 +6,14 @@ conf = {
 	:outdir  => nil,
 	:lang    => nil,
 	:verbose => false,
+	:devel => false,
 }
 
 op = OptionParser.new
 op.on('-o', '--output DIR') {|s| conf[:outdir] = s }
 op.on('-g', '--gen LANG')   {|s| conf[:lang] = s }
 op.on('-v', '--verbose')    { conf[:verbose] = true }
+op.on('', '--devel')        { conf[:devel] = true }
 op.banner += " <input>"
 
 (class<<self;self;end).module_eval {

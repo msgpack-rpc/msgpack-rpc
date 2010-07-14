@@ -37,12 +37,12 @@ class Session
 
 	# backward compatibility
 	def port  #:nodoc:
-		@address.port;
+		@address.port
 	end
 
 	# backward compatibility
 	def host  #:nodoc:
-		@address.host;
+		@address.host
 	end
 
 	# call-seq:

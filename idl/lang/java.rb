@@ -22,7 +22,7 @@ def generate(doc, outdir, langdir)
 		when AST::Struct, AST::Exception
 			Mplex.write("#{ldir}/struct.mpl", "#{nspath}/#{d.name}.java", d)
 		when AST::Service
-			#FIXME
+			# TODO
 			#Mplex.write("#{ldir}/server.mpl", "#{nspath}/#{d.name}Server.java", doc)
 			#Mplex.write("#{ldir}/client.mpl", "#{nspath}/#{d.name}Client.java", doc)
 		end
