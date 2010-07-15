@@ -33,8 +33,7 @@ JAVA_DIST = \
 LANG_DIST = \
 		$(CPP_DIST) \
 		$(RUBY_DIST) \
-		$(JAVA_DIST) \
-		lang/lang.rb
+		$(JAVA_DIST)
 
 RUBYLIB = \
 		rubylib/treetop.rb \
@@ -55,7 +54,6 @@ RUBYLIB = \
 msgpack-idl:
 	echo '#!$(RUBY_PATH)' > $@
 	echo '$$LOAD_PATH.unshift("$(pkgdatadir)/rubylib")' >> $@
-	echo '$$LOAD_PATH.unshift("$(pkgdatadir)/lang")' >> $@
 	echo 'load "$(pkgdatadir)/command.rb"' >> $@
 	chmod 755 $@
 

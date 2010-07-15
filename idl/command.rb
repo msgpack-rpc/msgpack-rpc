@@ -50,13 +50,13 @@ require 'parser'
 require 'ast'
 require 'mplex'
 
+LANGDIR = File.expand_path File.join(File.dirname(__FILE__), "lang")
+
 begin
-	require "lang/#{lang}"
+	require "#{LANGDIR}/#{lang}"
 rescue LoadError
 	usage("'#{lang}' is not supported.")
 end
-
-require 'lang/lang'  # LANGDIR
 
 if input == "-"
 	in_fname = "(stdin)"
@@ -96,7 +96,6 @@ end
 
 Dir.mkdir(outdir) unless File.directory?(outdir)
 outdir = File.expand_path(outdir)
-langdir = File.expand_path(LANGDIR)
 
-generate(doc, outdir, langdir)
+generate(doc, outdir, LANGDIR)
 
