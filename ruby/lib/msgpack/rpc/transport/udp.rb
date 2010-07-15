@@ -29,7 +29,10 @@ class UDPTransport
 	end
 
 	class BasicSocket < Rev::IOWatcher
+		HAVE_DNRL = UDPSocket.public_instance_methods.include?(:do_not_reverse_lookup)
+
 		def initialize(io)
+			io.do_not_reverse_lookup = true if HAVE_DNRL
 			super(io)
 			@io = io
 		end
