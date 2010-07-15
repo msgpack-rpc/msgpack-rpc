@@ -84,7 +84,14 @@ body = expand_include(in_body, in_fname)
 
 
 parser = MessagePackIDLParser.new
+parser.consume_all_input = true
 sn = parser.parse(body)
+
+if sn.nil?
+	puts "Parse error at #{in_fname}:#{parser.failure_line}:#{parser.failure_column}:"
+	puts parser.failure_reason
+	exit 1
+end
 
 doc = sn.ast
 doc.normalize!(conf)

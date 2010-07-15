@@ -1,5 +1,5 @@
 RUBY=ruby
-TTVER=treetop-1.4.5
+TTVER=treetop-1.4.8
 
 all: parser.rb
 
