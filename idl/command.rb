@@ -44,8 +44,7 @@ rescue
 	usage($!.to_s)
 end
 
-require 'rubygems'
-require 'treetop'
+require 'treetop/runtime'
 require 'parser'
 require 'ast'
 require 'mplex'

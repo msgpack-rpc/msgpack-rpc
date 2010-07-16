@@ -40,6 +40,8 @@ RUBYLIB = \
 		rubylib/treetop/README.md \
 		rubylib/treetop/LICENSE \
 		rubylib/treetop/runtime.rb \
+		rubylib/treetop/ruby_extensions.rb \
+		rubylib/treetop/ruby_extensions/string.rb \
 		rubylib/treetop/runtime/compiled_parser.rb \
 		rubylib/treetop/runtime/interval_skip_list.rb \
 		rubylib/treetop/runtime/syntax_node.rb \
