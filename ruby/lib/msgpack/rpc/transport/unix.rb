@@ -34,6 +34,13 @@ class UNIXTransport
 			@pac = MessagePack::Unpacker.new
 		end
 
+		# from Rev::TCPSocket
+		def on_readable
+			super
+		rescue
+			close
+		end
+
 		# from Rev::UNIXSocket
 		def on_read(data)
 			@pac.feed(data)
