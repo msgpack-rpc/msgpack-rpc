@@ -26,6 +26,10 @@
 
 #include <sys/un.h>
 
+#ifdef unix
+#undef unix
+#endif
+
 namespace msgpack {
 namespace rpc {
 namespace transport {
