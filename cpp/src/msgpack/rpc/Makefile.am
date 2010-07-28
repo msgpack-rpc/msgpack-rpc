@@ -21,7 +21,7 @@ libmsgpack_rpc_la_SOURCES = \
 		transport/udp.cc \
 		transport/unix.cc
 
-libmsgpack_rpc_include_HEADERS = \
+nobase_libmsgpack_rpc_include_HEADERS = \
 		address.h \
 		caller.h \
 		client.h \
