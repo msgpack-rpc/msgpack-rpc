@@ -22,159 +22,190 @@ module RPC
 class Error < StandardError
 end
 
+
+##
+## MessagePack-RPC Exception
+##
+#
+#  RPCError
+#  |
+#  +-- TimeoutError
+#  |
+#  +-- TransportError
+#  |   |
+#  |   +-- NetworkUnreachableError
+#  |   |
+#  |   +-- ConnectionRefusedError
+#  |   |
+#  |   +-- ConnectionTimeoutError
+#  |   |
+#  |   +-- MalformedMessageError
+#  |   |
+#  |   +-- StreamClosedError
+#  |
+#  +-- CallError
+#  |   |
+#  |   +-- NoMethodError
+#  |   |
+#  |   +-- ArgumentError
+#  |
+#  +-- ServerError
+#  |   |
+#  |   +-- ServerBusyError
+#  |
+#  +-- RemoteError
+#      |
+#      +-- RuntimeError
+#      |
+#      +-- (user-defined errors)
+
 class RPCError < Error
+	def initialize(code, *data)
+		@code = code.to_s
+		@data = data
+		super(@data.shift || @code)
+	end
+	attr_reader :code
+	attr_reader :data
+
+	def is?(code)
+		if code.is_a?(Class) && code < RPCError
+			code = code::CODE
+		end
+		@code == code || @code[0,code.length+1] == "#{code}." ||
+			(code == ".RemoteError" && @code[0] != ?.)
+	end
+end
+
+
+##
+# Top Level Errors
+#
+class TimeoutError < RPCError
+	CODE = ".TimeoutError"
 	def initialize(msg)
-		super(msg)
+		super(self.class::CODE, msg)
+	end
+end
+
+class TransportError < RPCError
+	CODE = ".TransportError"
+	def initialize(msg)
+		super(self.class::CODE, msg)
+	end
+end
+
+class CallError < RPCError
+	CODE = ".CallError"
+	def initialize(msg)
+		super(self.class::CODE, msg)
+	end
+end
+
+class ServerError < RPCError
+	CODE = ".ServerError"
+	def initialize(msg)
+		super(self.class::CODE, msg)
 	end
 end
 
 class RemoteError < RPCError
-	def initialize(msg, result = nil)
-		super(msg)
-		@result = result
-	end
-	attr_reader :result
-end
-
-class TimeoutError < Error
-	def initialize(msg = "request timed out")
-		super
-	end
-end
-
-class ConnectError < TimeoutError
-	def initialize(msg = "connect failed")
-		super
+	CODE = ".RemoteError"
+	def initialize(code, *data)
+		super(code, *data)
 	end
 end
 
 
-=begin
-#TODO
-
-class Error < StandardError
-end
-
-class RPCError < Error
-	def initialize(msg, code)
-		super(msg)
-		@code = code
-	end
-	attr_reader :code
-end
-
-
-class TimeoutError < RPCError
-	CODE = -60
-	def initialize(msg = "request timed out")
-		super(msg, CODE)
-	end
-end
-
-
-class ClientError < RPCError
-	def initialize(msg, code)
-		super(msg, code)
-	end
-end
-
-
-class TransportError < RPCError
-	CODE = -50
-	def initialize(msg, code = CODE)
-		super(msg, CODE)
-	end
-end
-
+##
+# TransportError
+#
 class NetworkUnreachableError < TransportError
-	CODE = -51
-	def initialize(msg = "network unreachable")
-		super(msg, CODE)
-	end
+	CODE = ".TransportError.NetworkUnreachableError"
 end
 
 class ConnectionRefusedError < TransportError
-	CODE = -52
-	def initialize(msg = "connection refused")
-		super(msg, CODE)
-	end
+	CODE = ".TransportError.ConnectionRefusedError"
 end
 
 class ConnectionTimeoutError < TransportError
-	CODE = -53
-	def initialize(msg = "connection timed out")
-		super(msg, CODE)
-	end
+	CODE = ".TransportError.ConnectionRefusedError"
 end
 
-
-class MessageRefusedError < ClientError
-	CODE = -40
-	def initialize(msg = "broken message", code = CODE)
-		super(msg, code)
-	end
+class MalformedMessageError < TransportError
+	CODE = ".TransportError.ConnectionRefusedError"
 end
 
-class MessageTooLargeError < MessageRefusedError
-	CODE = -41
-	def initialize(msg = "messge too large")
-		super(msg, CODE)
-	end
+class StreamClosedError < TransportError
+	CODE = ".TransportError.StreamClosedError"
 end
 
-
-class CallError < ClientError
-	CODE = -20
-	def initialize(msg, code = CODE)
-		super(msg, code)
-	end
-end
-
+##
+# CallError
+#
 class NoMethodError < CallError
-	CODE = -21
-	def initialize(msg = "method not found")
-		super(msg, CODE)
-	end
+	CODE = ".CallError.NoMethodError"
 end
 
-class ArgumentError < NoMethodError
-	CODE = -22
-	def initialize(msg = "invalid argument")
-		super(msg, CODE)
-	end
+class ArgumentError < CallError
+	CODE = ".CallError.ArgumentError"
 end
 
-
-class ServerError < RPCError
-	CODE = -30
-	def initialize(msg, code = CODE)
-		super(msg, code)
-	end
-end
-
+##
+# ServerError
+#
 class ServerBusyError < ServerError
-	CODE = -31
-	def initialize(msg = "server temporally busy")
-		super(msg, CODE)
+	CODE = ".ServerError.ServerBusyError"
+end
+
+##
+# RuntimeError
+#
+class RuntimeError < RemoteError
+	def initialize(msg, *data)
+		super("RuntimeError", msg, *data)
 	end
 end
 
 
-class RemoteError < RPCError
-	def initialize(msg, code, result = nil)
-		super(msg, code)
-		@result = result
-	end
-	attr_reader :result
-end
+class RPCError
+	def self.create(code, data)
+		if code[0] == ?.
+			code = code.dup
+			while true
+				if klass = SYSTEM_ERROR_TABLE[code]
+					return klass.new(*data)
+				end
+				if code.slice!(/\.[^\.]*$/) == nil || code.empty?
+					return RPCError.new(code, *data)
+				end
+			end
 
-class RemoteRuntimeError < RemoteRuntimeError
-	CODE = -10
-	def initialize(msg, result = nil)
-		super(msg, CODE, result)
+		elsif code == RuntimeError::CODE
+			RuntimeError.new(*data)
+
+		else
+			RemoteError.new(code, *data)
+		end
 	end
+
+	private
+	SYSTEM_ERROR_TABLE = {
+		TimeoutError::CODE            => TimeoutError,
+		TransportError::CODE          => TransportError,
+		CallError::CODE               => CallError,
+		ServerError::CODE             => ServerError,
+		RemoteError::CODE             => RemoteError,
+		NetworkUnreachableError::CODE => NetworkUnreachableError,
+		ConnectionRefusedError::CODE  => ConnectionRefusedError,
+		ConnectionTimeoutError::CODE  => ConnectionTimeoutError,
+		MalformedMessageError::CODE   => MalformedMessageError,
+		StreamClosedError::CODE       => StreamClosedError,
+		NoMethodError::CODE           => NoMethodError,
+		ArgumentError::CODE           => ArgumentError,
+		ServerBusyError::CODE         => ServerBusyError,
+	}
 end
-=end
 
 
 end
