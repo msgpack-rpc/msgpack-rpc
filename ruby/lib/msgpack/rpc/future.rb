@@ -88,6 +88,7 @@ class Future
 	def set_result(err, res)  #:nodoc:
 		@error  = err
 		@result = res
+		@set = true
 		if @callback_handler
 			if @callback_handler.arity == 2
 				# FIXME backward compatibility
@@ -96,7 +97,6 @@ class Future
 				@callback_handler.call(self)
 			end
 		end
-		@set = true
 	end
 
 	def step_timeout  #:nodoc:
