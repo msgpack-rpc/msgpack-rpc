@@ -16,9 +16,10 @@ class MessagePackRPC_Client
   {
     $host    = $this->host;
     $port    = $this->port;
-    $req     = $this->back->clientCallObject($func, $args);
-    $res     = $this->back->clientConnection($host, $port, $req);
-    $feature = $this->back->clientRecvObject($res);
+    $code    = 0;
+    $call    = $this->back->clientCallObject($func, $args, $code);
+    $send    = $this->back->clientConnection($host, $port, $call);
+    $feature = $this->back->clientRecvObject($send);
 
     $result  = $feature->getResult();
     $errors  = $feature->getErrors();
@@ -32,6 +33,6 @@ class MessagePackRPC_Client
 
   public function call($func, $args)
   {
-    $feature = $this->send($func, $args);
+    return $this->send($func, $args);
   }
 }
