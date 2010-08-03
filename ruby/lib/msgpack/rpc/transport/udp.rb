@@ -49,6 +49,9 @@ class UDPTransport
 			# FIXME multiple objects in one message
 			obj = MessagePack.unpack(data)
 			on_message(obj, addr)
+		rescue
+			# FIXME log
+			return
 		end
 
 		include MessageReceiver
@@ -101,12 +104,12 @@ class UDPClientTransport
 
 		# MessageReceiver interface
 		def on_request(msgid, method, param, addr)
-			raise RPCError.new("request message on client session")
+			raise Error.new("request message on client session")
 		end
 
 		# MessageReceiver interface
 		def on_notify(method, param, addr)
-			raise RPCError.new("notify message on client session")
+			raise Error.new("notify message on client session")
 		end
 
 		# MessageReceiver interface
@@ -172,7 +175,7 @@ class UDPServerTransport
 
 		# MessageReceiver interface
 		def on_response(msgid, error, result, addr)
-			raise RPCError.new("response message on server session")
+			raise Error.new("response message on server session")
 		end
 	end
 

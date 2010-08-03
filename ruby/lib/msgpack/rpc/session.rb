@@ -153,10 +153,7 @@ class Session
 	# from ClientTransport
 	def on_connect_failed  #:nodoc:
 		@reqtable.reject! {|msgid, future|
-			begin
-				future.set_result ConnectError.new, nil
-			rescue
-			end
+			future.set_result ConnectionTimeoutError::CODE, ["connection timed out"]
 			true
 		}
 		nil
@@ -172,10 +169,7 @@ class Session
 			end
 		}
 		timedout.each {|future|
-			begin
-				future.set_result TimeoutError.new, nil
-			rescue
-			end
+			future.set_result TimeoutError::CODE, ["request timed out"]
 		}
 		!@reqtable.empty?
 	end
