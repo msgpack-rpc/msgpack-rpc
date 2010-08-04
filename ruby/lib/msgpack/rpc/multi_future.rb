@@ -50,6 +50,27 @@ class MultiFuture
 	# Gets Future objects which are joined as success.
 	attr_reader :success
 
+	# Clears all Future objects and all callback methods.
+	def clear
+		@all = []
+
+		@not_joined = []
+		@joined = []
+		@error = []
+		@success = []
+
+		clear_callback
+	end
+
+	# Clears all callback methods registered by on_xxx methods.
+	def clear_callback
+		@on_all = nil
+		@on_error = nil
+		@on_success = nil
+		@on_num = {}
+		self
+	end
+
 	# Registeres new Future object.
 	# Returns self.
 	def add(future)
