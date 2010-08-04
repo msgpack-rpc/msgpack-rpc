@@ -27,6 +27,6 @@ class MessagePackRPC_Future
   public function getErrors()
   {
     $errors = $this->errors;
-    return $erros;
+    return $errors;
   }
 }
