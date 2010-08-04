@@ -234,6 +234,7 @@ end  # module MessagePack
 require 'msgpack'
 require 'socket'
 require 'rev'
+require 'msgpack/rpc/version'
 require 'msgpack/rpc/address'
 require 'msgpack/rpc/message'
 require 'msgpack/rpc/exception'
@@ -247,3 +248,4 @@ require 'msgpack/rpc/client'
 require 'msgpack/rpc/server'
 require 'msgpack/rpc/transport/base'
 require 'msgpack/rpc/transport/tcp'
+
