@@ -55,6 +55,15 @@ public:
 	template <typename Error>
 	void error(Error err, shared_zone z);
 
+	template <typename Error, typename Result>
+	void error(Error err, Result res);
+
+	template <typename Error, typename Result>
+	void error(Error err, Result res, auto_zone z);
+
+	template <typename Error, typename Result>
+	void error(Error err, Result res, shared_zone z);
+
 	template <typename Result>
 	class type;
 
@@ -176,6 +185,24 @@ template <typename Error>
 void request::error(Error err, shared_zone z)
 {
 	msgpack::type::nil res;
+	call(res, err, z);
+}
+
+template <typename Error, typename Result>
+void request::error(Error err, Result res)
+{
+	call(res, err);
+}
+
+template <typename Error, typename Result>
+void request::error(Error err, Result res, auto_zone z)
+{
+	call(res, err, z);
+}
+
+template <typename Error, typename Result>
+void request::error(Error err, Result res, shared_zone z)
+{
 	call(res, err, z);
 }
 
