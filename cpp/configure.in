@@ -2,7 +2,7 @@ AC_INIT(src/msgpack/rpc/session.h)
 AC_CONFIG_AUX_DIR(ac)
 AC_CANONICAL_TARGET
 
-AM_INIT_AUTOMAKE(msgpack-rpc, 0.1.0)
+AM_INIT_AUTOMAKE(msgpack-rpc, 0.2.0)
 AC_CONFIG_HEADER(config.h)
 
 AC_SUBST(CFLAGS)
