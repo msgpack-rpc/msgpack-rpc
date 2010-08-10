@@ -1,14 +1,15 @@
 *.o
 *.lo
 *.la
-*.in
 .deps
 .libs
 config.h
 config.log
 config.status
+config.h.in
 configure
 Makefile
+Makefile.in
 stamp-h1
 aclocal
 ac/

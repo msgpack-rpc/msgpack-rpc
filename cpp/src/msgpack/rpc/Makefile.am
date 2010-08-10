@@ -19,7 +19,8 @@ libmsgpack_rpc_la_SOURCES = \
 		session_pool.cc \
 		transport/tcp.cc \
 		transport/udp.cc \
-		transport/unix.cc
+		transport/unix.cc \
+		version.c
 
 nobase_libmsgpack_rpc_include_HEADERS = \
 		address.h \
@@ -39,18 +40,22 @@ nobase_libmsgpack_rpc_include_HEADERS = \
 		transport.h \
 		transport/tcp.h \
 		transport/udp.h \
-		transport/unix.h
+		transport/unix.h \
+		version.h
 
 noinst_HEADERS = \
 		exception_impl.h \
 		future_impl.h \
 		request_impl.h \
+		server_impl.h \
 		session_impl.h \
+		session_pool_impl.h \
 		reqtable.h \
 		message_sendable.h \
-		transport_impl.h
+		transport_impl.h \
 		transport/base.h
 
 EXTRA_DIST = \
-		caller.hmpl
+		caller.hmpl \
+		version.h.in
 
