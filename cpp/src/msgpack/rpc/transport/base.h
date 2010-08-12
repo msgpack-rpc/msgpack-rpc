@@ -348,18 +348,27 @@ try {
 }
 
 
+class scoped_buffer {
+public:
+	scoped_buffer(size_t size) : data((char*)malloc(size))
+		{ if(data == NULL) { throw std::bad_alloc(); } }
+	~scoped_buffer() { ::free(data); }
+	char* data;
+	void release() { data = NULL; }
+private:
+	scoped_buffer();
+	scoped_buffer(const scoped_buffer&);
+};
+
 template <typename MixIn>
 void dgram_handler<MixIn>::on_read(mp::wavy::event& e)
 try {
-	char* buffer = (char*)malloc(MSGPACK_RPC_DGRAM_BUFFER_SIZE);
-	if(!buffer) {
-		throw std::bad_alloc();
-	}
+	scoped_buffer buffer(MSGPACK_RPC_DGRAM_BUFFER_SIZE);
 
 	struct sockaddr_storage addrbuf;
 	socklen_t addrlen = sizeof(addrbuf);
 
-	ssize_t rl = ::recvfrom(ident(), buffer, MSGPACK_RPC_DGRAM_BUFFER_SIZE,
+	ssize_t rl = ::recvfrom(ident(), buffer.data, MSGPACK_RPC_DGRAM_BUFFER_SIZE,
 			0, (sockaddr*)&addrbuf, &addrlen);
 	if(rl <= 0) {
 		if(rl == 0) { throw closed_exception(); }
@@ -370,7 +379,10 @@ try {
 	e.next();  // FIXME more()?
 
 	msgpack::unpacked result;
-	msgpack::unpack(&result, buffer, rl);
+	msgpack::unpack(&result, buffer.data, rl);
+
+	result.zone()->push_finalizer(&::free, buffer.data);
+	buffer.release();
 
 	dgram_handler<MixIn>::on_message(result.get(), result.zone(), (struct sockaddr*)&addrbuf, addrlen);
 
