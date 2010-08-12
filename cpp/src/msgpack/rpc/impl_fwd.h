@@ -40,6 +40,7 @@ typedef mp::shared_ptr<session_pool_impl> shared_session_pool;
 class server;
 class server_impl;
 typedef mp::shared_ptr<server_impl> shared_server;
+typedef mp::weak_ptr<server_impl> weak_server;
 
 class request;
 class request_impl;

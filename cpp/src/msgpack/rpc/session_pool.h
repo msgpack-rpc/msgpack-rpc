@@ -45,8 +45,6 @@ public:
 	const loop& get_loop() const;
 	loop get_loop();
 
-	// FIXME close
-
 protected:
 	session_pool(shared_session_pool pimpl);
 	shared_session_pool m_pimpl;

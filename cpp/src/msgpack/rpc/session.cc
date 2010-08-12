@@ -30,14 +30,14 @@ session_impl::session_impl(const address& addr, loop lo) :
 	m_addr(addr),
 	m_loop(lo),
 	m_msgid_rr(0),  // FIXME rand()?
-	m_timeout(5)  // FIXME
+	m_timeout(30)  // FIXME
 { }
 
 session_impl::~session_impl() { }
 
 void session_impl::build(const builder& b)
 {
-	m_tran = b.build(shared_from_this(), m_addr);
+	m_tran = b.build(this, m_addr);
 }
 
 shared_session session_impl::create(const builder& b, const address addr, loop lo)

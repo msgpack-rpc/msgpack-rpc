@@ -32,7 +32,7 @@ public:
 	udp_builder();
 	~udp_builder();
 
-	std::auto_ptr<client_transport> build(shared_session s, const address& addr) const;
+	std::auto_ptr<client_transport> build(session_impl* s, const address& addr) const;
 };
 
 
@@ -43,7 +43,7 @@ public:
 
 	~udp_listener();
 
-	std::auto_ptr<server_transport> listen(shared_server svr) const;
+	std::auto_ptr<server_transport> listen(server_impl* svr) const;
 
 private:
 	address m_addr;

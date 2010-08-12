@@ -34,7 +34,8 @@ class builder {
 public:
 	virtual ~builder() { }
 
-	virtual std::auto_ptr<client_transport> build(shared_session s, const address& addr) const = 0;
+	virtual std::auto_ptr<client_transport> build(
+			session_impl* s, const address& addr) const = 0;
 
 	template <typename IMPL>
 	class base;
@@ -46,7 +47,8 @@ class listener {
 public:
 	virtual ~listener() { }
 
-	virtual std::auto_ptr<server_transport> listen(shared_server svr) const = 0;
+	virtual std::auto_ptr<server_transport> listen(
+			server_impl* svr) const = 0;
 
 	template <typename IMPL>
 	class base;

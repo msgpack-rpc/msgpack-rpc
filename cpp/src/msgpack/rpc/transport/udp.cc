@@ -33,100 +33,30 @@ namespace {
 
 using namespace mp::placeholders;
 
-
-#ifndef MSGPACK_RPC_UDP_SOCKET_BUFFER_SIZE
-#define MSGPACK_RPC_UDP_SOCKET_BUFFER_SIZE (64*1024)
-#endif
-
-
-template <typename MixIn>
-class basic_socket : public mp::wavy::handler {
-public:
-	basic_socket(int fd, loop lo);
-	~basic_socket();
-
-	void on_read(mp::wavy::event& e);
-
-	void on_message(object msg, auto_zone z,
-			const sockaddr* addrbuf, socklen_t addrlen);
-
-	void send_data(sbuffer* sbuf);
-	void send_data(vrefbuffer* vbuf, shared_zone life);
-
-
-	void on_request(
-			msgid_t msgid,
-			object method, object params, auto_zone z,
-			const sockaddr* addrbuf, socklen_t addrlen)
-	{
-		throw msgpack::type_error();  // FIXME
-	}
-
-	void on_notify(
-			object method, object params, auto_zone z)
-	{
-		throw msgpack::type_error();  // FIXME
-	}
-
-	void on_response(msgid_t msgid,
-			object result, object error, auto_zone z)
-	{
-		throw msgpack::type_error();  // FIXME
-	}
-
-protected:
-	loop m_loop;
-	char m_buffer[MSGPACK_RPC_UDP_SOCKET_BUFFER_SIZE];
-};
-
-
 class client_transport;
 class server_transport;
 
 
-class client_socket : public basic_socket<client_socket> {
+class client_socket : public dgram_handler<client_socket> {
 public:
-	client_socket(int sock, shared_session s);
+	client_socket(int sock, session_impl* s);
 	~client_socket();
 
 	void on_response(msgid_t msgid,
 			object result, object error, auto_zone z);
 
 private:
-	shared_session m_session;
+	weak_session m_session;
 
 private:
 	client_socket();
 	client_socket(const client_socket&);
 };
 
-class server_socket : public basic_socket<server_socket> {
-public:
-	server_socket(int sock, shared_server svr);
-	~server_socket();
-
-	void close();
-
-	void on_request(
-			msgid_t msgid,
-			object method, object params, auto_zone z,
-			const sockaddr* addrbuf, socklen_t addrlen);
-
-	void on_notify(
-			object method, object params, auto_zone z);
-
-private:
-	shared_server m_svr;
-
-private:
-	server_socket();
-	server_socket(const server_socket&);
-};
-
 
 class client_transport : public rpc::client_transport {
 public:
-	client_transport(shared_session s, const address& addr, const udp_builder& b);
+	client_transport(session_impl* s, const address& addr, const udp_builder& b);
 	~client_transport();
 
 public:
@@ -142,157 +72,25 @@ private:
 };
 
 
-class server_transport : public rpc::server_transport {
-public:
-	server_transport(const address& addr, shared_server svr);
-	~server_transport();
-
-public:
-	void close();
-
-private:
-	mp::shared_ptr<server_socket> m_sock;
-
-private:
-	server_transport();
-	server_transport(const server_transport&);
-};
-
-
-class response_sender : public message_sendable {
-public:
-	response_sender(int sock, const sockaddr* addrbuf, socklen_t addrlen);
-	~response_sender();
-
-	void send_data(sbuffer* sbuf);
-	void send_data(vrefbuffer* vbuf, shared_zone life);
-
-private:
-	int m_sock;
-	struct sockaddr_storage m_addrbuf;
-	size_t m_addrlen;
-
-private:
-	response_sender();
-	response_sender(const response_sender&);
-};
-
-
-template <typename MixIn>
-basic_socket<MixIn>::basic_socket(int fd, loop lo) :
-	mp::wavy::handler(fd),
-	m_loop(lo) { }
-
-template <typename MixIn>
-basic_socket<MixIn>::~basic_socket() { }
-
-template <typename MixIn>
-void basic_socket<MixIn>::on_read(mp::wavy::event& e)
-try {
-	msgpack::unpacked result;
-	struct sockaddr_storage addrbuf;
-	socklen_t addrlen;
-
-	while(true) {
-		addrlen = sizeof(addrbuf);
-
-		ssize_t rl = ::recvfrom(ident(), m_buffer, MSGPACK_RPC_UDP_SOCKET_BUFFER_SIZE,
-				0, (sockaddr*)&addrbuf, &addrlen);
-		if(rl <= 0) {
-			if(rl == 0) { throw mp::system_error(errno, "connection closed"); }
-			if(errno == EAGAIN || errno == EINTR) { return; }
-			else { throw mp::system_error(errno, "read error"); }
-		}
-
-		e.next();
-
-		msgpack::unpack(&result, m_buffer, rl);
-
-		on_message(result.get(), result.zone(), (struct sockaddr*)&addrbuf, addrlen);
-	}
-
-} catch(msgpack::type_error& e) {
-	LOG_ERROR("connection: type error");
-	throw;
-} catch(std::exception& e) {
-	LOG_WARN("connection: ", e.what());
-	throw;
-} catch(...) {
-	LOG_ERROR("connection: unknown error");
-	throw;
-}
-
-
-template <typename MixIn>
-void basic_socket<MixIn>::on_message(object msg, auto_zone z,
-		const sockaddr* addrbuf, socklen_t addrlen)
-{
-	msg_rpc rpc;
-	msg.convert(&rpc);
-
-	switch(rpc.type) {
-	case REQUEST: {
-			msg_request<object, object> req;
-			msg.convert(&req);
-			static_cast<MixIn*>(this)->on_request(
-					req.msgid, req.method, req.param, z,
-					addrbuf, addrlen);
-		}
-		break;
-
-	case RESPONSE: {
-			msg_response<object, object> res;
-			msg.convert(&res);
-			static_cast<MixIn*>(this)->on_response(
-					res.msgid, res.result, res.error, z);
-		}
-		break;
-
-	case NOTIFY: {
-			msg_notify<object, object> req;
-			msg.convert(&req);
-			static_cast<MixIn*>(this)->on_notify(
-					req.method, req.param, z);
-		}
-		break;
-
-	default:
-		throw msgpack::type_error();
-	}
-}
-
-
-template <typename MixIn>
-void basic_socket<MixIn>::send_data(msgpack::vrefbuffer* vbuf, shared_zone z)
-{
-	// FIXME?
-	m_loop->writev(fd(), vbuf->vector(), vbuf->vector_size(), z);
-}
-
-template <typename MixIn>
-void basic_socket<MixIn>::send_data(msgpack::sbuffer* sbuf)
-{
-	// FIXME?
-	m_loop->write(fd(), sbuf->data(), sbuf->size(), &::free, sbuf->data());
-	sbuf->release();
-}
-
-
-client_socket::client_socket(int sock, shared_session s) :
-	basic_socket<client_socket>(sock, s->get_loop()),
-	m_session(s) { }
+client_socket::client_socket(int sock, session_impl* s) :
+	dgram_handler<client_socket>(sock, s->get_loop()),
+	m_session(s->shared_from_this()) { }
 
 client_socket::~client_socket() { }
 
 void client_socket::on_response(msgid_t msgid,
 			object result, object error, auto_zone z)
 {
-	m_session->on_response(
+	shared_session s = m_session.lock();
+	if(!s) {
+		throw closed_exception();
+	}
+	s->on_response(
 			msgid, result, error, z);
 }
 
 
-client_transport::client_transport(shared_session s, const address& addr, const udp_builder& b)
+client_transport::client_transport(session_impl* s, const address& addr, const udp_builder& b)
 {
 	int sock = ::socket(PF_INET, SOCK_DGRAM, 0);
 	if(sock < 0) {
@@ -315,7 +113,10 @@ client_transport::client_transport(shared_session s, const address& addr, const 
 	}
 }
 
-client_transport::~client_transport() { }
+client_transport::~client_transport()
+{
+	m_sock->remove_handler();
+}
 
 void client_transport::send_data(sbuffer* sbuf)
 {
@@ -328,37 +129,46 @@ void client_transport::send_data(vrefbuffer* vbuf, shared_zone life)
 }
 
 
-response_sender::response_sender(int sock, const sockaddr* addrbuf, socklen_t addrlen) :
-	m_sock(sock)
-{
-	if(addrlen > sizeof(m_addrbuf)) {
-		throw std::runtime_error("invalid sizeof address");
-	}
-	memcpy((void*)&m_addrbuf, (const void*)addrbuf, addrlen);
-	m_addrlen = addrlen;
-}
+class server_socket : public dgram_handler<server_socket> {
+public:
+	server_socket(int sock, shared_server svr);
+	~server_socket();
 
-response_sender::~response_sender() { }
+	void on_request(
+			msgid_t msgid,
+			object method, object params, auto_zone z,
+			const sockaddr* addrbuf, socklen_t addrlen);
 
-void response_sender::send_data(sbuffer* sbuf)
-{
-	// FIXME m_sock is non-blocking mode
-	sendto(m_sock, sbuf->data(), sbuf->size(), 0,
-			(struct sockaddr*)&m_addrbuf, m_addrlen);
-	// FIXME check errno == EAGAIN
-}
+	void on_notify(
+			object method, object params, auto_zone z);
 
-void response_sender::send_data(vrefbuffer* vbuf, shared_zone life)
-{
-	// FIXME m_sock is non-blocking mode
-	sendto(m_sock, vbuf->vector(), vbuf->vector_size(), 0,
-			(struct sockaddr*)&m_addrbuf, m_addrlen);
-	// FIXME check errno == EAGAIN
-}
+private:
+	weak_server m_svr;
+
+private:
+	server_socket();
+	server_socket(const server_socket&);
+};
+
+
+class server_transport : public rpc::server_transport {
+public:
+	server_transport(server_impl* svr, const address& addr);
+	~server_transport();
+
+	void close();
+
+private:
+	mp::shared_ptr<server_socket> m_sock;
+
+private:
+	server_transport();
+	server_transport(const server_transport&);
+};
 
 
 server_socket::server_socket(int sock, shared_server svr) :
-	basic_socket<server_socket>(sock, svr->get_loop()),
+	dgram_handler<server_socket>(sock, svr->get_loop()),
 	m_svr(svr) { }
 
 server_socket::~server_socket() { }
@@ -368,23 +178,26 @@ void server_socket::on_request(
 		object method, object params, auto_zone z,
 		const sockaddr* addrbuf, socklen_t addrlen)
 {
-	mp::shared_ptr<message_sendable> ms(new response_sender(fd(), addrbuf, addrlen));
-	m_svr->on_request(ms, msgid, method, params, z);
+	shared_server svr = m_svr.lock();
+	if(!svr) {
+		throw closed_exception();
+	}
+	svr->on_request(get_response_sender(addrbuf, addrlen),
+			msgid, method, params, z);
 }
 
 void server_socket::on_notify(
 		object method, object params, auto_zone z)
 {
-	m_svr->on_notify(method, params, z);
+	shared_server svr = m_svr.lock();
+	if(!svr) {
+		throw closed_exception();
+	}
+	svr->on_notify(method, params, z);
 }
 
-void server_socket::close()
-{
-	::close(fd());  // FIXME shutdown? invalidate fd without releasing fd number
-}
 
-
-server_transport::server_transport(const address& addr, shared_server svr)
+server_transport::server_transport(server_impl* svr, const address& addr)
 {
 	int sock = ::socket(PF_INET, SOCK_DGRAM, 0);
 	if(sock < 0) {
@@ -399,7 +212,10 @@ server_transport::server_transport(const address& addr, shared_server svr)
 			throw mp::system_error(errno, "failed to bind UDP socket");
 		}
 
-		m_sock = svr->get_loop()->add_handler<server_socket>(sock, svr);
+		m_sock = svr->get_loop()->add_handler<server_socket>(
+				sock,
+				mp::static_pointer_cast<server_impl>(svr->shared_from_this())
+				);
 
 	} catch(...) {
 		::close(sock);
@@ -414,8 +230,9 @@ server_transport::~server_transport()
 
 void server_transport::close()
 {
-	m_sock->close();  // FIXME
+	m_sock->remove_handler();
 }
+
 
 }  // noname namespace
 
@@ -427,7 +244,7 @@ udp_builder::udp_builder() { }
 
 udp_builder::~udp_builder() { }
 
-std::auto_ptr<client_transport> udp_builder::build(shared_session s, const address& addr) const
+std::auto_ptr<client_transport> udp_builder::build(session_impl* s, const address& addr) const
 {
 	return std::auto_ptr<client_transport>(new transport::udp::client_transport(s, addr, *this));
 }
@@ -441,9 +258,10 @@ udp_listener::udp_listener(const address& addr) :
 
 udp_listener::~udp_listener() { }
 
-std::auto_ptr<server_transport> udp_listener::listen(shared_server svr) const
+std::auto_ptr<server_transport> udp_listener::listen(server_impl* svr) const
 {
-	return std::auto_ptr<server_transport>(new transport::udp::server_transport(m_addr, svr));
+	return std::auto_ptr<server_transport>(
+			new transport::udp::server_transport(svr, m_addr));
 }
 
 

@@ -33,31 +33,13 @@ namespace {
 
 using namespace mp::placeholders;
 
-
-template <typename MixIn>
-class basic_socket : public mp::wavy::handler, public message_sendable, public protocol_handler<MixIn> {
-public:
-	basic_socket(int fd, loop lo);
-	~basic_socket();
-
-	void on_read(mp::wavy::event& e);
-
-	void send_data(sbuffer* sbuf);
-	void send_data(vrefbuffer* vbuf, shared_zone life);
-
-protected:
-	unpacker m_pac;
-	loop m_loop;
-};
-
-
 class client_transport;
 class server_transport;
 
 
-class client_socket : public basic_socket<client_socket> {
+class client_socket : public stream_handler<client_socket> {
 public:
-	client_socket(int sock, client_transport* tran, shared_session s);
+	client_socket(int sock, client_transport* tran, session_impl* s);
 	~client_socket();
 
 	void on_response(msgid_t msgid,
@@ -65,37 +47,17 @@ public:
 
 private:
 	client_transport* m_tran;
-	shared_session m_session;  // has auto_ptr<client_transport>
+	weak_session m_session;
 
 private:
 	client_socket();
 	client_socket(const client_socket&);
 };
 
-class server_socket : public basic_socket<server_socket> {
-public:
-	server_socket(int sock, shared_server svr);
-	~server_socket();
-
-	void on_request(
-			msgid_t msgid,
-			object method, object params, auto_zone z);
-
-	void on_notify(
-			object method, object params, auto_zone z);
-
-private:
-	shared_server m_svr;
-
-private:
-	server_socket();
-	server_socket(const server_socket&);
-};
-
 
 class client_transport : public rpc::client_transport {
 public:
-	client_transport(shared_session s, const address& addr, const tcp_builder& b);
+	client_transport(session_impl* s, const address& addr, const tcp_builder& b);
 	~client_transport();
 
 public:
@@ -116,15 +78,15 @@ private:
 	typedef mp::sync<sync_t>::ref sync_ref;
 	mp::sync<sync_t> m_sync;
 
-	shared_session m_session;
+	session_impl* m_session;
 
 	double m_connect_timeout;
 	unsigned int m_reconnect_limit;
 
 private:
 	void try_connect(sync_ref& lk_ref);
-	void connect_callback(int fd, int err, shared_session session_life);
-	void on_connect(int fd, sync_ref& ref);
+	static void on_connect(int fd, int err, weak_session ws, client_transport* self);
+	void on_connect_success(int fd, sync_ref& ref);
 	void on_connect_failed(int fd, sync_ref& ref);
 
 	friend class client_socket;
@@ -136,130 +98,57 @@ private:
 };
 
 
-class server_transport : public rpc::server_transport {
-public:
-	server_transport(const address& addr, shared_server svr);
-	~server_transport();
-
-public:
-	void close();
-
-	static void on_accept(loop lo, shared_server svr, int fd, int err);
-
-private:
-	int m_lsock;
-
-private:
-	server_transport();
-	server_transport(const server_transport&);
-};
-
-
-#ifndef MSGPACK_RPC_TCP_SOCKET_BUFFER_SIZE
-#define MSGPACK_RPC_TCP_SOCKET_BUFFER_SIZE (64*1024)
-#endif
-
-#ifndef MSGPACK_RPC_TCP_SOCKET_RESERVE_SIZE
-#define MSGPACK_RPC_TCP_SOCKET_RESERVE_SIZE (8*1024)
-#endif
-
-template <typename MixIn>
-basic_socket<MixIn>::basic_socket(int fd, loop lo) :
-	mp::wavy::handler(fd),
-	m_pac(MSGPACK_RPC_TCP_SOCKET_BUFFER_SIZE),
-	m_loop(lo) { }
-
-template <typename MixIn>
-basic_socket<MixIn>::~basic_socket() { }
-
-template <typename MixIn>
-void basic_socket<MixIn>::on_read(mp::wavy::event& e)
-try {
-	while(true) {
-		if(m_pac.execute()) {
-			object msg = m_pac.data();
-			LOG_TRACE("obj received: ",msg);
-			auto_zone z( m_pac.release_zone() );
-			m_pac.reset();
-
-			e.more();  // FIXME
-			protocol_handler<MixIn>::on_message(msg, z);
-			return;
-		}
-
-		m_pac.reserve_buffer(MSGPACK_RPC_TCP_SOCKET_RESERVE_SIZE);
-
-		ssize_t rl = ::read(ident(), m_pac.buffer(), m_pac.buffer_capacity());
-		if(rl <= 0) {
-			if(rl == 0) { throw mp::system_error(errno, "connection closed"); }
-			if(errno == EAGAIN || errno == EINTR) { return; }
-			else { throw mp::system_error(errno, "read error"); }
-		}
-
-		m_pac.buffer_consumed(rl);
-	}
-
-} catch(msgpack::type_error& e) {
-	LOG_ERROR("connection: type error");
-	throw;
-} catch(std::exception& e) {
-	LOG_WARN("connection: ", e.what());
-	throw;
-} catch(...) {
-	LOG_ERROR("connection: unknown error");
-	throw;
-}
-
-template <typename MixIn>
-void basic_socket<MixIn>::send_data(msgpack::vrefbuffer* vbuf, shared_zone z)
-{
-	m_loop->writev(fd(), vbuf->vector(), vbuf->vector_size(), z);
-}
-
-template <typename MixIn>
-void basic_socket<MixIn>::send_data(msgpack::sbuffer* sbuf)
-{
-	m_loop->write(fd(), sbuf->data(), sbuf->size(), &::free, sbuf->data());
-	sbuf->release();
-}
-
-
-client_socket::client_socket(int sock, client_transport* tran, shared_session s) :
-	basic_socket<client_socket>(sock, s->get_loop()),
-	m_tran(tran), m_session(s)
-{
-	// FIXME
-}
+client_socket::client_socket(int sock, client_transport* tran, session_impl* s) :
+	stream_handler<client_socket>(sock, s->get_loop()),
+	m_tran(tran), m_session(s->shared_from_this()) { }
 
 client_socket::~client_socket()
 {
-	// FIXME
+	shared_session s = m_session.lock();
+	if(!s) {
+		return;
+	}
 	m_tran->on_close(this);
 }
 
 void client_socket::on_response(msgid_t msgid,
 			object result, object error, auto_zone z)
 {
-	m_session->on_response(
-			msgid, result, error, z);
+	shared_session s = m_session.lock();
+	if(!s) {
+		throw closed_exception();
+	}
+	s->on_response(msgid, result, error, z);
 }
 
 
-client_transport::client_transport(shared_session s, const address& addr, const tcp_builder& b) :
+client_transport::client_transport(session_impl* s, const address& addr, const tcp_builder& b) :
 	m_session(s),
 	m_connect_timeout(b.connect_timeout()),
-	m_reconnect_limit(b.reconnect_limit())
-{ }
+	m_reconnect_limit(b.reconnect_limit()) { }
 
-client_transport::~client_transport() { }
+client_transport::~client_transport()
+{
+	// avoids dead lock
+	sockpool_t sockpool;
 
-void client_transport::on_connect(int fd, sync_ref& ref)
+	{
+		sync_ref ref(m_sync);
+		sockpool.swap(ref->sockpool);
+
+		for(sockpool_t::iterator it(sockpool.begin()), it_end(sockpool.end());
+				it != it_end; ++it) {
+			(*it)->remove_handler();
+		}
+	}
+}
+
+inline void client_transport::on_connect_success(int fd, sync_ref& ref)
 {
 	LOG_DEBUG("connect success to ",m_session->get_address()," fd=",fd);
 
 	mp::shared_ptr<client_socket> cs =
-		m_session->get_loop()->add_handler<client_socket>(
-				fd, this, m_session);
+		m_session->get_loop()->add_handler<client_socket>(fd, this, m_session);
 
 	ref->sockpool.push_back(cs.get());
 
@@ -286,14 +175,22 @@ void client_transport::on_connect_failed(int err, sync_ref& ref)
 	m_session->on_connect_failed();
 }
 
-void client_transport::connect_callback(int fd, int err, shared_session session_life)
+void client_transport::on_connect(int fd, int err, weak_session ws, client_transport* self)
 {
-	sync_ref ref(m_sync);
+	shared_session s = ws.lock();
+	if(!s) {
+		if(fd >= 0) {
+			::close(fd);
+		}
+		return;
+	}
+
+	sync_ref ref(self->m_sync);
 
 	if(fd >= 0) {
 		// success
 		try {
-			on_connect(fd, ref);
+			self->on_connect_success(fd, ref);
 			return;
 		} catch (...) {
 			::close(fd);
@@ -301,16 +198,12 @@ void client_transport::connect_callback(int fd, int err, shared_session session_
 		}
 	}
 
-	on_connect_failed(err, ref);
+	self->on_connect_failed(err, ref);
 }
 
 void client_transport::try_connect(sync_ref& lk_ref)
 {
 	address addr = m_session->get_address();
-	//// FIXME
-	//if(addr.get_port() == 0) {
-	//	return;  // FIXME throw?
-	//}
 
 	LOG_INFO("connecting to ",addr);
 
@@ -322,8 +215,10 @@ void client_transport::try_connect(sync_ref& lk_ref)
 			(sockaddr*)addrbuf, sizeof(addrbuf),
 			m_connect_timeout,
 			mp::bind(
-				&client_transport::connect_callback, this,
-				_1, _2, m_session));
+				&client_transport::on_connect,
+				_1, _2,
+				weak_session(m_session->shared_from_this()), this
+				));
 }
 
 void client_transport::on_close(client_socket* sock)
@@ -372,8 +267,48 @@ void client_transport::send_data(vrefbuffer* vbuf, shared_zone life)
 }
 
 
+class server_socket : public stream_handler<server_socket> {
+public:
+	server_socket(int sock, shared_server svr);
+	~server_socket();
+
+	void on_request(
+			msgid_t msgid,
+			object method, object params, auto_zone z);
+
+	void on_notify(
+			object method, object params, auto_zone z);
+
+private:
+	weak_server m_svr;
+
+private:
+	server_socket();
+	server_socket(const server_socket&);
+};
+
+
+class server_transport : public rpc::server_transport {
+public:
+	server_transport(server_impl* svr, const address& addr);
+	~server_transport();
+
+	void close();
+
+	static void on_accept(int fd, int err, weak_server wsvr);
+
+private:
+	int m_lsock;
+	loop m_loop;
+
+private:
+	server_transport();
+	server_transport(const server_transport&);
+};
+
+
 server_socket::server_socket(int sock, shared_server svr) :
-	basic_socket<server_socket>(sock, svr->get_loop()),
+	stream_handler<server_socket>(sock, svr->get_loop()),
 	m_svr(svr) { }
 
 server_socket::~server_socket() { }
@@ -382,29 +317,38 @@ void server_socket::on_request(
 		msgid_t msgid,
 		object method, object params, auto_zone z)
 {
-	m_svr->on_request(shared_self<server_socket>(),
-			msgid, method, params, z);
+	shared_server svr = m_svr.lock();
+	if(!svr) {
+		throw closed_exception();
+	}
+	svr->on_request(get_response_sender(), msgid, method, params, z);
 }
 
 void server_socket::on_notify(
 		object method, object params, auto_zone z)
 {
-	m_svr->on_notify(method, params, z);
+	shared_server svr = m_svr.lock();
+	if(!svr) {
+		throw closed_exception();
+	}
+	svr->on_notify(method, params, z);
 }
 
 
-server_transport::server_transport(const address& addr, shared_server svr) :
-	m_lsock(-1)
+server_transport::server_transport(server_impl* svr, const address& addr) :
+	m_lsock(-1), m_loop(svr->get_loop())
 {
 	char addrbuf[addr.get_addrlen()];
 	addr.get_addr((sockaddr*)addrbuf);
 
-	loop lo = svr->get_loop();
-
-	m_lsock = lo->listen(
+	m_lsock = m_loop->listen(
 			PF_INET, SOCK_STREAM, 0,
 			(sockaddr*)addrbuf, sizeof(addrbuf),
-			mp::bind(&server_transport::on_accept, lo, svr, _1, _2));
+			mp::bind(
+				&server_transport::on_accept,
+				_1, _2,
+				weak_server(mp::static_pointer_cast<server_impl>(svr->shared_from_this()))
+				));
 }
 
 server_transport::~server_transport()
@@ -415,22 +359,28 @@ server_transport::~server_transport()
 void server_transport::close()
 {
 	if(m_lsock >= 0) {
-		::close(m_lsock);  // FIXME shutdown? invalidate fd without releasing fd number
+		m_loop->remove_handler(m_lsock);
 		m_lsock = -1;
 	}
+	// FIXME m_sock->remove_handler();
 }
 
-void server_transport::on_accept(loop lo, shared_server svr, int fd, int err)
+void server_transport::on_accept(int fd, int err, weak_server wsvr)
 {
+	shared_server svr = wsvr.lock();
+	if(!svr) {
+		return;
+	}
+
 	// FIXME
 	if(fd < 0) {
-		LOG_ERROR("accept failed");
+		LOG_DEBUG("accept failed");
 		return;
 	}
 	LOG_TRACE("accepted fd=",fd);
 
 	try {
-		lo->add_handler<server_socket>(fd, svr);
+		svr->get_loop()->add_handler<server_socket>(fd, svr);
 	} catch (...) {
 		::close(fd);
 		throw;
@@ -445,15 +395,16 @@ void server_transport::on_accept(loop lo, shared_server svr, int fd, int err)
 
 
 tcp_builder::tcp_builder() :
-	m_connect_timeout(5.0),  // FIXME default connect timeout
-	m_reconnect_limit(3)     // FIXME default connect reconnect limit
+	m_connect_timeout(10.0),  // FIXME default connect timeout
+	m_reconnect_limit(3)      // FIXME default connect reconnect limit
 { }
 
 tcp_builder::~tcp_builder() { }
 
-std::auto_ptr<client_transport> tcp_builder::build(shared_session s, const address& addr) const
+std::auto_ptr<client_transport> tcp_builder::build(session_impl* s, const address& addr) const
 {
-	return std::auto_ptr<client_transport>(new transport::tcp::client_transport(s, addr, *this));
+	return std::auto_ptr<client_transport>(
+			new transport::tcp::client_transport(s, addr, *this));
 }
 
 
@@ -465,9 +416,10 @@ tcp_listener::tcp_listener(const address& addr) :
 
 tcp_listener::~tcp_listener() { }
 
-std::auto_ptr<server_transport> tcp_listener::listen(shared_server svr) const
+std::auto_ptr<server_transport> tcp_listener::listen(server_impl* svr) const
 {
-	return std::auto_ptr<server_transport>(new transport::tcp::server_transport(m_addr, svr));
+	return std::auto_ptr<server_transport>(
+			new transport::tcp::server_transport(svr, m_addr));
 }
 
 

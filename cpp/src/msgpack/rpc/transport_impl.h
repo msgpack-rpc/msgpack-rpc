@@ -28,7 +28,7 @@ namespace rpc {
 class client_transport : public message_sendable {
 public:
 	client_transport() { }
-	// FIXME close
+	//virtual void close() = 0;
 };
 
 
