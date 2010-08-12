@@ -8,7 +8,7 @@ Following programs are requred to build:
 
   - gcc >= 4.1 with C++ support
   - [MessagePack for C++](http://msgpack.sourceforge.net/) >= 0.5.0
-  - [mpio](http://github.com/frsyuki/mpio) >= 0.3.3
+  - [mpio](http://github.com/frsyuki/mpio) >= 0.3.5
 
 
 ## Installation

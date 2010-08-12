@@ -3,27 +3,28 @@
 #include <cclog/cclog_tty.h>
 #include <vector>
 
-#define ATTACK_PIPELINE 100
-#define ATTACK_THREAD 100
-#define ATTACK_LOOP 50
+static size_t ATTACK_DEPTH;
+static size_t ATTACK_THREAD;
+static size_t ATTACK_LOOP;
 
-using msgpack::type::raw_ref;
-
-rpc::session_pool* sp;
+static std::auto_ptr<attacker> test;
+static std::auto_ptr<rpc::session_pool> sp;
 
 void attack_pipeline()
 {
-	std::vector<rpc::future> pipeline(ATTACK_PIPELINE);
+	using msgpack::type::raw_ref;
 
-	for(int i=0; i < ATTACK_LOOP; ++i) {
-		rpc::session c = sp->get_session("127.0.0.1", 8080);
+	std::vector<rpc::future> pipeline(ATTACK_DEPTH);
+
+	for(size_t i=0; i < ATTACK_LOOP; ++i) {
+		rpc::session c = sp->get_session(test->address());
 		c.set_timeout(30.0);
 
-		for(int j=0; j < ATTACK_PIPELINE; ++j) {
+		for(size_t j=0; j < ATTACK_DEPTH; ++j) {
 			pipeline[j] = c.call("add", 1, 2);
 		}
 
-		for(int j=0; j < ATTACK_PIPELINE; ++j) {
+		for(size_t j=0; j < ATTACK_DEPTH; ++j) {
 			int result = pipeline[j].get<int>();
 			if(result != 3) {
 				LOG_ERROR("invalid response: ",result);
@@ -36,18 +37,22 @@ int main(void)
 {
 	cclog::reset(new cclog_tty(cclog::WARN, std::cout));
 
-	std::cout << "pipeline attack depth="<<ATTACK_PIPELINE<<" thread="<<ATTACK_THREAD<<" loop="<<ATTACK_LOOP << std::endl;
+	ATTACK_DEPTH  = attacker::option("DEPTH",  25, 100);
+	ATTACK_THREAD = attacker::option("THREAD", 25, 100);
+	ATTACK_LOOP   = attacker::option("LOOP",   5, 50);
 
-	rpc::server svr;
-	std::auto_ptr<rpc::dispatcher> dp(new myecho);
-	svr.serve(dp.get());
-	svr.listen("0.0.0.0", 8080);
-	svr.start(4);
+	std::cout << "pipeline attack"
+		<< " depth="  << ATTACK_DEPTH
+		<< " thread=" << ATTACK_THREAD
+		<< " loop="   << ATTACK_LOOP
+		<< std::endl;
 
-	sp = new rpc::session_pool();
+	test.reset(new attacker());
+
+	sp.reset(new rpc::session_pool(test->builder()));
 	sp->start(4);
 
-	attack::run_attacker(ATTACK_THREAD, &attack_pipeline);
+	test->run(ATTACK_THREAD, &attack_pipeline);
 
 	return 0;
 }

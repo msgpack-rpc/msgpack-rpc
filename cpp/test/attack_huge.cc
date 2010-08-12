@@ -2,20 +2,22 @@
 #include <cclog/cclog.h>
 #include <cclog/cclog_tty.h>
 
-#define ATTACK_SIZE (8*1024*1024)
-#define ATTACK_THREAD 20
-#define ATTACK_LOOP 20
+static size_t ATTACK_SIZE;
+static size_t ATTACK_THREAD;
+static size_t ATTACK_LOOP;
 
-using msgpack::type::raw_ref;
+static char* data;
 
-char* data;
+static std::auto_ptr<attacker> test;
 
 void attack_huge()
 {
-	rpc::client c("127.0.0.1", 8080);
+	rpc::client c(test->builder(), test->address());
 	c.set_timeout(30.0);
 
-	for(int i=0; i < ATTACK_LOOP; ++i) {
+	using msgpack::type::raw_ref;
+
+	for(size_t i=0; i < ATTACK_LOOP; ++i) {
 		raw_ref result = c.call("echo_huge", raw_ref(data, ATTACK_SIZE)).get<raw_ref>();
 
 		if(result.size != ATTACK_SIZE) {
@@ -30,13 +32,15 @@ int main(void)
 {
 	cclog::reset(new cclog_tty(cclog::WARN, std::cout));
 
-	std::cout << "huge send/recv attack size="<<(ATTACK_SIZE/1024/1024)<<"MB thread="<<ATTACK_THREAD<<" loop="<<ATTACK_LOOP << std::endl;
+	ATTACK_SIZE   = attacker::option("SIZE",   1024*1024, 8*1024*1024);
+	ATTACK_THREAD = attacker::option("THREAD", 5, 20);
+	ATTACK_LOOP   = attacker::option("LOOP",   2, 20);
 
-	rpc::server svr;
-	std::auto_ptr<rpc::dispatcher> dp(new myecho);
-	svr.serve(dp.get());
-	svr.listen("0.0.0.0", 8080);
-	svr.start(4);
+	std::cout << "huge send/recv attack"
+		<< " size="   << (ATTACK_SIZE/1024/1024) << "MB"
+		<< " thread=" << ATTACK_THREAD
+		<< " loop="   << ATTACK_LOOP
+		<< std::endl;
 
 	data = (char*)malloc(ATTACK_SIZE);
 	if(data == NULL) {
@@ -44,7 +48,8 @@ int main(void)
 		return 1;
 	}
 
-	attack::run_attacker(ATTACK_THREAD, &attack_huge);
+	test.reset(new attacker());
+	test->run(ATTACK_THREAD, &attack_huge);
 
 	return 0;
 }
