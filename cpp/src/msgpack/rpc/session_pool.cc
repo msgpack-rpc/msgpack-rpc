@@ -23,13 +23,32 @@ namespace msgpack {
 namespace rpc {
 
 
-session_pool_impl::session_pool_impl(const builder& b, loop lo) :
-	m_loop(lo), m_builder(b.copy())
+MP_UTIL_DEF(session_pool) {
+	void start_timeout();
+	static bool step_timeout(weak_session_pool wsp);
+};
+
+void MP_UTIL_IMPL(session_pool)::start_timeout()
 {
-	m_loop->add_timer(1.0, 1.0,
-			mp::bind(&session_pool_impl::step_timeout, this));
-	// FIXME thisの寿命: weak_ptrのlock()が失敗したらタイマーを終了？
+	get_loop()->add_timer(1.0, 1.0, mp::bind(
+				&MP_UTIL_IMPL(session_pool)::step_timeout,
+				weak_session_pool(m_pimpl)
+				));
 }
+
+bool MP_UTIL_IMPL(session_pool)::step_timeout(weak_session_pool wsp)
+{
+	shared_session_pool sp = wsp.lock();
+	if(!sp) {
+		return false;
+	}
+	sp->step_timeout();
+	return true;
+}
+
+
+session_pool_impl::session_pool_impl(const builder& b, loop lo) :
+	m_loop(lo), m_builder(b.copy()) { }
 
 session_pool_impl::~session_pool_impl() { }
 
@@ -70,13 +89,22 @@ bool session_pool_impl::step_timeout()
 
 
 session_pool::session_pool(loop lo) :
-	m_pimpl(new session_pool_impl(tcp_builder(), lo)) { }
+	m_pimpl(new session_pool_impl(tcp_builder(), lo))
+{
+	MP_UTIL.start_timeout();
+}
 
 session_pool::session_pool(const builder& b, loop lo) :
-	m_pimpl(new session_pool_impl(b, lo)) { }
+	m_pimpl(new session_pool_impl(b, lo))
+{
+	MP_UTIL.start_timeout();
+}
 
 session_pool::session_pool(shared_session_pool pimpl) :
-	m_pimpl(pimpl) { }
+	m_pimpl(pimpl)
+{
+	MP_UTIL.start_timeout();
+}
 
 session_pool::~session_pool() { }
 

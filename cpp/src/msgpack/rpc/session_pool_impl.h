@@ -43,6 +43,9 @@ public:
 	loop get_loop()
 		{ return m_loop; }
 
+public:
+	bool step_timeout();
+
 private:
 	typedef mp::unordered_map<address, weak_session, address::hash> table_t;
 	typedef mp::sync<table_t>::ref table_ref;
@@ -51,9 +54,6 @@ private:
 	loop m_loop;
 
 	std::auto_ptr<builder> m_builder;
-
-protected:
-	bool step_timeout();
 
 private:
 	session_pool_impl(const session_pool_impl&);

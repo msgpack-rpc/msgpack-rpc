@@ -24,6 +24,7 @@
 #include "transport.h"
 #include "impl_fwd.h"
 #include "types.h"
+#include <mp/utilize.h>
 #include <string>
 
 namespace msgpack {
@@ -48,6 +49,8 @@ public:
 protected:
 	session_pool(shared_session_pool pimpl);
 	shared_session_pool m_pimpl;
+
+	MP_UTILIZE;
 
 private:
 	session_pool(const session_pool&);
