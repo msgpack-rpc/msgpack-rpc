@@ -135,7 +135,6 @@ public:
 
 private:
 	loop m_loop;
-	char m_buffer[MSGPACK_RPC_DGRAM_BUFFER_SIZE];
 };
 
 
@@ -209,16 +208,22 @@ inline void dgram_handler<MixIn>::send_data(const sockaddr* addrbuf, socklen_t a
 template <typename MixIn>
 inline void dgram_handler<MixIn>::send_data(msgpack::sbuffer* sbuf)
 {
-	// FIXME?
-	m_loop->write(fd(), sbuf->data(), sbuf->size(), &::free, sbuf->data());
-	sbuf->release();
+	//// FIXME?
+	//m_loop->write(fd(), sbuf->data(), sbuf->size(), &::free, sbuf->data());
+	//sbuf->release();
+	send(fd(), sbuf->data(), sbuf->size(), 0);
 }
 
 template <typename MixIn>
 inline void dgram_handler<MixIn>::send_data(msgpack::vrefbuffer* vbuf, shared_zone z)
 {
-	// FIXME?
-	m_loop->writev(fd(), vbuf->vector(), vbuf->vector_size(), z);
+	//// FIXME?
+	//m_loop->writev(fd(), vbuf->vector(), vbuf->vector_size(), z);
+	struct msghdr msg;
+	memset(&msg, 0, sizeof(msg));
+	msg.msg_iov = const_cast<struct iovec*>(vbuf->vector());
+	msg.msg_iovlen = vbuf->vector_size();
+	sendmsg(fd(), &msg, 0);
 }
 
 
@@ -346,27 +351,28 @@ try {
 template <typename MixIn>
 void dgram_handler<MixIn>::on_read(mp::wavy::event& e)
 try {
-	msgpack::unpacked result;
-	struct sockaddr_storage addrbuf;
-	socklen_t addrlen;
-
-	while(true) {
-		addrlen = sizeof(addrbuf);
-
-		ssize_t rl = ::recvfrom(ident(), m_buffer, MSGPACK_RPC_DGRAM_BUFFER_SIZE,
-				0, (sockaddr*)&addrbuf, &addrlen);
-		if(rl <= 0) {
-			if(rl == 0) { throw closed_exception(); }
-			if(errno == EAGAIN || errno == EINTR) { return; }
-			else { throw mp::system_error(errno, "read error"); }
-		}
-
-		e.next();  // FIXME more()?
-
-		msgpack::unpack(&result, m_buffer, rl);
-
-		dgram_handler<MixIn>::on_message(result.get(), result.zone(), (struct sockaddr*)&addrbuf, addrlen);
+	char* buffer = (char*)malloc(MSGPACK_RPC_DGRAM_BUFFER_SIZE);
+	if(!buffer) {
+		throw std::bad_alloc();
 	}
+
+	struct sockaddr_storage addrbuf;
+	socklen_t addrlen = sizeof(addrbuf);
+
+	ssize_t rl = ::recvfrom(ident(), buffer, MSGPACK_RPC_DGRAM_BUFFER_SIZE,
+			0, (sockaddr*)&addrbuf, &addrlen);
+	if(rl <= 0) {
+		if(rl == 0) { throw closed_exception(); }
+		if(errno == EAGAIN || errno == EINTR) { return; }
+		else { throw mp::system_error(errno, "read error"); }
+	}
+
+	e.next();  // FIXME more()?
+
+	msgpack::unpacked result;
+	msgpack::unpack(&result, buffer, rl);
+
+	dgram_handler<MixIn>::on_message(result.get(), result.zone(), (struct sockaddr*)&addrbuf, addrlen);
 
 } catch(msgpack::type_error& ex) {
 	LOG_ERROR("connection: type error");
