@@ -16,7 +16,7 @@
 
 class attacker {
 public:
-	attacker() : m_nthreads(0), m_threads(NULL), m_times(NULL)
+	attacker() : m_nthreads(0)
 	{
 		unsigned short port = 18800;
 		const char* env_port = getenv("TEST_PORT");
@@ -59,11 +59,7 @@ public:
 		}
 	}
 
-	~attacker()
-	{
-		delete[] m_threads;
-		delete[] m_times;
-	}
+	~attacker() { }
 
 	rpc::builder& builder() { return *m_builder; }
 	rpc::address address() { return m_connect_addr; }
@@ -81,8 +77,8 @@ public:
 
 	void start_attacker(size_t nthreads, mp::function<void ()> func)
 	{
-		m_threads = new mp::pthread_thread[nthreads];
-		m_times = new double[nthreads];
+		m_threads.resize(nthreads);
+		m_times.resize(nthreads);
 		m_nthreads = nthreads;
 
 		for(size_t i=0; i < m_nthreads; ++i) {
@@ -108,12 +104,19 @@ public:
 
 	void show_status() const
 	{
-		double sum = std::accumulate(m_times, m_times+m_nthreads, 0.0);
+		double sum = std::accumulate(m_times.begin(), m_times.end(), 0.0);
 		double ave = sum / m_nthreads;
+
+		std::vector<double> var_tmp(m_times.size());
+		for(size_t i=0; i < var_tmp.size(); ++i) {
+			double a = ave - m_times[i];
+			var_tmp[i] = a*a;
+		}
+		double var = std::accumulate(var_tmp.begin(), var_tmp.end(), 0.0) / m_nthreads;
 
 		std::cout
 			<< "total time    : " << sum << "\n"
-			<< "average time  : " << ave << std::endl;
+			<< "variance      : " << var << std::endl;
 	}
 
 	void run(size_t nthreads, mp::function<void ()> func)
@@ -136,8 +139,8 @@ private:
 	std::auto_ptr<rpc::dispatcher> m_dp;
 
 	size_t m_nthreads;
-	mp::pthread_thread* m_threads;
-	double* m_times;
+	std::vector<mp::pthread_thread> m_threads;
+	std::vector<double> m_times;
 
 	static void thread_main(mp::function<void ()> func, double* time)
 	{
