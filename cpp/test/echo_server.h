@@ -27,6 +27,11 @@ public:
 			req.params().convert(&params);
 			echo(req, params.get<0>());
 
+		} else if(method == "echo_huge") {
+			msgpack::type::tuple<msgpack::type::raw_ref> params;
+			req.params().convert(&params);
+			echo_huge(req, params.get<0>());
+
 		} else if(method == "err") {
 			msgpack::type::tuple<> params;
 			req.params().convert(&params);
@@ -51,6 +56,11 @@ public:
 	}
 
 	void echo(request req, const std::string& msg)
+	{
+		req.result(msg);
+	}
+
+	void echo_huge(request req, const msgpack::type::raw_ref& msg)
 	{
 		req.result(msg);
 	}

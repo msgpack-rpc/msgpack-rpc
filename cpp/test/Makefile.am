@@ -18,7 +18,10 @@ check_PROGRAMS = \
 		async_server \
 		error \
 		udp \
-		unix
+		unix \
+		attack_connect \
+		attack_pipeline \
+		attack_huge
 
 TESTS = $(check_PROGRAMS)
 
@@ -38,3 +41,8 @@ udp_SOURCES = udp.cc
 
 unix_SOURCES = unix.cc
 
+attack_connect_SOURCES = attack_connect.cc
+
+attack_pipeline_SOURCES = attack_pipeline.cc
+
+attack_huge_SOURCES = attack_huge.cc
