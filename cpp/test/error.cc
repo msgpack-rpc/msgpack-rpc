@@ -14,7 +14,7 @@ int main(void)
 	std::auto_ptr<rpc::dispatcher> dp(new myecho);
 	svr.serve(dp.get());
 
-	svr.listen("0.0.0.0", 8080);
+	svr.listen("0.0.0.0", 18811);
 
 	svr.start(4);
 	// }
@@ -27,7 +27,7 @@ int main(void)
 		std::cout << "ok: "<< e.what() << std::endl;
 	}
 
-	rpc::client cli("127.0.0.1", 8080);
+	rpc::client cli("127.0.0.1", 18811);
 
 	try {
 		cli.call("sub", 2, 1).get<int>();

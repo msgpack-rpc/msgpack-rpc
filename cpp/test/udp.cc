@@ -15,14 +15,14 @@ int main(void)
 	std::auto_ptr<rpc::dispatcher> dp(new myecho);
 	svr.serve(dp.get());
 
-	svr.listen( msgpack::rpc::udp_listener("0.0.0.0", 8080) );
+	svr.listen( msgpack::rpc::udp_listener("0.0.0.0", 18811) );
 
 	svr.start(4);
 	// }
 
 
 	// create client
-	rpc::client cli(msgpack::rpc::udp_builder(), msgpack::rpc::ip_address("127.0.0.1", 8080));
+	rpc::client cli(msgpack::rpc::udp_builder(), msgpack::rpc::ip_address("127.0.0.1", 18811));
 
 	// call
 	std::string msg("MessagePack-RPC");

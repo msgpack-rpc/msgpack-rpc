@@ -12,16 +12,14 @@ static std::auto_ptr<rpc::session_pool> sp;
 
 void attack_pipeline()
 {
-	using msgpack::type::raw_ref;
-
 	std::vector<rpc::future> pipeline(ATTACK_DEPTH);
 
 	for(size_t i=0; i < ATTACK_LOOP; ++i) {
-		rpc::session c = sp->get_session(test->address());
-		c.set_timeout(30.0);
+		rpc::session s = sp->get_session(test->address());
+		s.set_timeout(30.0);
 
 		for(size_t j=0; j < ATTACK_DEPTH; ++j) {
-			pipeline[j] = c.call("add", 1, 2);
+			pipeline[j] = s.call("add", 1, 2);
 		}
 
 		for(size_t j=0; j < ATTACK_DEPTH; ++j) {
