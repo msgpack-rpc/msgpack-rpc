@@ -18,6 +18,7 @@
 #include "session_pool_impl.h"
 #include "session_impl.h"
 #include "transport/tcp.h"
+#include "cclog/cclog.h"
 
 namespace msgpack {
 namespace rpc {
@@ -62,16 +63,16 @@ session session_pool_impl::get_session(const address& addr)
 		if(s) {
 			return session(s);
 		}
+		ref->erase(found);
 	}
 
-	shared_session s(session_impl::create(
-				*m_builder, addr, m_loop));
+	shared_session s(session_impl::create(*m_builder, addr, m_loop));
 	ref->insert( table_t::value_type(addr, weak_session(s)) );
 
 	return session(s);
 }
 
-bool session_pool_impl::step_timeout()
+void session_pool_impl::step_timeout()
 {
 	table_ref ref(m_table);
 	for(table_t::iterator it(ref->begin());
@@ -84,7 +85,6 @@ bool session_pool_impl::step_timeout()
 			ref->erase(it++);
 		}
 	}
-	return true;
 }
 
 

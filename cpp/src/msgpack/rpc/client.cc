@@ -18,6 +18,7 @@
 #include "client.h"
 #include "session_impl.h"
 #include "transport/tcp.h"
+#include "cclog/cclog.h"
 
 namespace msgpack {
 namespace rpc {

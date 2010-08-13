@@ -44,7 +44,7 @@ public:
 		{ return m_loop; }
 
 public:
-	bool step_timeout();
+	void step_timeout();
 
 private:
 	typedef mp::unordered_map<address, weak_session, address::hash> table_t;

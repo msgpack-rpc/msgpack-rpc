@@ -42,6 +42,8 @@ public:
 
 	void step_timeout(std::vector<shared_future>* timedout);
 
+	size_t size() const;
+
 private:
 	mp::pthread_mutex m_mutex;
 	typedef mp::unordered_map<msgid_t, shared_future> map_t;
