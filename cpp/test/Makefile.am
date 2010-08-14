@@ -21,7 +21,8 @@ check_PROGRAMS = \
 		unix \
 		attack_connect \
 		attack_pipeline \
-		attack_huge
+		attack_huge \
+		attack_callback
 
 TESTS = $(check_PROGRAMS)
 
@@ -46,3 +47,6 @@ attack_connect_SOURCES = attack_connect.cc
 attack_pipeline_SOURCES = attack_pipeline.cc
 
 attack_huge_SOURCES = attack_huge.cc
+
+attack_callback_SOURCES = attack_callback.cc
+
