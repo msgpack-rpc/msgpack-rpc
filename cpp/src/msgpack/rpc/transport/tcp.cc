@@ -62,7 +62,7 @@ public:
 
 public:
 	void send_data(sbuffer* sbuf);
-	void send_data(vrefbuffer* vbuf, shared_zone life);
+	void send_data(auto_vreflife vbuf);
 
 private:
 	typedef std::vector<client_socket*> sockpool_t;
@@ -249,7 +249,7 @@ void client_transport::send_data(sbuffer* sbuf)
 	}
 }
 
-void client_transport::send_data(vrefbuffer* vbuf, shared_zone life)
+void client_transport::send_data(auto_vreflife vbuf)
 {
 	sync_ref ref(m_sync);
 	if(ref->sockpool.empty()) {
@@ -258,11 +258,11 @@ void client_transport::send_data(vrefbuffer* vbuf, shared_zone life)
 			ref->connecting = 1;
 		}
 		ref->pending_xf.push_writev(vbuf->vector(), vbuf->vector_size());
-		ref->pending_xf.push_finalize(life);
+		ref->pending_xf.push_finalize(vbuf);
 	} else {
 		// FIXME pesudo connecting load balance
 		client_socket* sock = ref->sockpool[0];
-		sock->send_data(vbuf, life);
+		sock->send_data(vbuf);
 	}
 }
 

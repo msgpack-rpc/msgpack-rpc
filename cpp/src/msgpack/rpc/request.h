@@ -79,7 +79,7 @@ private:
 
 	uint32_t get_msgid() const;
 	void send_data(sbuffer* sbuf);
-	void send_data(vrefbuffer* vbuf, shared_zone life);
+	void send_data(std::auto_ptr<with_shared_zone<vrefbuffer> > vbuf);
 
 private:
 	shared_request m_pimpl;
@@ -130,11 +130,12 @@ inline void request::call(Result& res, Error& err, shared_zone z)
 {
 	if(is_sent()) { return; }
 
-	msgpack::vrefbuffer* vbuf = z->template allocate<msgpack::vrefbuffer>();
+	std::auto_ptr<with_shared_zone<vrefbuffer> > vbuf(
+			new with_shared_zone<vrefbuffer>(z));
 	msg_response<Result&, Error> msgres(res, err, get_msgid());
 	msgpack::pack(*vbuf, msgres);
 
-	send_data(vbuf, z);
+	send_data(vbuf);
 }
 
 template <typename Result>

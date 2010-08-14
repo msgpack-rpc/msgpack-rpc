@@ -57,7 +57,7 @@ public:
 
 	// message_sendable interface
 	void send_data(sbuffer* sbuf);
-	void send_data(vrefbuffer* vbuf, shared_zone life);
+	void send_data(std::auto_ptr<vreflife> vbufife);
 
 	// mp::wavy::handler interface
 	void on_read(mp::wavy::event& e);
@@ -101,11 +101,11 @@ public:
 	// message_sendable interface
 	class response_sender;
 	void send_data(const sockaddr* addrbuf, socklen_t addrlen, sbuffer* sbuf);
-	void send_data(const sockaddr* addrbuf, socklen_t addrlen, vrefbuffer* vbuf, shared_zone z);
+	void send_data(const sockaddr* addrbuf, socklen_t addrlen, std::auto_ptr<vreflife> vbuf);
 
 	// connected dgram
 	void send_data(sbuffer* sbuf);
-	void send_data(vrefbuffer* vbuf, shared_zone life);
+	void send_data(std::auto_ptr<vreflife> vbuf);
 
 	// mp::wavy::handler interface
 	void on_read(mp::wavy::event& e);
@@ -177,9 +177,9 @@ inline void stream_handler<MixIn>::send_data(msgpack::sbuffer* sbuf)
 }
 
 template <typename MixIn>
-inline void stream_handler<MixIn>::send_data(msgpack::vrefbuffer* vbuf, shared_zone z)
+inline void stream_handler<MixIn>::send_data(std::auto_ptr<vreflife> vbuf)
 {
-	m_loop->writev(fd(), vbuf->vector(), vbuf->vector_size(), z);
+	m_loop->writev(fd(), vbuf->vector(), vbuf->vector_size(), vbuf);
 }
 
 
@@ -192,7 +192,7 @@ inline void dgram_handler<MixIn>::send_data(const sockaddr* addrbuf, socklen_t a
 }
 
 template <typename MixIn>
-inline void dgram_handler<MixIn>::send_data(const sockaddr* addrbuf, socklen_t addrlen, vrefbuffer* vbuf, shared_zone z)
+inline void dgram_handler<MixIn>::send_data(const sockaddr* addrbuf, socklen_t addrlen, std::auto_ptr<vreflife> vbuf)
 {
 	// FIXME fd is non-blocking mode
 	// FIXME check errno == EAGAIN
@@ -215,7 +215,7 @@ inline void dgram_handler<MixIn>::send_data(msgpack::sbuffer* sbuf)
 }
 
 template <typename MixIn>
-inline void dgram_handler<MixIn>::send_data(msgpack::vrefbuffer* vbuf, shared_zone z)
+inline void dgram_handler<MixIn>::send_data(std::auto_ptr<vreflife> vbuf)
 {
 	//// FIXME?
 	//m_loop->writev(fd(), vbuf->vector(), vbuf->vector_size(), z);
@@ -420,7 +420,7 @@ public:
 	~response_sender();
 
 	void send_data(sbuffer* sbuf);
-	void send_data(vrefbuffer* vbuf, shared_zone z);
+	void send_data(std::auto_ptr<vreflife> vbuf);
 
 private:
 	mp::shared_ptr<dgram_handler<MixIn> > m_handler;
@@ -455,9 +455,9 @@ void dgram_handler<MixIn>::response_sender::send_data(sbuffer* sbuf)
 }
 
 template <typename MixIn>
-void dgram_handler<MixIn>::response_sender::send_data(vrefbuffer* vbuf, shared_zone z)
+void dgram_handler<MixIn>::response_sender::send_data(std::auto_ptr<vreflife> vbuf)
 {
-	m_handler->send_data((struct sockaddr*)&m_addrbuf, m_addrlen, vbuf, z);
+	m_handler->send_data((struct sockaddr*)&m_addrbuf, m_addrlen, vbuf);
 }
 
 template <typename MixIn>

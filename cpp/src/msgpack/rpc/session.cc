@@ -47,17 +47,6 @@ shared_session session_impl::create(const builder& b, const address addr, loop l
 	return s;
 }
 
-future session_impl::send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone z)
-{
-	LOG_DEBUG("sending... msgid=",msgid);
-	shared_future f(new future_impl(shared_from_this(), m_loop));
-	m_reqtable.insert(msgid, f);
-
-	m_tran->send_data(vbuf, z);
-
-	return future(f);
-}
-
 future session_impl::send_request_impl(msgid_t msgid, sbuffer* sbuf)
 {
 	LOG_DEBUG("sending... msgid=",msgid);
@@ -69,14 +58,25 @@ future session_impl::send_request_impl(msgid_t msgid, sbuffer* sbuf)
 	return future(f);
 }
 
-void session_impl::send_notify_impl(vrefbuffer* vbuf, shared_zone z)
+future session_impl::send_request_impl(msgid_t msgid, auto_vreflife vbuf)
 {
-	m_tran->send_data(vbuf, z);
+	LOG_DEBUG("sending... msgid=",msgid);
+	shared_future f(new future_impl(shared_from_this(), m_loop));
+	m_reqtable.insert(msgid, f);
+
+	m_tran->send_data(vbuf);
+
+	return future(f);
 }
 
 void session_impl::send_notify_impl(sbuffer* sbuf)
 {
 	m_tran->send_data(sbuf);
+}
+
+void session_impl::send_notify_impl(auto_vreflife vbuf)
+{
+	m_tran->send_data(vbuf);
 }
 
 msgid_t session_impl::next_msgid()
@@ -138,17 +138,17 @@ void session::set_timeout(unsigned int sec)
 unsigned int session::get_timeout() const
 	{ return m_pimpl->get_timeout(); }
 
-future session::send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone z)
-	{ return m_pimpl->send_request_impl(msgid, vbuf, z); }
+future session::send_request_impl(msgid_t msgid, std::auto_ptr<with_shared_zone<vrefbuffer> > vbuf)
+	{ return m_pimpl->send_request_impl(msgid, vbuf); }
 
 future session::send_request_impl(msgid_t msgid, sbuffer* sbuf)
 	{ return m_pimpl->send_request_impl(msgid, sbuf); }
 
-void session::send_notify_impl(vrefbuffer* vbuf, shared_zone z)
-	{ return m_pimpl->send_notify_impl(vbuf, z); }
-
 void session::send_notify_impl(sbuffer* sbuf)
 	{ return m_pimpl->send_notify_impl(sbuf); }
+
+void session::send_notify_impl(std::auto_ptr<with_shared_zone<vrefbuffer> > vbuf)
+	{ return m_pimpl->send_notify_impl(vbuf); }
 
 msgid_t session::next_msgid()
 	{ return m_pimpl->next_msgid(); }

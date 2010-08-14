@@ -68,7 +68,7 @@ public:
 
 public:
 	void send_data(sbuffer* sbuf);
-	void send_data(vrefbuffer* vbuf, shared_zone life);
+	void send_data(auto_vreflife vbuf);
 
 private:
 	session_impl* m_session;
@@ -132,9 +132,9 @@ void client_transport::send_data(sbuffer* sbuf)
 	m_sock->send_data(sbuf);
 }
 
-void client_transport::send_data(vrefbuffer* vbuf, shared_zone life)
+void client_transport::send_data(auto_vreflife vbuf)
 {
-	m_sock->send_data(vbuf, life);
+	m_sock->send_data(vbuf);
 }
 
 

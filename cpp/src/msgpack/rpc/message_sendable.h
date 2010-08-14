@@ -24,8 +24,9 @@ namespace msgpack {
 namespace rpc {
 
 
-class message_sendable;
-typedef mp::shared_ptr<message_sendable> shared_message_sendable;
+typedef with_shared_zone<vrefbuffer> vreflife;
+typedef std::auto_ptr<vreflife> auto_vreflife;
+
 
 class message_sendable {
 public:
@@ -33,8 +34,10 @@ public:
 	virtual ~message_sendable() { }
 
 	virtual void send_data(sbuffer* sbuf) = 0;
-	virtual void send_data(vrefbuffer* vbuf, shared_zone life) = 0;
+	virtual void send_data(auto_vreflife vbuf) = 0;
 };
+
+typedef mp::shared_ptr<message_sendable> shared_message_sendable;
 
 
 }  // namespace rpc

@@ -29,6 +29,20 @@ typedef std::auto_ptr<zone> auto_zone;
 typedef mp::shared_ptr<zone> shared_zone;
 
 
+template <typename T>
+class with_shared_zone : public T {
+public:
+	with_shared_zone(shared_zone life) : m_life(life) { }
+	with_shared_zone(const T& c, shared_zone life) : T(c), m_life(life) { }
+	~with_shared_zone() { }
+private:
+	shared_zone m_life;
+private:
+	with_shared_zone();
+	with_shared_zone(const with_shared_zone&);
+};
+
+
 }  // namespace rpc
 }  // namespace msgpack
 
