@@ -32,6 +32,7 @@ void attack_huge()
 int main(void)
 {
 	cclog::reset(new cclog_tty(cclog::WARN, std::cout));
+	signal(SIGPIPE, SIG_IGN);
 
 	ATTACK_SIZE   = attacker::option("SIZE",   1024*1024, 4*1024*1024);
 	ATTACK_THREAD = attacker::option("THREAD", 5, 20);

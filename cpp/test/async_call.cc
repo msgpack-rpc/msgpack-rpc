@@ -7,7 +7,7 @@
 int main(void)
 {
 	cclog::reset(new cclog_tty(cclog::TRACE, std::cout));
-
+	signal(SIGPIPE, SIG_IGN);
 
 	// run server {
 	rpc::server svr;
