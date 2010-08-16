@@ -1,7 +1,7 @@
 lib_LTLIBRARIES = libmsgpack-rpc.la
 
 # -version-info CURRENT:REVISION:AGE
-libmsgpack_rpc_la_LDFLAGS = -version-info 0:0:0
+libmsgpack_rpc_la_LDFLAGS = -version-info 1:0:0
 
 libmsgpack_rpc_includedir = $(includedir)/msgpack/rpc
 
