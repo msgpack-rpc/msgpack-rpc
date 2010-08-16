@@ -7,7 +7,7 @@ MessagePack-RPC for C++
 Following programs are requred to build:
 
   - gcc >= 4.1 with C++ support
-  - [MessagePack for C++](http://msgpack.sourceforge.net/) >= 0.5.0
+  - [MessagePack for C++](http://msgpack.org/) >= 0.5.2
   - [mpio](http://github.com/frsyuki/mpio) >= 0.3.5
 
 

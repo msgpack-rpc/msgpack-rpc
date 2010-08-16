@@ -1,4 +1,13 @@
 
+2010-08-16 version 0.3.0
+
+  * increments library's version-info
+  * fixes circular reference problem of shared_ptr
+  * adds high-load test cases
+  * graceful shutting down of timer threads
+  * fixes race condition of shared_zone->allocate
+  * increases default buffer size
+
 2010-08-10 version 0.2.0
 
   * underlying transport layer is redesigned
