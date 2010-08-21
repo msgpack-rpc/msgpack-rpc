@@ -27,7 +27,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/1]).
+-export([start_link/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -43,9 +43,10 @@
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the server
 %%--------------------------------------------------------------------
-start_link(Argv) ->
+start_link(Mod, Options) ->
+    Name = proplists:get_value(name, Options, Mod),
 %    gen_server:start_link({local, ?SERVER}, ?MODULE, [Argv], [{debug,[trace,log,statistics]}]).
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [Argv], []).
+    gen_server:start_link({local, Name}, ?MODULE, [Mod,Options], []).
 
 %%====================================================================
 %% gen_server callbacks
@@ -58,11 +59,12 @@ start_link(Argv) ->
 %%                         {stop, Reason}
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
-init(Argv) ->
-    _Addr = proplists:get_value(addr, Argv, localhost), % FIXME! use this!
-    Port = proplists:get_value(port, Argv, 65500),
+init([Mod, Options]) ->
+    Addr = proplists:get_value(addr, Options, localhost),
+    Port = proplists:get_value(port, Options, 65500),
     Opts = [binary, {packet, raw}, {reuseaddr, true},
-            {keepalive, true}, {backlog, 30}, {active, false}],
+            {keepalive, true}, {backlog, 30}, {active, false},
+            {ip, Addr}],
 
     process_flag(trap_exit, true),
     case gen_tcp:listen(Port, Opts) of
@@ -70,7 +72,8 @@ init(Argv) ->
         %%Create first accepting process
 	    {ok, Ref} = prim_inet:async_accept(ListenSocket, -1),
 	    {ok, #state{listener = ListenSocket,
-			acceptor = Ref}};
+			acceptor = Ref,
+			module = Mod}};
     {error, Reason} ->
         {stop, Reason}
     end.
@@ -103,7 +106,7 @@ handle_cast(_Msg, State) ->
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
 handle_info({inet_async, ListSock, Ref, {ok, CliSocket}},
-            #state{listener=ListSock, acceptor=Ref} = State) ->
+            #state{listener=ListSock, acceptor=Ref, module=Mod} = State) ->
     try
 %	inet:setsockopts(ListSock, [{active,once}]),
 	case set_sockopt(ListSock, CliSocket) of
@@ -113,7 +116,7 @@ handle_info({inet_async, ListSock, Ref, {ok, CliSocket}},
 
         %% New client connected - spawn a new process using the simple_one_for_one
         %% supervisor.
-        {ok, Pid} = mp_server_sup:start_client(CliSocket),
+        {ok, Pid} = mp_server_session_sup:start_client(Mod, CliSocket),
         gen_tcp:controlling_process(CliSocket, Pid),
 %	set_sockopt(ListSock, CliSocket),
 

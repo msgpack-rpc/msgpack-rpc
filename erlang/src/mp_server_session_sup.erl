@@ -22,12 +22,12 @@
 %%%
 %%% Created : 30 May 2010 by UENISHI Kota <kuenishi@gmail.com>
 %%%-------------------------------------------------------------------
--module(mp_server_sup2).
+-module(mp_server_session_sup).
 
 -behaviour(supervisor).
 
 %% API
--export([start_link/1]).
+-export([start_link/0, start_client/2]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -41,8 +41,13 @@
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the supervisor
 %%--------------------------------------------------------------------
-start_link(Module) when is_atom(Module) ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, [Module]).
+start_link() ->
+    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+
+%% A startup function for spawning new client connection handling FSM.
+%% To be called by the TCP listener process.
+start_client(Module, Socket) ->
+    supervisor:start_child(?SERVER, [Module, Socket]).
 
 %%====================================================================
 %% Supervisor callbacks
@@ -56,12 +61,12 @@ start_link(Module) when is_atom(Module) ->
 %% to find out about restart strategy, maximum restart frequency and child 
 %% specifications.
 %%--------------------------------------------------------------------
-init([Module|_]) ->
-    AChild = {mp_session,{mp_session,start_link,[Module]},
+init([]) ->
+    AChild = {mp_session,{mp_session,start_link,[]},
 	      temporary,brutal_kill,worker,[mp_session]},
-
+    erlang:display(AChild),
     ok=supervisor:check_childspecs([AChild]),
-
+    erlang:display(AChild),
     {ok,{{simple_one_for_one,0,1}, [AChild]}}.
 
 %%====================================================================
