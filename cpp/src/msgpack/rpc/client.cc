@@ -18,46 +18,52 @@
 #include "client.h"
 #include "session_impl.h"
 #include "transport/tcp.h"
+#include "cclog/cclog.h"
 
 namespace msgpack {
 namespace rpc {
 
 
 MP_UTIL_DEF(client) {
-	void start_timeout(loop& lo);
-	bool step_timeout();
+	void start_timeout();
+	static bool step_timeout(weak_session ws);
 };
 
-void MP_UTIL_IMPL(client)::start_timeout(loop& lo)
+void MP_UTIL_IMPL(client)::start_timeout()
 {
-	lo->add_timer(1.0, 1.0,
-			mp::bind(&MP_UTIL_IMPL(client)::step_timeout, &MP_UTIL));
-	// FIXME thisの寿命: weak_ptrのlock()が失敗したらタイマーを終了？
+	get_loop()->add_timer(1.0, 1.0, mp::bind(
+				&MP_UTIL_IMPL(client)::step_timeout,
+				weak_session(session::m_pimpl)
+				));
 }
 
-bool MP_UTIL_IMPL(client)::step_timeout()
+bool MP_UTIL_IMPL(client)::step_timeout(weak_session ws)
 {
-	session::m_pimpl->step_timeout();
+	shared_session s = ws.lock();
+	if(!s) {
+		return false;
+	}
+	s->step_timeout();
 	return true;
 }
 
 
 client::client(const std::string& host, uint16_t port, loop lo) :
-	session(session_impl::create(tcp_builder(), address(host,port), lo))
+	session(session_impl::create(tcp_builder(), ip_address(host,port), lo))
 {
-	MP_UTIL.start_timeout(lo);
+	MP_UTIL.start_timeout();
 }
 
 client::client(const address& addr, loop lo) :
 	session(session_impl::create(tcp_builder(), addr, lo))
 {
-	MP_UTIL.start_timeout(lo);
+	MP_UTIL.start_timeout();
 }
 
 client::client(const builder& b, const address& addr, loop lo) :
 	session(session_impl::create(b, addr, lo))
 {
-	MP_UTIL.start_timeout(lo);
+	MP_UTIL.start_timeout();
 }
 
 client::~client() { }

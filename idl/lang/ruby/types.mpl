@@ -1,63 +1,56 @@
-%if nss = namespace(:ruby)
-module {{ns}}  %|ns| nss.each
-%end
+%doc = self
+%Mplex.file(doc.data[:common_mpl], self)
+
+require 'msgpack/rpc'
+
+%gen_package(doc) do
 
 
 %each do |d|
 %case d
-%when AST::Const
-{{modname(d.name)}} = {{d.value}}
-
-%when AST::Typedef
-%#do nothing
+%when AST::Constant
+{{d.const_name}} = {{d.value}}
 
 %when AST::Enum
-module {{modname(d.name)}}
-	%d.fields.each do |f|
-	{{modname(f.name)}} = {{f.value}}
-	%end
-end
+%d.enum.each do |e|
+{{e.field_name}} = {{e.num}}
+%end
 
-%when AST::Struct
-class {{modname(d.name)}}
-	def initialize(*args)
-		%d.fields.each_with_index do |f,i|
-		@{{f.name}} = args[{{i}}]
-		%end
+class {{d.type_name}}
+	def initialize(value = {{d.enum.first.field_name}})
+		@value = value
 	end
-	attr_accessor [%join(d.fields){|f|":#{f.name}"}%]
+	attr_accessor :value
+
 	def to_msgpack(out = '')
-		[[%join(d.fields){|f|"@#{f.name}"}%]].to_msgpack(out)
+		value.to_msgpack(out)
 	end
+
 	def self.from_msgpack(obj)
-		new(*obj)
+		case obj
+		when [%xjoin(d.enum){|x|x.num}%]
+			@value = obj
+		else
+			raise "type error"
+		end
 	end
-	%#FIXME id, required, optional
 end
 
 %when AST::Exception
-class {{modname(d.name)}} < MessagePack::RPC::RemoteError
-	def initialize(*args)
-		%d.fields.each_with_index do |f,i|
-		@{{f.name}} = args[{{i}}]
-		%end
-	end
-	attr_accessor [%join(d.fields){|f|":#{f.name}"}%]
-	def to_msgpack(out = '')
-		[{{d.fields.map{|f|"@#{f.name}"}.join(', ')}}].to_msgpack(out)
-	end
-	def self.from_msgpack(obj)
-		new(*obj)
-	end
-	%#FIXME id, required, optional
+class {{d.type_name}} < MessagePack::RPC::RemoteError
+	%gen_struct(d.type_name, d.fields)
+	%#FIXME
+end
+
+%when AST::Struct
+class {{d.type_name}}
+	%gen_struct(d.type_name, d.fields)
 end
 
 %when AST::Service
-	%# do nothing
+	%# done in client.mpl and server.mpl
 %end
 %end
 
 
-%if nss = namespace(:ruby)
-end  # module {{ns}}  %|ns| nss.reverse.each
-%end
+%end  # gen_package

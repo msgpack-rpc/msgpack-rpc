@@ -36,10 +36,12 @@ typedef mp::weak_ptr<session_impl> weak_session;
 class session_pool;
 class session_pool_impl;
 typedef mp::shared_ptr<session_pool_impl> shared_session_pool;
+typedef mp::weak_ptr<session_pool_impl> weak_session_pool;
 
 class server;
 class server_impl;
 typedef mp::shared_ptr<server_impl> shared_server;
+typedef mp::weak_ptr<server_impl> weak_server;
 
 class request;
 class request_impl;

@@ -37,12 +37,12 @@ class Session
 
 	# backward compatibility
 	def port  #:nodoc:
-		@address.port;
+		@address.port
 	end
 
 	# backward compatibility
 	def host  #:nodoc:
-		@address.host;
+		@address.host
 	end
 
 	# call-seq:
@@ -51,7 +51,17 @@ class Session
 	# Calls remote method.
 	# This method is same as call_async(method, *args).get
 	def call(method, *args)
-		call_async(method, *args).get
+		send_request(method, args).get
+	end
+
+	# call-seq:
+	#   call_apply(symbol, params) -> result of remote method
+	#
+	# Calls remote method.
+	# This method is same as call(method, *args) excepting that
+	# the arugment is a array.
+	def call_apply(method, params)
+		send_request(method, params).get
 	end
 
 	# call-seq:
@@ -61,6 +71,16 @@ class Session
 	# This method is non-blocking and returns Future.
 	def call_async(method, *args)
 		future = send_request(method, args)
+	end
+
+	# call-seq:
+	#   call_async_apply(symbol, params) -> Future
+	#
+	# Calls remote method asynchronously.
+	# This method is same as call_async(method, *args) excepting that
+	# the arugment is a array.
+	def call_async_apply(method, params)
+		future = send_request(method, params)
 	end
 
 	# backward compatibility
@@ -79,6 +99,19 @@ class Session
 	end
 
 	# call-seq:
+	#   callback_apply(symbol, params) {|future| }
+	#
+	# Calls remote method asynchronously.
+	# The callback method is called with Future when the result is reached.
+	# This method is same as callback(method, *args).attach_callback {|future|  }
+	# excepting that the argument is a array.
+	def callback_apply(method, params, &block)
+		future = send_request(method, params)
+		future.attach_callback(block)
+		future
+	end
+
+	# call-seq:
 	#   notify(symbol, *args) -> nil
 	#
 	# Calls remote method with NOTIFY protocol.
@@ -86,6 +119,19 @@ class Session
 	# This method is non-blocking and returns nil.
 	def notify(method, *args)
 		send_notify(method, args)
+		nil
+	end
+
+	# call-seq:
+	#   notify_apply(symbol, params) -> nil
+	#
+	# Calls remote method with NOTIFY protocol.
+	# It doesn't require server to return results.
+	# This method is non-blocking and returns nil.
+	# This method is same as notify(method, *args) excepting that
+	# the argument is a array.
+	def notify_apply(method, params)
+		send_notify(method, params)
 		nil
 	end
 
@@ -107,10 +153,7 @@ class Session
 	# from ClientTransport
 	def on_connect_failed  #:nodoc:
 		@reqtable.reject! {|msgid, future|
-			begin
-				future.set_result ConnectError.new, nil
-			rescue
-			end
+			future.set_result ConnectionTimeoutError::CODE, ["connection timed out"]
 			true
 		}
 		nil
@@ -126,10 +169,7 @@ class Session
 			end
 		}
 		timedout.each {|future|
-			begin
-				future.set_result TimeoutError.new, nil
-			rescue
-			end
+			future.set_result TimeoutError::CODE, ["request timed out"]
 		}
 		!@reqtable.empty?
 	end

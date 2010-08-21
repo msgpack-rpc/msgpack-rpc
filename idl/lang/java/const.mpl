@@ -1,5 +1,5 @@
-%nss = doc.namespace(:java)
-package {{nss.join('.')}}; %>unless nss.empty?
+%Mplex.file(doc.data[:common_mpl], self)
+%gen_package(doc)
 
 import java.util.List;
 import java.util.Set;

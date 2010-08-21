@@ -2,7 +2,7 @@ AC_INIT(src/msgpack/rpc/session.h)
 AC_CONFIG_AUX_DIR(ac)
 AC_CANONICAL_TARGET
 
-AM_INIT_AUTOMAKE(msgpack-rpc, 0.1.0)
+AM_INIT_AUTOMAKE(msgpack-rpc, 0.3.0)
 AC_CONFIG_HEADER(config.h)
 
 AC_SUBST(CFLAGS)
@@ -140,10 +140,17 @@ AC_MSG_RESULT($enable_trace)
 AM_CONDITIONAL(WANT_CCLOG, test "$want_cclog" = "yes")
 
 
+
+major=`echo $VERSION | sed 's/\([[0-9]]*\)\.\([[0-9]]*\).*/\1/'`
+minor=`echo $VERSION | sed 's/\([[0-9]]*\)\.\([[0-9]]*\).*/\2/'`
+AC_SUBST(VERSION_MAJOR, $major)
+AC_SUBST(VERSION_MINOR, $minor)
+
+
 AC_OUTPUT([Makefile
 		   src/Makefile
 		   src/cclog/Makefile
 		   src/msgpack/rpc/Makefile
+		   src/msgpack/rpc/version.h
 		   test/Makefile])
-		   #src/mp/Makefile
-		   #src/mpsrc/Makefile
+

@@ -55,7 +55,16 @@ public:
 	template <typename Error>
 	void error(Error err, shared_zone z);
 
-	template <typename T>
+	template <typename Error, typename Result>
+	void error(Error err, Result res);
+
+	template <typename Error, typename Result>
+	void error(Error err, Result res, auto_zone z);
+
+	template <typename Error, typename Result>
+	void error(Error err, Result res, shared_zone z);
+
+	template <typename Result>
 	class type;
 
 private:
@@ -70,26 +79,26 @@ private:
 
 	uint32_t get_msgid() const;
 	void send_data(sbuffer* sbuf);
-	void send_data(vrefbuffer* vbuf, shared_zone life);
+	void send_data(std::auto_ptr<with_shared_zone<vrefbuffer> > vbuf);
 
 private:
 	shared_request m_pimpl;
 };
 
 
-template <typename T>
+template <typename Result>
 class request::type : public request {
 public:
 	type(const request& req) : request(req) { }
 	~type() { }
 
-	void result(T res)
+	void result(Result res)
 		{ request::result(res); }
 
-	void result(T res, auto_zone z)
+	void result(Result res, auto_zone z)
 		{ request::result(res, z); }
 
-	void result(T res, shared_zone z)
+	void result(Result res, shared_zone z)
 		{ request::result(res, z); }
 };
 
@@ -121,11 +130,12 @@ inline void request::call(Result& res, Error& err, shared_zone z)
 {
 	if(is_sent()) { return; }
 
-	msgpack::vrefbuffer* vbuf = z->template allocate<msgpack::vrefbuffer>();
+	std::auto_ptr<with_shared_zone<vrefbuffer> > vbuf(
+			new with_shared_zone<vrefbuffer>(z));
 	msg_response<Result&, Error> msgres(res, err, get_msgid());
 	msgpack::pack(*vbuf, msgres);
 
-	send_data(vbuf, z);
+	send_data(vbuf);
 }
 
 template <typename Result>
@@ -176,6 +186,24 @@ template <typename Error>
 void request::error(Error err, shared_zone z)
 {
 	msgpack::type::nil res;
+	call(res, err, z);
+}
+
+template <typename Error, typename Result>
+void request::error(Error err, Result res)
+{
+	call(res, err);
+}
+
+template <typename Error, typename Result>
+void request::error(Error err, Result res, auto_zone z)
+{
+	call(res, err, z);
+}
+
+template <typename Error, typename Result>
+void request::error(Error err, Result res, shared_zone z)
+{
 	call(res, err, z);
 }
 

@@ -26,6 +26,10 @@
 
 #include <sys/un.h>
 
+#ifdef unix
+#undef unix
+#endif
+
 namespace msgpack {
 namespace rpc {
 namespace transport {
@@ -36,46 +40,107 @@ namespace {
 using namespace mp::placeholders;
 
 
-template <typename MixIn>
-class basic_socket : public mp::wavy::handler, public message_sendable, public protocol_handler<MixIn> {
-public:
-	basic_socket(int fd, loop lo);
-	~basic_socket();
-
-	void on_read(mp::wavy::event& e);
-
-	void send_data(sbuffer* sbuf);
-	void send_data(vrefbuffer* vbuf, shared_zone life);
-
-protected:
-	unpacker m_pac;
-	loop m_loop;
-};
-
-
 class client_transport;
 class server_transport;
 
 
-class client_socket : public basic_socket<client_socket> {
+class client_socket : public stream_handler<client_socket> {
 public:
-	client_socket(int sock, shared_session s);
+	client_socket(int fd, session_impl* s);
 	~client_socket();
 
 	void on_response(msgid_t msgid,
 			object result, object error, auto_zone z);
 
 private:
-	shared_session m_session;
+	weak_session m_session;
 
 private:
 	client_socket();
 	client_socket(const client_socket&);
 };
 
-class server_socket : public basic_socket<server_socket> {
+
+class client_transport : public rpc::client_transport {
 public:
-	server_socket(int sock, shared_server svr);
+	client_transport(session_impl* s, const address& addr, const unix_builder& b);
+	~client_transport();
+
+public:
+	void send_data(sbuffer* sbuf);
+	void send_data(auto_vreflife vbuf);
+
+private:
+	session_impl* m_session;
+	mp::shared_ptr<client_socket> m_sock;
+
+private:
+	client_transport();
+	client_transport(const client_transport&);
+};
+
+
+client_socket::client_socket(int fd, session_impl* s) :
+	stream_handler<client_socket>(fd, s->get_loop()),
+	m_session(s->shared_from_this()) { }
+
+client_socket::~client_socket() { }
+
+void client_socket::on_response(msgid_t msgid,
+			object result, object error, auto_zone z)
+{
+	shared_session s = m_session.lock();
+	if(!s) {
+		throw closed_exception();
+	}
+	s->on_response(msgid, result, error, z);
+}
+
+
+client_transport::client_transport(session_impl* s, const address& addr, const unix_builder& b) :
+	m_session(s)
+{
+	int fd = ::socket(PF_LOCAL, SOCK_STREAM, 0);
+	if(fd < 0) {
+		throw mp::system_error(errno, "failed to open UNIX socket");
+	}
+
+	try {
+		// FIXME UNIX addr
+		char addrbuf[addr.get_addrlen()];
+		addr.get_addr((sockaddr*)addrbuf);
+
+		if(::connect(fd, (sockaddr*)addrbuf, sizeof(addrbuf)) < 0) {
+			throw mp::system_error(errno, "failed to connect UNIX socket");
+		}
+
+		m_sock = m_session->get_loop()->add_handler<client_socket>(fd, m_session);
+
+	} catch(...) {
+		::close(fd);
+		throw;
+	}
+}
+
+client_transport::~client_transport()
+{
+	m_sock->remove_handler();
+}
+
+void client_transport::send_data(sbuffer* sbuf)
+{
+	m_sock->send_data(sbuf);
+}
+
+void client_transport::send_data(auto_vreflife vbuf)
+{
+	m_sock->send_data(vbuf);
+}
+
+
+class server_socket : public stream_handler<server_socket> {
+public:
+	server_socket(int fd, shared_server svr);
 	~server_socket();
 
 	void on_request(
@@ -86,7 +151,7 @@ public:
 			object method, object params, auto_zone z);
 
 private:
-	shared_server m_svr;
+	weak_server m_svr;
 
 private:
 	server_socket();
@@ -94,36 +159,18 @@ private:
 };
 
 
-class client_transport : public rpc::client_transport {
-public:
-	client_transport(shared_session s, const address& addr, const unix_builder& b);
-	~client_transport();
-
-public:
-	void send_data(sbuffer* sbuf);
-	void send_data(vrefbuffer* vbuf, shared_zone life);
-
-private:
-	mp::shared_ptr<client_socket> m_sock;
-
-private:
-	client_transport();
-	client_transport(const client_transport&);
-};
-
-
 class server_transport : public rpc::server_transport {
 public:
-	server_transport(const std::string& path, shared_server svr);
+	server_transport(server_impl* svr, const address& addr);
 	~server_transport();
 
-public:
 	void close();
 
-	static void on_accept(loop lo, shared_server svr, int fd, int err);
+	static void on_accept(int fd, int err, weak_server wsvr);
 
 private:
 	int m_lsock;
+	loop m_loop;
 
 private:
 	server_transport();
@@ -131,128 +178,8 @@ private:
 };
 
 
-#ifndef MSGPACK_RPC_UNIX_SOCKET_BUFFER_SIZE
-#define MSGPACK_RPC_UNIX_SOCKET_BUFFER_SIZE (64*1024)
-#endif
-
-#ifndef MSGPACK_RPC_UNIX_SOCKET_RESERVE_SIZE
-#define MSGPACK_RPC_UNIX_SOCKET_RESERVE_SIZE (8*1024)
-#endif
-
-template <typename MixIn>
-basic_socket<MixIn>::basic_socket(int fd, loop lo) :
-	mp::wavy::handler(fd),
-	m_pac(MSGPACK_RPC_UNIX_SOCKET_BUFFER_SIZE),
-	m_loop(lo) { }
-
-template <typename MixIn>
-basic_socket<MixIn>::~basic_socket() { }
-
-template <typename MixIn>
-void basic_socket<MixIn>::on_read(mp::wavy::event& e)
-try {
-	while(true) {
-		if(m_pac.execute()) {
-			object msg = m_pac.data();
-			LOG_TRACE("obj received: ",msg);
-			auto_zone z( m_pac.release_zone() );
-			m_pac.reset();
-
-			e.more();  // FIXME
-			protocol_handler<MixIn>::on_message(msg, z);
-			return;
-		}
-
-		m_pac.reserve_buffer(MSGPACK_RPC_UNIX_SOCKET_RESERVE_SIZE);
-
-		ssize_t rl = ::read(ident(), m_pac.buffer(), m_pac.buffer_capacity());
-		if(rl <= 0) {
-			if(rl == 0) { throw mp::system_error(errno, "connection closed"); }
-			if(errno == EAGAIN || errno == EINTR) { return; }
-			else { throw mp::system_error(errno, "read error"); }
-		}
-
-		m_pac.buffer_consumed(rl);
-	}
-
-} catch(msgpack::type_error& e) {
-	LOG_ERROR("connection: type error");
-	throw;
-} catch(std::exception& e) {
-	LOG_WARN("connection: ", e.what());
-	throw;
-} catch(...) {
-	LOG_ERROR("connection: unknown error");
-	throw;
-}
-
-template <typename MixIn>
-void basic_socket<MixIn>::send_data(msgpack::vrefbuffer* vbuf, shared_zone z)
-{
-	m_loop->writev(fd(), vbuf->vector(), vbuf->vector_size(), z);
-}
-
-template <typename MixIn>
-void basic_socket<MixIn>::send_data(msgpack::sbuffer* sbuf)
-{
-	m_loop->write(fd(), sbuf->data(), sbuf->size(), &::free, sbuf->data());
-	sbuf->release();
-}
-
-
-client_socket::client_socket(int sock, shared_session s) :
-	basic_socket<client_socket>(sock, s->get_loop()),
-	m_session(s) { }
-
-client_socket::~client_socket() { }
-
-void client_socket::on_response(msgid_t msgid,
-			object result, object error, auto_zone z)
-{
-	m_session->on_response(
-			msgid, result, error, z);
-}
-
-
-client_transport::client_transport(shared_session s, const address& addr, const unix_builder& b)
-{
-	int sock = ::socket(PF_LOCAL, SOCK_STREAM, 0);
-	if(sock < 0) {
-		throw mp::system_error(errno, "failed to open UNIX socket");
-	}
-
-	try {
-		// FIXME UNIX addr
-		char addrbuf[addr.addrlen()];
-		addr.getaddr((sockaddr*)addrbuf);
-
-		if(::connect(sock, (sockaddr*)addrbuf, sizeof(addrbuf)) < 0) {
-			throw mp::system_error(errno, "failed to connect UNIX socket");
-		}
-
-		m_sock = s->get_loop()->add_handler<client_socket>(sock, s);
-
-	} catch(...) {
-		::close(sock);
-		throw;
-	}
-}
-
-client_transport::~client_transport() { }
-
-void client_transport::send_data(sbuffer* sbuf)
-{
-	m_sock->send_data(sbuf);
-}
-
-void client_transport::send_data(vrefbuffer* vbuf, shared_zone life)
-{
-	m_sock->send_data(vbuf, life);
-}
-
-
-server_socket::server_socket(int sock, shared_server svr) :
-	basic_socket<server_socket>(sock, svr->get_loop()),
+server_socket::server_socket(int fd, shared_server svr) :
+	stream_handler<server_socket>(fd, svr->get_loop()),
 	m_svr(svr) { }
 
 server_socket::~server_socket() { }
@@ -261,37 +188,38 @@ void server_socket::on_request(
 		msgid_t msgid,
 		object method, object params, auto_zone z)
 {
-	m_svr->on_request(shared_self<server_socket>(),
-			msgid, method, params, z);
+	shared_server svr = m_svr.lock();
+	if(!svr) {
+		throw closed_exception();
+	}
+	svr->on_request(get_response_sender(), msgid, method, params, z);
 }
 
 void server_socket::on_notify(
 		object method, object params, auto_zone z)
 {
-	m_svr->on_notify(method, params, z);
+	shared_server svr = m_svr.lock();
+	if(!svr) {
+		throw closed_exception();
+	}
+	svr->on_notify(method, params, z);
 }
 
 
-server_transport::server_transport(const std::string& path, shared_server svr) :
-	m_lsock(-1)
+server_transport::server_transport(server_impl* svr, const address& addr) :
+	m_lsock(-1), m_loop(svr->get_loop())
 {
-	// FIXME UNIX_MAX_PATH?
-	//if(path.size() >= UNIX_MAX_PATH) {  // FIXME?
-	//	throw std::runtime_error("path name too long"); // FIXME message
-	//}
+	char addrbuf[addr.get_addrlen()];
+	addr.get_addr((sockaddr*)addrbuf);
 
-	struct sockaddr_un addrbuf;
-	memset(&addrbuf, 0, sizeof(addrbuf));
-	addrbuf.sun_family = AF_UNIX;
-	//addrbuf.sun_len = path.size()+1; FIXME
-	memcpy(addrbuf.sun_path, path.c_str(), path.size()+1);
-
-	loop lo = svr->get_loop();
-
-	m_lsock = lo->listen(
+	m_lsock = m_loop->listen(
 			PF_LOCAL, SOCK_STREAM, 0,
 			(sockaddr*)&addrbuf, sizeof(addrbuf),
-			mp::bind(&server_transport::on_accept, lo, svr, _1, _2));
+			mp::bind(
+				&server_transport::on_accept,
+				_1, _2,
+				weak_server(mp::static_pointer_cast<server_impl>(svr->shared_from_this()))
+				));
 }
 
 server_transport::~server_transport()
@@ -302,13 +230,19 @@ server_transport::~server_transport()
 void server_transport::close()
 {
 	if(m_lsock >= 0) {
-		::close(m_lsock);  // FIXME shutdown? invalidate fd without releasing fd number
+		m_loop->remove_handler(m_lsock);
 		m_lsock = -1;
 	}
+	// FIXME m_sock->remove_handler();
 }
 
-void server_transport::on_accept(loop lo, shared_server svr, int fd, int err)
+void server_transport::on_accept(int fd, int err, weak_server wsvr)
 {
+	shared_server svr = wsvr.lock();
+	if(!svr) {
+		return;
+	}
+
 	// FIXME
 	if(fd < 0) {
 		LOG_ERROR("accept failed");
@@ -317,7 +251,7 @@ void server_transport::on_accept(loop lo, shared_server svr, int fd, int err)
 	LOG_TRACE("accepted fd=",fd);
 
 	try {
-		lo->add_handler<server_socket>(fd, svr);
+		svr->get_loop()->add_handler<server_socket>(fd, svr);
 	} catch (...) {
 		::close(fd);
 		throw;
@@ -335,20 +269,26 @@ unix_builder::unix_builder() { }
 
 unix_builder::~unix_builder() { }
 
-std::auto_ptr<client_transport> unix_builder::build(shared_session s, const address& addr) const
+std::auto_ptr<client_transport> unix_builder::build(
+		session_impl* s, const address& addr) const
 {
-	return std::auto_ptr<client_transport>(new transport::unix::client_transport(s, addr, *this));
+	return std::auto_ptr<client_transport>(
+			new transport::unix::client_transport(s, addr, *this));
 }
 
 
 unix_listener::unix_listener(const std::string& path) :
-	m_path(path) { }
+	m_addr(path_address(path)) { }
+
+unix_listener::unix_listener(const address& addr) :
+	m_addr(addr) { }
 
 unix_listener::~unix_listener() { }
 
-std::auto_ptr<server_transport> unix_listener::listen(shared_server svr) const
+std::auto_ptr<server_transport> unix_listener::listen(server_impl* svr) const
 {
-	return std::auto_ptr<server_transport>(new transport::unix::server_transport(m_path, svr));
+	return std::auto_ptr<server_transport>(
+			new transport::unix::server_transport(svr, m_addr));
 }
 
 

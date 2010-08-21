@@ -67,13 +67,11 @@ public:
 	msgid_t next_msgid();
 
 public:
-	future send_request_impl(msgid_t msgid, vrefbuffer* vbuf, shared_zone life);
-
 	future send_request_impl(msgid_t msgid, sbuffer* sbuf);
-
-	void send_notify_impl(vrefbuffer* vbuf, shared_zone life);
+	future send_request_impl(msgid_t msgid, auto_vreflife vbuf);
 
 	void send_notify_impl(sbuffer* sbuf);
+	void send_notify_impl(auto_vreflife vbuf);
 
 public:
 	void on_response(msgid_t msgid,

@@ -24,6 +24,7 @@
 #include "transport.h"
 #include "impl_fwd.h"
 #include "types.h"
+#include <mp/utilize.h>
 #include <string>
 
 namespace msgpack {
@@ -40,16 +41,16 @@ public:
 	session get_session(const address& addr);
 
 	session get_session(const std::string& host, uint16_t port)
-		{ return get_session(address(host, port)); }
+		{ return get_session(ip_address(host, port)); }
 
 	const loop& get_loop() const;
 	loop get_loop();
 
-	// FIXME close
-
 protected:
 	session_pool(shared_session_pool pimpl);
 	shared_session_pool m_pimpl;
+
+	MP_UTILIZE;
 
 private:
 	session_pool(const session_pool&);

@@ -1,7 +1,7 @@
 RUBY=ruby
-TTVER=treetop-1.4.5
+TTVER=treetop-1.4.8
 
-all: mprpc_idl.rb
+all: parser.rb
 
 TTURL = http://rubygems.org/downloads/$(TTVER).gem
 
@@ -21,14 +21,14 @@ rubylib/rubygems: $(TTVER)/bin/tt
 	cp -rf $(TTVER)/LICENSE rubylib/treetop/
 	echo "# dummy" > $@
 
-mprpc_idl.tt: mprpc_idl.tt.mpl mplex.rb
-	$(RUBY) -rmplex -e 'Mplex.write("mprpc_idl.tt.mpl", "$@")'
+parser.tt: parser.tt.mpl mplex.rb
+	$(RUBY) -rmplex -e 'Mplex.write("parser.tt.mpl", "$@")'
 
-mprpc_idl.rb: $(TTVER)/bin/tt mprpc_idl.tt rubylib/rubygems
-	$(RUBY) -I$(TTVER)/lib $(TTVER)/bin/tt -o $@ mprpc_idl.tt
+parser.rb: $(TTVER)/bin/tt parser.tt rubylib/rubygems
+	$(RUBY) -I$(TTVER)/lib $(TTVER)/bin/tt -o $@ parser.tt
 
 clean:
-	rm -rf $(TTVER) rubylib mprpc_idl.tt mprpc_idl.rb
+	rm -rf $(TTVER) rubylib parser.tt parser.rb
 
 distclean: clean
 	rm -rf $(TTVER).gem

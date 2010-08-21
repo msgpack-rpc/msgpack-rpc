@@ -32,7 +32,7 @@ server_impl::server_impl(const builder& b, loop lo) :
 
 server_impl::~server_impl()
 {
-	close();
+	//close();
 }
 
 void server_impl::serve(dispatcher* dp)
@@ -42,7 +42,7 @@ void server_impl::serve(dispatcher* dp)
 
 void server_impl::listen(const listener& l)
 {
-	m_stran = l.listen(mp::static_pointer_cast<server_impl>(shared_from_this()));
+	m_stran = l.listen(this);
 }
 
 void server_impl::close()
@@ -82,7 +82,9 @@ void server::serve(dispatcher* dp)
 	{ static_cast<server_impl*>(m_pimpl.get())->serve(dp); }
 
 void server::close()
-	{ static_cast<server_impl*>(m_pimpl.get())->close(); }
+{
+	static_cast<server_impl*>(m_pimpl.get())->close();
+}
 
 void server::listen(const listener& l)
 	{ static_cast<server_impl*>(m_pimpl.get())->listen(l); }
@@ -91,7 +93,7 @@ void server::listen(const address& addr)
 	{ listen(tcp_listener(addr)); }
 
 void server::listen(const std::string& host, uint16_t port)
-	{ listen(address(host, port)); }
+	{ listen(ip_address(host, port)); }
 
 
 }  // namespace rpc

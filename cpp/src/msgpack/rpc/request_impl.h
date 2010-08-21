@@ -45,11 +45,11 @@ public:
 		return !m_ms;
 	}
 
-	void send_data(vrefbuffer* vbuf, shared_zone z)
+	void send_data(auto_vreflife vbuf)
 	{
 		shared_message_sendable ms = m_ms;
 		if(!ms) { return; }
-		ms->send_data(vbuf, z);
+		ms->send_data(vbuf);
 		m_ms.reset();
 	}
 

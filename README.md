@@ -4,7 +4,7 @@ http://github.com/msgpack/msgpack-rpc
 
 ## Overview
 
-MessagePack-RPC is an inter-process messaging library that uses [MessagePack](http://msgpack.sourceforge.net/) for object serialization.
+MessagePack-RPC is an inter-process messaging library that uses [MessagePack](http://msgpack.org/) for object serialization.
 
 MessagePack enables very fast streaming serialization/deserialization, and communication between heterogeneous languages like Ruby <-> C++.
 
@@ -26,20 +26,20 @@ See [cpp](http://github.com/msgpack/msgpack-rpc/tree/master/cpp/) directory.
 
 ### Java
 
-[Maven2 repository](http://msgpack.sourceforge.net/maven2/) is available. Please add these lines to your pom.xml.
+[Maven2 repository](http://msgpack.org/maven2/) is available. Please add these lines to your pom.xml.
 
   <repositories>
     <repository>
-    <id>msgpack.sourceforge.net</id>
+    <id>msgpack.org</id>
     <name>MessagePack Repository for Maven</name> 
-    <url>http://msgpack.sourceforge.net/maven2/</url>
+    <url>http://msgpack.org/maven2/</url>
     </repository>
   </repositories>
   <dependencies>
     <dependency>
       <groupId>org.msgpack</groupId>
       <artifactId>msgpack-rpc</artifactId>
-      <version>0.3.0</version>
+      <version>0.4.1</version>
     </dependency>
   </dependencies>
 
@@ -60,4 +60,3 @@ See [cpp](http://github.com/msgpack/msgpack-rpc/tree/master/cpp/) directory.
        limitations under the License.
 
 See also NOTICE file.
-

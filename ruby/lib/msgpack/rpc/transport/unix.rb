@@ -34,6 +34,15 @@ class UNIXTransport
 			@pac = MessagePack::Unpacker.new
 		end
 
+		# from Rev::TCPSocket
+		def on_readable
+			super
+		rescue
+			# FIXME send Connection Close message
+			# FIXME log
+			close
+		end
+
 		# from Rev::UNIXSocket
 		def on_read(data)
 			@pac.feed(data)
@@ -90,12 +99,12 @@ class UNIXClientTransport
 
 		# MessageReceiver interface
 		def on_request(msgid, method, param)
-			raise RPCError.new("request message on client session")
+			raise Error.new("request message on client session")
 		end
 
 		# MessageReceiver interface
 		def on_notify(method, param)
-			raise RPCError.new("notify message on client session")
+			raise Error.new("notify message on client session")
 		end
 
 		# MessageReceiver interface
@@ -155,7 +164,7 @@ class UNIXServerTransport
 
 		# MessageReceiver interface
 		def on_response(msgid, error, result)
-			raise RPCError.new("response message on server session")
+			raise Error.new("response message on server session")
 		end
 	end
 end

@@ -35,13 +35,16 @@ public:
 	session get_session(const address& addr);
 
 	session get_session(const std::string& host, uint16_t port)
-		{ return get_session(address(host, port)); }
+		{ return get_session(ip_address(host, port)); }
 
 	const loop& get_loop() const
 		{ return m_loop; }
 
 	loop get_loop()
 		{ return m_loop; }
+
+public:
+	void step_timeout();
 
 private:
 	typedef mp::unordered_map<address, weak_session, address::hash> table_t;
@@ -51,9 +54,6 @@ private:
 	loop m_loop;
 
 	std::auto_ptr<builder> m_builder;
-
-protected:
-	bool step_timeout();
 
 private:
 	session_pool_impl(const session_pool_impl&);

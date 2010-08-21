@@ -46,9 +46,9 @@ void request::send_data(sbuffer* sbuf)
 	m_pimpl->send_data(sbuf);
 }
 
-void request::send_data(vrefbuffer* vbuf, shared_zone life)
+void request::send_data(std::auto_ptr<with_shared_zone<vrefbuffer> > vbuf)
 {
-	m_pimpl->send_data(vbuf, life);
+	m_pimpl->send_data(vbuf);
 }
 
 auto_zone& request::zone()

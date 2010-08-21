@@ -32,20 +32,21 @@ public:
 	unix_builder();
 	~unix_builder();
 
-	std::auto_ptr<client_transport> build(shared_session s, const address& addr) const;
+	std::auto_ptr<client_transport> build(session_impl* s, const address& addr) const;
 };
 
 
 class unix_listener : public listener::base<unix_listener> {
 public:
 	unix_listener(const std::string& path);
+	unix_listener(const address& addr);
 
 	~unix_listener();
 
-	std::auto_ptr<server_transport> listen(shared_server svr) const;
+	std::auto_ptr<server_transport> listen(server_impl* svr) const;
 
 private:
-	std::string m_path;
+	address m_addr;
 
 private:
 	unix_listener();

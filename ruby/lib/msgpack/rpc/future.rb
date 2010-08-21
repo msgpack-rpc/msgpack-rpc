@@ -49,12 +49,14 @@ class Future
 				return @result
 			end
 		end
-		if @error_handler
-			return @error_handler.call(self)
-		else
-			raise @error if @error.is_a?(Error)
-			raise RemoteError.new(@error, @result)
+		if @result.nil?
+			# compatible error
+			raise RuntimeError.new(@error)
 		end
+		if @error_handler
+			@error_handler.call(@error, @result)
+		end
+		raise RPCError.create(@error, @result)
 	end
 
 	# Wait for receiving result of remote procedure call.
@@ -88,6 +90,7 @@ class Future
 	def set_result(err, res)  #:nodoc:
 		@error  = err
 		@result = res
+		@set = true
 		if @callback_handler
 			if @callback_handler.arity == 2
 				# FIXME backward compatibility
@@ -96,7 +99,9 @@ class Future
 				@callback_handler.call(self)
 			end
 		end
-		@set = true
+		self
+	rescue
+		self
 	end
 
 	def step_timeout  #:nodoc:
