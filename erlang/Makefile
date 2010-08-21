@@ -21,7 +21,7 @@ edoc: $(SOURCES)
 	erl -noshell -eval 'ok=edoc:files(["src/tcadb.erl"], [{dir,"edoc"}]).' -s init stop
 	@echo "  - building edoc done. see edoc/index.html"
 
-test: build
+ct: build
 	@echo "testing in ${ROOT} .."
 	@mkdir -p test/log
 	sh ${RUN_TEST_CMD} -dir ${ROOT}/test -logdir ${ROOT}/test/log \

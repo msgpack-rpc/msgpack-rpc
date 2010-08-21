@@ -1,4 +1,7 @@
 MANIFEST
 *.beam
 *~
-
+*.omakedb
+*.omakedb.lock
+*.omc
+test/log
