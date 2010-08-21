@@ -18,95 +18,57 @@
 #ifndef MSGPACK_RPC_TRANSPORT_TCP_H__
 #define MSGPACK_RPC_TRANSPORT_TCP_H__
 
-#include "transport/base.h"
-#include "transport/listener.h"
-#include "session_impl.h"
+#include "../transport.h"
 #include <mp/functional.h>
 #include <mp/sync.h>
 #include <mp/utilize.h>
 
-#include <mp/wavy.h>
-
 namespace msgpack {
 namespace rpc {
-namespace transport {
 
 
-class tcp : public transport::base, public mp::enable_shared_from_this<tcp> {
+class tcp_builder : public builder::base<tcp_builder> {
 public:
-	tcp(session_impl* s, const transport_option& topt);
-	~tcp();
+	tcp_builder();
+	~tcp_builder();
 
-	// message_sendable interface
-	void send_data(msgpack::vrefbuffer* vbuf, shared_zone z);
-	void send_data(msgpack::sbuffer* sbuf);
-	shared_message_sendable shared_from_this();
+	std::auto_ptr<client_transport> build(session_impl* s, const address& addr) const;
+
+	tcp_builder& connect_timeout(double sec)
+		{ m_connect_timeout = sec; return *this; }
+
+	double connect_timeout() const
+		{ return m_connect_timeout; }
+
+	tcp_builder& reconnect_limit(unsigned int num)
+		{ m_reconnect_limit = num; return *this; }
+
+	unsigned int reconnect_limit() const
+		{ return m_reconnect_limit; }
 
 public:
-	class listener;
-
-private:
-	class socket;
-	class active_socket;
-	class passive_socket;
-
-	typedef mp::shared_ptr<tcp> shared_tcp_transport;
-
-	typedef std::vector<socket*> sockpool_t;
-
-	struct sync_t {
-		sync_t() : sockpool_rr(0), connecting(0) { }
-		sockpool_t sockpool;
-		size_t sockpool_rr;
-		unsigned int connecting;
-		mp::wavy::xfer pending_xf;
-	};
-
-	typedef mp::sync<sync_t>::ref sync_ref;
-	mp::sync<sync_t> m_sync;
-
-	MP_UTILIZE;
-
-private:
-	void on_close(socket* sock);
-	friend class active_socket;
-
-protected:
 	double m_connect_timeout;
 	unsigned int m_reconnect_limit;
-
-private:
-	tcp();
-	tcp(const tcp&);
 };
 
 
-class tcp::listener : public transport::listener {
+class tcp_listener : public listener::base<tcp_listener> {
 public:
-	listener(
-			int socket_family, int socket_type, int protocol,
-			const sockaddr* addr, socklen_t addrlen,
-			loop lo,
-			mp::function<shared_session ()> create_session);
+	tcp_listener(const std::string& host, uint16_t port);
+	tcp_listener(const address& addr);
 
-	~listener();
+	~tcp_listener();
 
-	void close();
+	std::auto_ptr<server_transport> listen(server_impl* svr) const;
 
 private:
-	int m_lsock;
-	loop m_loop;
-	mp::function<shared_session ()> m_create_session;
-
-	MP_UTILIZE;
+	address m_addr;
 
 private:
-	listener();
-	listener(const listener&);
+	tcp_listener();
 };
 
 
-}  // namespace transport
 }  // namespace rpc
 }  // namespace msgpack
 

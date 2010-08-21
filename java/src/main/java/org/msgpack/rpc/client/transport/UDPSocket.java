@@ -1,3 +1,20 @@
+//
+// MessagePack-RPC for Java
+//
+// Copyright (C) 2010 Kazuki Ohta
+//
+//    Licensed under the Apache License, Version 2.0 (the "License");
+//    you may not use this file except in compliance with the License.
+//    You may obtain a copy of the License at
+//
+//        http://www.apache.org/licenses/LICENSE-2.0
+//
+//    Unless required by applicable law or agreed to in writing, software
+//    distributed under the License is distributed on an "AS IS" BASIS,
+//    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//    See the License for the specific language governing permissions and
+//    limitations under the License.
+//
 package org.msgpack.rpc.client.transport;
 
 import static org.jboss.netty.channel.Channels.pipeline;
@@ -19,7 +36,7 @@ import org.msgpack.rpc.client.netty.RPCRequestEncoder;
 import org.msgpack.rpc.client.netty.RPCResponseDecoder;
 
 class DatagramClientHandler extends SimpleChannelHandler {
-    protected UDPSocket sock;
+    protected final UDPSocket sock;
     
     public DatagramClientHandler(UDPSocket sock) {
         super();
@@ -44,7 +61,7 @@ class DatagramClientHandler extends SimpleChannelHandler {
 }
 
 class UDPClientPipelineFactory implements ChannelPipelineFactory {
-    protected UDPSocket sock;
+    protected final UDPSocket sock;
     
     public UDPClientPipelineFactory(UDPSocket sock) {
         this.sock = sock;

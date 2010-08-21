@@ -30,8 +30,16 @@ class Server < SessionPool
 		@listeners = []
 	end
 
+	# 1. serve(dispatcher)
+	# 2. serve(obj, accept = obj.public_methods)
 	def serve(obj, accept = obj.public_methods)
-		@dispatcher = ObjectDispatcher.new(obj, accept)
+		if obj.is_a?(Dispatcher)
+			# 2.
+			@dispatcher = obj
+		else
+			# 1.
+			@dispatcher = ObjectDispatcher.new(obj, accept)
+		end
 		self
 	end
 
@@ -70,12 +78,81 @@ class Server < SessionPool
 	# from ServerTransport
 	def on_request(sendable, msgid, method, param)  #:nodoc:
 		responder = Responder.new(sendable, msgid)
-		@dispatcher.dispatch_request(self, method, param, responder)
+		dispatch_method(method, param, responder)
 	end
 
 	# from ServerTransport
 	def on_notify(method, param)  #:nodoc:
-		@dispatcher.dispatch_notify(self, method, param)
+		responder = NullResponder.new
+		dispatch_method(method, param, responder)
+	end
+
+	private
+	def dispatch_method(method, param, responder)  #:nodoc:
+		begin
+			sent = false
+			early_result = nil
+			result = @dispatcher.dispatch(method, param) do |result_|
+				unless result_.is_a?(AsyncResult)
+					responder.result(result_)
+					sent = true
+				end
+				early_result = result_
+			end
+
+		#FIXME on NoMethodError
+		# res.error(NO_METHOD_ERROR); return
+
+		#FIXME on ArgumentError
+		# res.error(ArgumentError); return
+
+		rescue
+			responder.error($!.to_s)
+			return
+		end
+
+		if early_result.is_a?(AsyncResult)
+			early_result.set_responder(responder)
+		elsif sent
+			return
+		elsif result.is_a?(AsyncResult)
+			result.set_responder(responder)
+		else
+			responder.result(result)
+		end
+	end
+end
+
+
+class AsyncResult
+	def initialize
+		@responder = nil
+		@sent = false
+	end
+
+	def result(retval, err = nil)
+		unless @sent
+			if @responder
+				@responder.result(retval, err)
+			else
+				@result = [retval, err]
+			end
+			@sent = true
+		end
+		nil
+	end
+
+	def error(err)
+		result(nil, err)
+		nil
+	end
+
+	def set_responder(res)  #:nodoc:
+		@responder = res
+		if @sent && @result
+			@responder.result(*@result)
+			@result = nil
+		end
 	end
 end
 
@@ -84,15 +161,39 @@ class Responder
 	def initialize(sendable, msgid)
 		@sendable = sendable  # send_message method is required
 		@msgid = msgid
+		@sent = false
+	end
+
+	def sent?
+		@sent
 	end
 
 	def result(retval, err = nil)
-		data = [RESPONSE, @msgid, err, retval].to_msgpack
-		@sendable.send_data(data)
+		unless @sent
+			data = [RESPONSE, @msgid, err, retval].to_msgpack
+			@sendable.send_data(data)
+			@sent = true
+		end
+		nil
 	end
 
 	def error(err, retval = nil)
 		result(retval, err)
+	end
+end
+
+
+class NullResponder
+	def sent?
+		true
+	end
+
+	def result(retval, err = nil)
+		nil
+	end
+
+	def error(err, retval = nil)
+		nil
 	end
 end
 

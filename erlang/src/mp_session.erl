@@ -27,7 +27,6 @@
 -behaviour(gen_server).
 -include("mp_rpc.hrl").
 
-
 %% API
 -export([start_link/2, behaviour_info/1]).
 
@@ -52,7 +51,11 @@ behaviour_info(_Other) ->
 %%   see mp_server_sup:start_client for caller.
 %%--------------------------------------------------------------------
 start_link(Module,Socket) when is_atom(Module), is_port(Socket)->
-    gen_server:start_link(?MODULE, [Module,Socket], [{debug,[trace,log,statistics]}]).
+%    gen_server:start_link(?MODULE, [Module,Socket], [{debug,[trace,log,statistics]}]).
+    gen_server:start_link(?MODULE, [Module,Socket], []).
+
+% TBF:
+% notify(Node, Type, Method, Parms)->
 
 %%====================================================================
 %% gen_server callbacks
@@ -122,17 +125,23 @@ handle_info({tcp, Socket, Bin}, #state{socket=Socket,module=Module,context=Conte
 	{[Req,CallID,M,Argv],<<>>}=msgpack:unpack(Bin),
 	case handle_request(Req,CallID,Module,M,Argv,Socket,Context) of
 	    {ok, NextContext}->
-	    % Flow control: enable forwarding of next TCP message
+						% Flow control: enable forwarding of next TCP message
 		ok=inet:setopts(Socket, [{active,once},{packet,raw}]),
-
+		
 		{noreply, State#state{context=NextContext}};
 	    {stop, Reason}->
 		{stop, Reason};
 	    _Other->
-		error_logger:error_msg("failed unpack: ~p  result: ~p~n", [Bin, _Other])
+		error_logger:error_msg("failed unpack: ~p  result: ~p~n", [Bin, _Other]),
+		{noreply, State}
 	end
-    catch _:What -> 
-	    error_logger:error_msg("failed: ~p~n", [What])
+    catch
+	_:{badmatch, X}->
+	    error_logger:error_msg("badmatch, bad binary ~p from ~p~n", [X, inet:peername(Socket)]),
+	    {noreply, State};
+	_:What ->
+	    error_logger:error_msg("failed: ~p~n", [What]),
+	    {noreply, State}
     end;
 
 handle_info({tcp_closed, Socket}, #state{socket=Socket} = State) ->
@@ -168,28 +177,35 @@ code_change(OldVsn, #state{module=Module, context=Context} = State, Extra) ->
 %%--------------------------------------------------------------------
 
 handle_request(?MP_TYPE_REQUEST, CallID, Module, M, Argv,Socket, Context) when is_integer(CallID), is_binary(M) ->
-    Method = binary_to_atom(M, latin1),
-    Prefix = [?MP_TYPE_RESPONSE, CallID],
-    case erlang:apply(Module,Method,Argv) of
-	{reply, Result}->
-	    ReplyBin = msgpack:pack(Prefix++[nil, Result]),
-	    ok=gen_tcp:send(Socket,ReplyBin),
+    try
+	Method = binary_to_atom(M, latin1),
+	Prefix = [?MP_TYPE_RESPONSE, CallID],
+	case erlang:apply(Module,Method,Argv) of
+	    {reply, Result}->
+		ReplyBin = msgpack:pack(Prefix++[nil, Result]),
+		ok=gen_tcp:send(Socket,ReplyBin),
+		{ok, Context};
+	    {noreply, _Result}-> {ok, Context};
+	    {stop_reply, Result, Reason}->
+		ReplyBin = msgpack:pack(Prefix++[ nil, Result]),
+		ok=gen_tcp:send(Socket,ReplyBin),
+		{stop, Reason};
+	    {stop, Reason}-> {stop, Reason};
+	    {error, Reason}->
+		ReplyBin = msgpack:pack(Prefix++[Reason, nil]),
+		ok=gen_tcp:send(Socket,ReplyBin),
+		{ok,Context}
+	end
+    catch
+	_:undef ->
+	    error_logger:error_msg("no such method: ~p:~s/~p~n", [Module,binary_to_list(M),length(Argv)]),
+	    ok=gen_tcp:send(Socket, msgpack:pack([?MP_TYPE_RESPONSE, CallID, <<"no such func">>, nil])),
+	    ok=inet:setopts(Socket, [{active,once}, {packet,raw}]),
 	    {ok, Context};
 
-	{noreply, _Result}->
-	    {ok, Context};
-
-	{stop_reply, Result, Reason}->
-	    ReplyBin = msgpack:pack(Prefix++[ nil, Result]),
-	    ok=gen_tcp:send(Socket,ReplyBin),
-	    {stop, Reason};
-
-	{stop, Reason}->
-	    {stop, Reason};
-
-	{error, Reason}->
-	    ReplyBin = msgpack:pack(Prefix++[Reason, nil]),
-	    ok=gen_tcp:send(Socket,ReplyBin),
-	    {ok,Context}
-
+	  _:What ->
+	    error_logger:error_msg("unknown error: ~p (~p:~s/~p)~n", [What, Module,binary_to_list(M),length(Argv)]),
+	    ok=gen_tcp:send(Socket, msgpack:pack([?MP_TYPE_RESPONSE, CallID, <<"unexpected error">>, nil])),
+	    ok=inet:setopts(Socket, [{active,once}, {packet,raw}]),
+	    {ok, Context}
     end.

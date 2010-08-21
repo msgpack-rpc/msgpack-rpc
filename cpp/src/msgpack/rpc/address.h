@@ -24,6 +24,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <sys/un.h>
 #include <msgpack.hpp>
 #include <mp/unordered_map.h>
 
@@ -34,203 +35,258 @@ namespace rpc {
 class address {
 public:
 	address();
-	explicit address(const struct sockaddr_in& addr);
-#ifdef MSGPACK_RPC_IPV6
-	explicit address(const struct sockaddr_in6& addr);
-#endif
-	address(const std::string& host, uint16_t port);
+	address(const address&);
+	const address& operator= (const address& o);
+	~address();
 
 public:
-	unsigned int dump_size() const;
-	const char* dump() const;
+	sa_family_t family() const { return m.ipv4.sin_family; }
 
-	static const unsigned int MAX_DUMP_SIZE = 18;
+	socklen_t get_addrlen() const;
+	void get_addr(sockaddr* addrbuf) const;
 
-	static void load(address* to, const char* data, size_t len);
-
-public:
-	bool connectable() const;
-
-private:
-	// +--+----+
-	// | 2|  4 |
-	// +--+----+
-	// port network byte order
-	//    IPv4 address
-	//
-	// +--+----------------+
-	// | 2|       16       |
-	// +--+----------------+
-	// port network byte order
-	//    IPv6 address
-	//
-#ifdef MSGPACK_RPC_IPV6
-	char m_serial_address[18];
-	unsigned int m_serial_length;  // 6 or 18
-#else
-	char m_serial_address[8];
-#endif
-
-public:
-	socklen_t addrlen() const;
-	void getaddr(sockaddr* addrbuf) const;
-	uint16_t port() const;
-	void set_port(uint16_t p);
-private:
-	uint16_t raw_port() const;
-
-public:
-	bool operator== (const address& addr) const;
-	bool operator!= (const address& addr) const;
-	bool operator<  (const address& addr) const;
-	bool operator>  (const address& addr) const;
+	bool operator== (const address& o) const;
+	bool operator!= (const address& o) const;
+	bool operator<  (const address& o) const;
+	bool operator>  (const address& o) const;
 
 	struct hash {
 		size_t operator() (const msgpack::rpc::address& a) const;
 	};
 
-	friend std::ostream& operator<< (std::ostream& stream, const address& addr);
+	friend std::ostream& operator<< (std::ostream& stream, const address& a);
+
+protected:
+	union {
+		struct sockaddr_in  ipv4;
+		struct sockaddr_in6 ipv6;
+		struct {
+			uint16_t family;  // don't reference. use family()
+			socklen_t addrlen;
+			struct sockaddr* addr;
+		} ex;
+	} m;
+
+	bool is_ex() const {
+		return m.ipv4.sin_family != AF_INET && m.ipv4.sin_family != AF_INET6 && m.ipv4.sin_family != 0;
+	}
+
+	void set_family(sa_family_t f) {
+		m.ipv4.sin_family = f;
+	}
+
+protected:
+	address(sa_family_t f) { m.ipv4.sin_family = f; }
+
+private:
+	void copy_ex(const address& a);
+	void assign_ex(const address& a);
 };
 
-std::ostream& operator<< (std::ostream& stream, const address& addr);
+std::ostream& operator<< (std::ostream& stream, const address& a);
+
+
+class ip_address : public address {
+public:
+	ip_address(const std::string& host, uint16_t port);
+	ip_address(const struct sockaddr_in& a);
+	ip_address(const struct sockaddr_in6& a);
+
+	uint16_t get_port() const;
+	void set_port(uint16_t port);
+
+protected:
+	ip_address(sa_family_t f) : address(f) { }
+
+	void resolve(const char* host, uint16_t port, int v6);
+};
+
+
+class ipv4_address : public ip_address {
+public:
+	ipv4_address(const std::string& host, uint16_t port);
+	ipv4_address(const struct sockaddr_in& a);
+};
+
+
+class ipv6_address : public ip_address {
+public:
+	ipv6_address(const std::string& host, uint16_t port);
+	ipv6_address(const struct sockaddr_in6& a);
+
+	uint32_t get_flowinfo() const { return m.ipv6.sin6_flowinfo; }
+	void set_flowinfo(uint32_t v) { m.ipv6.sin6_flowinfo = v; }
+
+	uint32_t get_scope_id() const { return m.ipv6.sin6_scope_id; }
+	void set_scope_id(uint32_t v) { m.ipv6.sin6_scope_id = v; }
+};
+
+
+class path_address : public address {
+public:
+	path_address(const std::string& path);
+
+	const char* get_path() const;
+};
 
 
 inline address::address()
-#ifdef MSGPACK_RPC_IPV6
-	: m_serial_length(0)
 {
-	*((uint16_t*)&m_serial_address[0]) = 0;
-}
-#else
-{
-	memset(&m_serial_address[0], 0, 8);
-}
-#endif
-
-//inline address::address(const address& o) :
-//	m_serial_length(o.m_serial_length)
-//{
-//	memcpy(m_serial_address, o.m_serial_address, m_serial_length);
-//}
-
-inline uint16_t address::raw_port() const
-{
-#ifdef MSGPACK_RPC_IPV6
-	return *((uint16_t*)&m_serial_address[0]);
-#else
-	return *((uint16_t*)&m_serial_address[0]);
-#endif
+	memset(&m, 0, sizeof(m));
 }
 
-inline unsigned int address::dump_size() const
+inline address::~address()
 {
-#ifdef MSGPACK_RPC_IPV6
-	return m_serial_length;
-#else
-	return 6;
-#endif
-}
-inline const char* address::dump() const
-{
-#ifdef MSGPACK_RPC_IPV6
-	return m_serial_address;
-#else
-	return m_serial_address;
-#endif
-}
-
-inline uint16_t address::port() const
-{
-	return ntohs(raw_port());
-}
-
-inline void address::set_port(uint16_t p)
-{
-#ifdef MSGPACK_RPC_IPV6
-	*((uint16_t*)m_serial_address) = htons(p);
-#else
-	*((uint16_t*)m_serial_address) = htons(p);
-#endif
-}
-
-inline bool address::connectable() const
-{
-	return raw_port() != 0;
-}
-
-inline socklen_t address::addrlen() const
-{
-#ifdef MSGPACK_RPC_IPV6
-	return m_serial_length == 6 ?
-		sizeof(sockaddr_in) : sizeof(sockaddr_in6);
-#else
-	return sizeof(sockaddr_in);
-#endif
-}
-
-inline bool address::operator== (const address& addr) const
-{
-#ifdef MSGPACK_RPC_IPV6
-	return m_serial_length == addr.m_serial_length &&
-		memcmp(m_serial_address, addr.m_serial_address, m_serial_length) == 0;
-#else
-	return memcmp(m_serial_address, addr.m_serial_address, 8) == 0;
-#endif
-}
-
-inline bool address::operator!= (const address& addr) const
-{
-	return !(*this == addr);
-}
-
-inline bool address::operator< (const address& addr) const
-{
-#ifdef MSGPACK_RPC_IPV6
-	if(m_serial_length == addr.m_serial_length) {
-		return memcmp(m_serial_address, addr.m_serial_address, m_serial_length) < 0;
-	} else {
-		return m_serial_length < addr.m_serial_length;
+	if(is_ex()) {
+		free(m.ex.addr);
 	}
-#else
-	return memcmp(m_serial_address, addr.m_serial_address, 8) < 0;
-#endif
 }
 
-inline bool address::operator> (const address& addr) const
+inline address::address(const address& a)
 {
-#ifdef MSGPACK_RPC_IPV6
-	if(m_serial_length == addr.m_serial_length) {
-		return memcmp(m_serial_address, addr.m_serial_address, m_serial_length) > 0;
+	if(a.is_ex()) {
+		copy_ex(a);
 	} else {
-		return m_serial_length > addr.m_serial_length;
+		memcpy(&m, &a.m, sizeof(m));
 	}
-#else
-	return memcmp(m_serial_address, addr.m_serial_address, 8) > 0;
-#endif
 }
 
+inline const address& address::operator=(const address& o)
+{
+	if(o.is_ex()) {
+		assign_ex(o);
+		return *this;
+	}
+
+	if(is_ex()) {
+		free(m.ex.addr);
+	}
+	memcpy(&m, &o.m, sizeof(m));
+
+	return *this;
+}
+
+inline socklen_t address::get_addrlen() const
+{
+	if(family() == AF_INET) {
+		return sizeof(struct sockaddr_in);
+	} else if(family() == AF_INET6) {
+		return sizeof(struct sockaddr_in6);
+	} else {
+		return m.ex.addrlen;
+	}
+}
+
+inline void address::get_addr(sockaddr* addrbuf) const
+{
+	if(family() == AF_INET) {
+		memcpy(addrbuf, &m.ipv4, sizeof(struct sockaddr_in));
+	} else if(family() == AF_INET6) {
+		memcpy(addrbuf, &m.ipv6, sizeof(struct sockaddr_in6));
+	} else {
+		memcpy(addrbuf, m.ex.addr, m.ex.addrlen);
+	}
+}
+
+
+inline ip_address::ip_address(const struct sockaddr_in& a)
+{
+	m.ipv4 = a;
+	m.ipv4.sin_family = AF_INET;
+}
+
+inline ip_address::ip_address(const struct sockaddr_in6& a)
+{
+	m.ipv6 = a;
+	m.ipv6.sin6_family = AF_INET6;
+}
+
+inline ipv4_address::ipv4_address(const struct sockaddr_in& a) :
+	ip_address(a) { }
+
+inline ipv6_address::ipv6_address(const struct sockaddr_in6& a) :
+	ip_address(a) { }
+
+inline uint16_t ip_address::get_port() const
+{
+	return ntohs(m.ipv4.sin_port);
+}
+
+inline void ip_address::set_port(uint16_t port)
+{
+	m.ipv4.sin_port = htons(port);
+}
+
+
+inline const char* path_address::get_path() const
+{
+	return ((struct sockaddr_un*)m.ex.addr)->sun_path;
+}
+
+
+inline bool address::operator== (const address& o) const
+{
+	if(family() != o.family()) {
+		return false;
+	}
+	if(family() == AF_INET) {
+		return memcmp(&m.ipv4, &o.m.ipv4, sizeof(m.ipv4)) == 0;
+	} else if(family() == AF_INET6) {
+		return memcmp(&m.ipv6, &o.m.ipv6, sizeof(m.ipv6)) == 0;
+	} else {
+		return m.ex.addrlen == o.m.ex.addrlen &&
+			memcmp(m.ex.addr, o.m.ex.addr, m.ex.addrlen) == 0;
+	}
+}
+
+inline bool address::operator!= (const address& o) const
+{
+	return !(*this == o);
+}
+
+inline bool address::operator<  (const address& o) const
+{
+	if(family() != o.family()) {
+		// FIXME platform dependent
+		return family() < o.family();
+	}
+	if(family() == AF_INET) {
+		return memcmp(&m.ipv4, &o.m.ipv4, sizeof(struct sockaddr_in)) < 0;
+	} else if(family() == AF_INET6) {
+		return memcmp(&m.ipv6, &o.m.ipv6, sizeof(struct sockaddr_in6)) < 0;
+	}
+	if(m.ex.addrlen != o.m.ex.addrlen) {
+		return m.ex.addrlen < o.m.ex.addrlen;
+	}
+	return memcmp(&m.ex.addr, &o.m.ex.addr, m.ex.addrlen) < 0;
+}
+
+inline bool address::operator>  (const address& o) const
+{
+	if(family() != o.family()) {
+		// FIXME platform dependent
+		return family() > o.family();
+	}
+	if(family() == AF_INET) {
+		return memcmp(&m.ipv4, &o.m.ipv4, sizeof(struct sockaddr_in)) > 0;
+	} else if(family() == AF_INET6) {
+		return memcmp(&m.ipv6, &o.m.ipv6, sizeof(struct sockaddr_in6)) > 0;
+	}
+	if(m.ex.addrlen != o.m.ex.addrlen) {
+		return m.ex.addrlen > o.m.ex.addrlen;
+	}
+	return memcmp(&m.ex.addr, &o.m.ex.addr, m.ex.addrlen) > 0;
+}
 
 inline size_t address::hash::operator() (const msgpack::rpc::address& a) const
 {
-	return mp::hash<std::string>()(std::string(a.dump(), a.dump_size()));
-}
-
-
-inline address& operator>> (msgpack::object o, address& v)
-{
-	using namespace msgpack;
-	if(o.type != type::RAW) { throw type_error(); }
-	address::load(&v, o.via.raw.ptr, o.via.raw.size);
-	return v;
-}
-
-template <typename Stream>
-inline msgpack::packer<Stream>& operator<< (msgpack::packer<Stream>& o, const address& v)
-{
-	using namespace msgpack;
-	o.pack_raw(v.dump_size());
-	o.pack_raw_body(v.dump(), v.dump_size());
-	return o;
+	if(a.family() == AF_INET) {
+		return mp::hash<std::string>()(std::string((const char*)&a.m.ipv4, sizeof(struct sockaddr_in)));
+	} else if(a.family() == AF_INET6) {
+		return mp::hash<std::string>()(std::string((const char*)&a.m.ipv6, sizeof(struct sockaddr_in6)));
+	} else {
+		return mp::hash<std::string>()(std::string((const char*)&a.m.ex.addr, a.m.ex.addrlen));
+	}
 }
 
 

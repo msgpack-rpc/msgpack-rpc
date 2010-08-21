@@ -5,21 +5,43 @@ DOC_FILES = \
 		README.md
 
 CPP_DIST = \
-		lang/cpp/header.mpl \
-		lang/cpp/rpc.mpl \
-		lang/cpp/source.mpl \
+		lang/cpp/common.mpl \
+		lang/cpp/headers.mpl \
+		lang/cpp/service.mpl \
+		lang/cpp/service_client.mpl \
+		lang/cpp/service_server.mpl \
+		lang/cpp/service_source.mpl \
 		lang/cpp/types.mpl \
 		lang/cpp.rb
 
+RUBY_DIST = \
+		lang/ruby/common.mpl \
+		lang/ruby/requires.mpl \
+		lang/ruby/service.mpl \
+		lang/ruby/service_client.mpl \
+		lang/ruby/service_server.mpl \
+		lang/ruby/types.mpl \
+		lang/ruby.rb
+
+JAVA_DIST = \
+		lang/java/common.mpl \
+		lang/java/const.mpl \
+		lang/java/enum.mpl \
+		lang/java/struct.mpl \
+		lang/java.rb
+
 LANG_DIST = \
 		$(CPP_DIST) \
-		lang/lang.rb
+		$(RUBY_DIST) \
+		$(JAVA_DIST)
 
 RUBYLIB = \
 		rubylib/treetop.rb \
 		rubylib/treetop/README.md \
 		rubylib/treetop/LICENSE \
 		rubylib/treetop/runtime.rb \
+		rubylib/treetop/ruby_extensions.rb \
+		rubylib/treetop/ruby_extensions/string.rb \
 		rubylib/treetop/runtime/compiled_parser.rb \
 		rubylib/treetop/runtime/interval_skip_list.rb \
 		rubylib/treetop/runtime/syntax_node.rb \
@@ -31,36 +53,34 @@ RUBYLIB = \
 		rubylib/treetop/runtime/interval_skip_list/node.rb \
 		rubylib/rubygems
 
-mprpcgen:
+msgpack-idl:
 	echo '#!$(RUBY_PATH)' > $@
 	echo '$$LOAD_PATH.unshift("$(pkgdatadir)/rubylib")' >> $@
-	echo '$$LOAD_PATH.unshift("$(pkgdatadir)/lang")' >> $@
-	echo 'load "$(pkgdatadir)/mprpcgen.rb"' >> $@
+	echo 'load "$(pkgdatadir)/command.rb"' >> $@
 	chmod 755 $@
 
-bin_SCRIPTS = mprpcgen
+bin_SCRIPTS = msgpack-idl
 
-MOSTLYCLEANFILES = mprpcgen
+MOSTLYCLEANFILES = msgpack-idl
 
-mprpcgendir = $(pkgdatadir)
+msgpack_idldir = $(pkgdatadir)
 
-nobase_mprpcgen_DATA = \
+nobase_msgpack_idl_DATA = \
 		$(LANG_DIST) \
 		$(RUBYLIB) \
-		mprpcgen.rb
+		command.rb
 
 corelibdir = $(pkgdatadir)/rubylib
 
 corelib_DATA = \
 		mplex.rb \
-		mprpc_ast.rb \
-		mprpc_ast_impl.rb \
-		mprpc_idl.rb
+		ast.rb \
+		parser.rb
 
 EXTRA_DIST = \
 		$(LANG_DIST) \
 		$(RUBYLIB) \
 		$(DOC_FILES) \
 		$(corelib_DATA) \
-		mprpcgen.rb
+		command.rb
 

@@ -1,3 +1,20 @@
+//
+// MessagePack-RPC for Java
+//
+// Copyright (C) 2010 Kazuki Ohta
+//
+//    Licensed under the Apache License, Version 2.0 (the "License");
+//    you may not use this file except in compliance with the License.
+//    You may obtain a copy of the License at
+//
+//        http://www.apache.org/licenses/LICENSE-2.0
+//
+//    Unless required by applicable law or agreed to in writing, software
+//    distributed under the License is distributed on an "AS IS" BASIS,
+//    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//    See the License for the specific language governing permissions and
+//    limitations under the License.
+//
 package org.msgpack.rpc.client.transport;
 
 import static org.jboss.netty.channel.Channels.pipeline;
@@ -21,8 +38,13 @@ import org.msgpack.rpc.client.RPCException;
 import org.msgpack.rpc.client.netty.RPCRequestEncoder;
 import org.msgpack.rpc.client.netty.RPCResponseDecoder;
 
+/**
+ * The netty ChannelHandler class. When some network events are occurred, the
+ * methods of this class are called (e,g. connection establishment, message
+ * receipt, etc.).
+ */
 class TCPClientHandler extends SimpleChannelHandler {
-    protected TCPSocket sock;
+    protected final TCPSocket sock;
     
     public TCPClientHandler(TCPSocket sock) {
         super();
@@ -68,8 +90,12 @@ class TCPClientHandler extends SimpleChannelHandler {
     }
 }
 
+/**
+ * The netty PipelineFactory class. The methods of this class is called, when
+ * some network events are occurred.
+ */
 class TCPClientPipelineFactory implements ChannelPipelineFactory {
-    protected TCPSocket sock;
+    protected final TCPSocket sock;
     
     public TCPClientPipelineFactory(TCPSocket sock) {
         this.sock = sock;
@@ -92,7 +118,7 @@ public class TCPSocket {
     protected final EventLoop loop;
     protected final TCPTransport transport;
     
-    // netty-specific
+    // netty-specific members
     protected ClientBootstrap bootstrap;
     protected ChannelFuture connectFuture;
     protected Channel channel;
@@ -142,17 +168,21 @@ public class TCPSocket {
      * The callback function, called when the connection is established.
      * @throws Exception
      */
-    public synchronized void onConnected() throws Exception {
-        // connected, but onConnected() called
-        if (channel != null)
-            throw new IOException("already connected");
-        // onConnected() called without tryConnect
-        if (connectFuture == null)
-            throw new IOException("tryConnect was not called");
+    public void onConnected() throws Exception {
+        boolean isSuccess = false;
+        synchronized(this) {
+            // connected, but onConnected() called
+            if (channel != null)
+                throw new IOException("already connected");
+            // onConnected() called without tryConnect
+            if (connectFuture == null)
+                throw new IOException("tryConnect was not called");
 
-        // set channel
-        channel = connectFuture.awaitUninterruptibly().getChannel();
-        if (connectFuture.isSuccess())
+            // set channel
+            channel = connectFuture.awaitUninterruptibly().getChannel();
+            isSuccess = connectFuture.isSuccess();
+        }
+        if (isSuccess)
             transport.onConnected();
         else
             onConnectFailed();
@@ -187,7 +217,7 @@ public class TCPSocket {
      * The callback called when the error occurred.
      * @param e occurred exception.
      */
-    public synchronized void onFailed(Exception e) {
+    public void onFailed(Exception e) {
         transport.onFailed(e);
         tryClose();
     }

@@ -1,3 +1,20 @@
+//
+// MessagePack-RPC for Java
+//
+// Copyright (C) 2010 Kazuki Ohta
+//
+//    Licensed under the Apache License, Version 2.0 (the "License");
+//    you may not use this file except in compliance with the License.
+//    You may obtain a copy of the License at
+//
+//        http://www.apache.org/licenses/LICENSE-2.0
+//
+//    Unless required by applicable law or agreed to in writing, software
+//    distributed under the License is distributed on an "AS IS" BASIS,
+//    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//    See the License for the specific language governing permissions and
+//    limitations under the License.
+//
 package org.msgpack.rpc.client.transport;
 
 import java.util.ArrayList;
@@ -15,9 +32,9 @@ import org.msgpack.rpc.client.Session;
  * Then, they are actually sent to the network when it's connected.
  */
 public class TCPTransport extends Transport {
+    protected final TCPSocket socket;
     protected Boolean isConnecting;
     protected Boolean isConnected;
-    protected TCPSocket socket;
     protected List<Object> pendingMessages;
 
     public TCPTransport(Session session, EventLoop loop) {
@@ -41,29 +58,23 @@ public class TCPTransport extends Transport {
      * @throws Exception
      */
     @Override
-    public synchronized void sendMessage(Object msg) throws Exception {
-        if (isConnected) {
-            socket.trySend(msg);
-        } else {
-            if (!isConnecting) {
-                socket.tryConnect();
-                isConnecting = true;
-            }
-            pendingMessages.add(msg);
-        }
-    }
-
-    /**
-     * Send the pending messages.
-     * @throws Exception
-     */
-    protected void trySendPending() throws Exception {
-        Object[] msgs;
+    public void sendMessage(Object msg) throws Exception {
+        boolean isTryConnect = false;
+        boolean isTrySend = false;
         synchronized(this) {
-            msgs = pendingMessages.toArray();
-            pendingMessages.clear();
+            if (isConnected) {
+                isTrySend = true;
+            } else {
+                if (!isConnecting) {
+                    isTryConnect = true;
+                    isConnecting = true;
+                }
+                pendingMessages.add(msg);
+            }
         }
-        for (Object msg : msgs)
+        if (isTryConnect)
+            socket.tryConnect();
+        if (isTrySend)
             socket.trySend(msg);
     }
 
@@ -71,22 +82,30 @@ public class TCPTransport extends Transport {
      * Close the connection associated with this transport.
      */
     @Override
-    public synchronized void tryClose() {
-        if (socket != null)
-            socket.tryClose();
-        isConnecting = false;
-        isConnected = false;
-        pendingMessages.clear();
+    public void tryClose() {
+        synchronized(this) {
+            isConnecting = false;
+            isConnected = false;
+            pendingMessages.clear();
+        }
+        socket.tryClose();
     }
     
     /**
      * The callback function, called when the connection is established.
      * @throws Exception
      */
-    public synchronized void onConnected() throws Exception {
-        isConnecting = false;
-        isConnected = true;
-        trySendPending();
+    public void onConnected() throws Exception {
+        // send the pending messages
+        Object[] msgs;
+        synchronized(this) {
+            isConnecting = false;
+            isConnected = true;
+            msgs = pendingMessages.toArray();
+            pendingMessages.clear();
+        }
+        for (Object msg : msgs)
+            socket.trySend(msg);
     }
     
     /**
@@ -94,8 +113,8 @@ public class TCPTransport extends Transport {
      * @param replyObject the received object, already unpacked.
      * @throws Exception
      */
-    public void onMessageReceived(Object replyObject) throws Exception {
-        session.onMessageReceived(replyObject);
+    public void onMessageReceived(Object replyObjects) throws Exception {
+        session.onMessageReceived(replyObjects);
     }
 
     /**

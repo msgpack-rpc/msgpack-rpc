@@ -18,7 +18,7 @@
 #ifndef MSGPACK_RPC_REQTABLE_H__
 #define MSGPACK_RPC_REQTABLE_H__
 
-#include "message.h"
+#include "protocol.h"
 #include "impl_fwd.h"
 #include <vector>
 #include <mp/unordered_map.h>
@@ -30,6 +30,10 @@ namespace rpc {
 
 class reqtable {
 public:
+	reqtable() { }
+	~reqtable() { }
+
+public:
 	void insert(msgid_t msgid, shared_future f);
 
 	shared_future take(msgid_t msgid);
@@ -37,6 +41,8 @@ public:
 	void take_all(std::vector<shared_future>* all);
 
 	void step_timeout(std::vector<shared_future>* timedout);
+
+	size_t size() const;
 
 private:
 	mp::pthread_mutex m_mutex;

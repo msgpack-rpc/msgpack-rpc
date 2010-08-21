@@ -1,3 +1,20 @@
+//
+// MessagePack-RPC for Java
+//
+// Copyright (C) 2010 Kazuki Ohta
+//
+//    Licensed under the Apache License, Version 2.0 (the "License");
+//    you may not use this file except in compliance with the License.
+//    You may obtain a copy of the License at
+//
+//        http://www.apache.org/licenses/LICENSE-2.0
+//
+//    Unless required by applicable law or agreed to in writing, software
+//    distributed under the License is distributed on an "AS IS" BASIS,
+//    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//    See the License for the specific language governing permissions and
+//    limitations under the License.
+//
 package org.msgpack.rpc.server;
 
 import java.io.IOException;
@@ -5,6 +22,10 @@ import java.lang.reflect.Method;
 import java.nio.channels.Channel;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ExceptionEvent;
@@ -13,13 +34,22 @@ import org.jboss.netty.channel.SimpleChannelHandler;
 import org.msgpack.rpc.Constants;
 
 public class RPCServerHandler extends SimpleChannelHandler {
-    protected Object handler = null;
-    protected Method[] handlerMethods = null;
+    protected final Object handler;
+    protected Map<String, Method> methodMap;
 
     public RPCServerHandler(Object handler) {
         super();
         this.handler = handler;
-        this.handlerMethods = handler.getClass().getMethods();
+        
+        // 2010/06/29 Kazuki Ohta <kazuki.ohta@gmail.com>
+        // Java supports function overloading, but it's not happy for RPC
+        // systems which distinguish the method by the name. We should throw
+        // the exception when we found the overloading here?
+        Method[] handlerMethods = handler.getClass().getMethods();
+        Map<String, Method> m = new HashMap<String, Method>();
+        for (Method method : handlerMethods)
+            m.put(method.getName(), method);
+        this.methodMap = Collections.unmodifiableMap(m);
     }
     
     @Override
@@ -35,7 +65,16 @@ public class RPCServerHandler extends SimpleChannelHandler {
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        AbstractList<?> a = (AbstractList<?>)e.getMessage();
+        Object obj = e.getMessage();
+        if (obj == null) return;
+        if (!(obj instanceof AbstractList<?>)) return;
+        List<Object> list = (List<Object>)obj;
+        for (Object o: list)
+            processOneMessage(e, o);
+    }
+    
+    protected void processOneMessage(MessageEvent e, Object o) throws Exception {
+        AbstractList<?> a = (AbstractList<?>)o;
         if (a.size() != 4)
             throw new IOException("Invalid MPRPC"); // TODO
 
@@ -57,7 +96,7 @@ public class RPCServerHandler extends SimpleChannelHandler {
             } else {
                 paramList = new ArrayList<Object>();
             }
-            handlerResult = callMethod(handler, new String((byte[])method), paramList);
+            handlerResult = callMethod(new String((byte[])method), paramList);
         } catch (Exception rpc_e) {
             errorMessage = rpc_e.getMessage();
         }
@@ -71,21 +110,11 @@ public class RPCServerHandler extends SimpleChannelHandler {
         e.getChannel().write(response, e.getRemoteAddress());
     }
 
-    protected Object callMethod(Object handler, String method, AbstractList<?> params) throws Exception {
-        Method m = findMethod(handler, method, params);
-        if (m == null) throw new IOException("No such method");
-        return m.invoke(handler, params.toArray());
-    }
-
-    protected Method findMethod(Object handler, String method, AbstractList<?> params) {
+    protected Object callMethod(String method, AbstractList<?> params) throws Exception {
         int nParams = params.size();
-        Method[] ms = handlerMethods;
-        for (int i = 0; i < ms.length; i++) {
-            Method m = ms[i];
-            if (!method.equals(m.getName())) continue;
-            if (nParams != m.getParameterTypes().length) continue;
-            return m;
-        }
-        return null;
+        Method m = methodMap.get(method);
+        if (m == null || nParams != m.getParameterTypes().length)
+            throw new IOException("No such method");
+        return m.invoke(handler, params.toArray());
     }
 }

@@ -19,38 +19,34 @@
 #define MSGPACK_RPC_SERVER_H__
 
 #include "session_pool.h"
-#include "dispatcher.h"
-#include <mp/utilize.h>
-#include <string>
+#include "request.h"
 
 namespace msgpack {
 namespace rpc {
 
 
+class dispatcher {
+public:
+	virtual void dispatch(request req) = 0;
+};
+
+
 class server : public session_pool {
 public:
 	server(loop lo = loop());
+	server(const builder& b, loop lo = loop());
+
 	~server();
 
 	void serve(dispatcher* dp);
 
-	void listen(address addr);
-
-	void listen(const std::string& host, uint16_t port)
-		{ listen(address(host, port)); }
+	void listen(const listener& l);
+	void listen(const address& addr);
+	void listen(const std::string& host, uint16_t port);
 
 	void close();
 
 	class base;
-
-private:
-	dispatcher* m_dp;
-	std::auto_ptr<transport::listener> m_listener;
-
-	MP_UTILIZE;
-
-protected:
-	shared_session create_session(const address& addr);
 
 private:
 	server(const server&);
@@ -59,7 +55,12 @@ private:
 
 class server::base : public dispatcher {
 public:
-	base(loop lo = loop()) : instance(lo) { instance.serve(this); }
+	base(loop lo = loop()) :
+		instance(lo) { instance.serve(this); }
+
+	base(const builder& b, loop lo = loop()) :
+		instance(b, lo) { instance.serve(this); }
+
 	~base() { }
 
 	rpc::server instance;

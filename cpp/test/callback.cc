@@ -16,17 +16,6 @@ void add_callback(rpc::future f, rpc::loop lo)
 	lo->end();
 }
 
-//void add_callback(rpc::future f, rpc::loop lo)
-//{
-//	try {
-//		std::cout << "callback: add(1,2) = " << f.get<int>() << std::endl;
-//	} catch (msgpack::rpc::remote_error& e) {
-//		std::cout << e.what() << std::endl;
-//		exit(1);
-//	}
-//	lo->end();
-//}
-
 using namespace mp::placeholders;
 
 int main(void)
@@ -40,7 +29,7 @@ int main(void)
 	std::auto_ptr<rpc::dispatcher> dp(new myecho);
 	svr.serve(dp.get());
 
-	svr.listen("0.0.0.0", 8080);
+	svr.listen("0.0.0.0", 18811);
 
 	svr.start(4);
 	// }
@@ -50,7 +39,7 @@ int main(void)
 	rpc::session_pool sp;
 
 	// get session
-	rpc::session s = sp.get_session("127.0.0.1", 8080);
+	rpc::session s = sp.get_session("127.0.0.1", 18811);
 
 	// call
 	rpc::future f = s.call("add", 1, 2);

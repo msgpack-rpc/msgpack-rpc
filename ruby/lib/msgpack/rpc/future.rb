@@ -49,12 +49,14 @@ class Future
 				return @result
 			end
 		end
-		if @error_handler
-			return @error_handler.call(self)
-		else
-			raise @error if @error.is_a?(Error)
-			raise RemoteError.new(@error, @result)
+		if @result.nil?
+			# compatible error
+			raise RuntimeError.new(@error)
 		end
+		if @error_handler
+			@error_handler.call(@error, @result)
+		end
+		raise RPCError.create(@error, @result)
 	end
 
 	# Wait for receiving result of remote procedure call.
@@ -73,13 +75,6 @@ class Future
 	# Attaches a callback method that is called when the result of remote method is received.
 	def attach_callback(proc = nil, &block)
 		@callback_handler = proc || block
-		if @callback_handler.arity == 2
-			# FIXME backward compatibility
-			handler = @callback_handler
-			@callback_handler = Proc.new {|future|
-				handler.call(future.error, future.result)
-			}
-		end
 	end
 
 	# For IDL
@@ -95,10 +90,18 @@ class Future
 	def set_result(err, res)  #:nodoc:
 		@error  = err
 		@result = res
-		if @callback_handler
-			@callback_handler.call(self)
-		end
 		@set = true
+		if @callback_handler
+			if @callback_handler.arity == 2
+				# FIXME backward compatibility
+				@callback_handler.call(error, result)
+			else
+				@callback_handler.call(self)
+			end
+		end
+		self
+	rescue
+		self
 	end
 
 	def step_timeout  #:nodoc:

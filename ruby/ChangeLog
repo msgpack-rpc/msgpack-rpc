@@ -1,0 +1,7 @@
+
+XXXX-XX-XX version 0.4.0
+
+  * updates dispatch mechanism
+  * adds Session#call_apply and notify_apply
+  * Responder prevents sending results twice
+

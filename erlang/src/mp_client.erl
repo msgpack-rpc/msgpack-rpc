@@ -46,6 +46,9 @@ connect(Identifier, Address, Port)->
     gen_server:start_link(Identifier, ?MODULE, [{address,Address},{port,Port}], []).
 
 % synchronous calls
+% when method 'Method' doesn't exist in server implementation,
+% it returns {error, {<<"no such method">>, nil}}
+% user func error => {error, {<<"unexpected error">>, nil}}
 -spec call(CallID::non_neg_integer(), Method::atom(), Argv::list()) -> 
     {ok, any()} | {error, {atom(), any()}}.
 call(CallID, Method, Argv) ->   call(?SERVER, CallID, Method, Argv).

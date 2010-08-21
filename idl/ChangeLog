@@ -1,0 +1,10 @@
+
+2010-07-17 version 0.1.1:
+
+  * shows error message on parse error
+  * fixes LOAD_PATH setting
+
+2010-07-14 version 0.1.0:
+
+  * first release
+

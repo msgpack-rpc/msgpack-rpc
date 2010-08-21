@@ -1,7 +1,10 @@
 MANIFEST
 *.beam
 *~
-*.omakedb
-*.omakedb.lock
-*.omc
 test/log
+edoc/*.html
+edoc/*.png
+edoc/*.css
+edoc/edoc-info
+.omakedb*
+*.omc

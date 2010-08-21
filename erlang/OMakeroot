@@ -50,7 +50,7 @@ public.INCLUDES_OPT = -I
 # Add the -I option to the includes lazily.
 # Don't redefine this variable unless you know what you are doing.
 #
-public.PREFIXED_INCLUDES = $`(addprefix $(INCLUDES_OPT), $(INCLUDES))
+#public.PREFIXED_INCLUDES = $`(addprefix $(INCLUDES_OPT), $(INCLUDES))
 
 #%$(BEAM_EXT): %$(ERL_EXT) #:scanner: scan-erl-%$(ERL_EXT)
 #    $(ERLC) $(ERLCFLAGS) $(PREFIXED_INCLUDES) $<

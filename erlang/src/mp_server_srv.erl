@@ -44,7 +44,8 @@
 %% Description: Starts the server
 %%--------------------------------------------------------------------
 start_link(Argv) ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [Argv], [{debug,[trace,log,statistics]}]).
+%    gen_server:start_link({local, ?SERVER}, ?MODULE, [Argv], [{debug,[trace,log,statistics]}]).
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [Argv], []).
 
 %%====================================================================
 %% gen_server callbacks

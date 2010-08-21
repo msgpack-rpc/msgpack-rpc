@@ -68,6 +68,12 @@ void reqtable::step_timeout(std::vector<shared_future>* timedout)
 }
 
 
+size_t reqtable::size() const
+{
+	return m_map.size();
+}
+
+
 }  // namespace rpc
 }  // namespace msgpack
 

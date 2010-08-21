@@ -29,7 +29,7 @@ public:
 		std::string method = req.method().as<std::string>();
 		msgpack::type::tuple<int, int> params(req.params());
 
-		rpc::session s = m_svr.get_session("127.0.0.1", 8080);
+		rpc::session s = m_svr.get_session("127.0.0.1", 18811);
 		rpc::future f = s.call(method, params.get<0>(), params.get<1>());
 		f.attach_callback( mp::bind(&callback, _1, req) );
 	}
@@ -48,7 +48,7 @@ int main(void)
 	std::auto_ptr<rpc::dispatcher> dp(new myecho);
 	svr.serve(dp.get());
 
-	svr.listen("0.0.0.0", 8080);
+	svr.listen("0.0.0.0", 18811);
 
 	svr.start(4);
 	// }
@@ -56,10 +56,10 @@ int main(void)
 
 	// start server with 4 threads
 	myserver s;
-	s.listen("0.0.0.0", 9090).start(4);
+	s.listen("0.0.0.0", 18812).start(4);
 
 	// send rquest from the client
-	msgpack::rpc::client c("127.0.0.1", 9090);
+	msgpack::rpc::client c("127.0.0.1", 18812);
 	int ret = c.call("add", 1, 2).get<int>();
 
 	std::cout << "call: add(1, 2) = " << ret << std::endl;

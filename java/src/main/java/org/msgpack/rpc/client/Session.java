@@ -1,8 +1,26 @@
+//
+// MessagePack-RPC for Java
+//
+// Copyright (C) 2010 Kazuki Ohta
+//
+//    Licensed under the Apache License, Version 2.0 (the "License");
+//    you may not use this file except in compliance with the License.
+//    You may obtain a copy of the License at
+//
+//        http://www.apache.org/licenses/LICENSE-2.0
+//
+//    Unless required by applicable law or agreed to in writing, software
+//    distributed under the License is distributed on an "AS IS" BASIS,
+//    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//    See the License for the specific language governing permissions and
+//    limitations under the License.
+//
 package org.msgpack.rpc.client;
 
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.ScheduledFuture;
@@ -186,10 +204,26 @@ public abstract class Session {
     
     /**
      * The callback called when the message arrives
-     * @param replyObject the received object, already unpacked.
+     * @param replyObjects the array of the received objects, which are
+     * already unpacked.
      * @throws Exception
      */
-    public void onMessageReceived(Object replyObject) throws Exception {
+    public void onMessageReceived(Object replyObjects) throws Exception {
+        if (replyObjects == null) return;
+        if (!(replyObjects instanceof AbstractList<?>))
+            throw new RPCException("invalid decoder");
+        List<Object> lists = (List<Object>)replyObjects;
+        for (Object o: lists)
+            onMessageReceivedOne(o);
+    }
+
+    /**
+     * Process one reply object. Set it to the corresponding Future object,
+     * by looking up the reqTable.
+     * @param replyObject the received object to handle.
+     * @throws Exception
+     */
+    protected void onMessageReceivedOne(Object replyObject) throws Exception {
         if (!(replyObject instanceof AbstractList<?>))
             throw new RPCException("invalid MPRPC Response");
         

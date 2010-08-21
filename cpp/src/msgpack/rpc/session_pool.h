@@ -21,42 +21,36 @@
 #include "session.h"
 #include "loop_util.h"
 #include "address.h"
+#include "transport.h"
 #include "impl_fwd.h"
 #include "types.h"
 #include <mp/utilize.h>
-#include <mp/sync.h>
-#include <mp/unordered_map.h>
+#include <string>
 
 namespace msgpack {
 namespace rpc {
 
 
-class session_pool : public loop_util {
+class session_pool : public loop_util<session_pool> {
 public:
 	session_pool(loop lo = loop());
+	session_pool(const builder& b, loop lo = loop());
 
 	~session_pool();
 
 	session get_session(const address& addr);
 
 	session get_session(const std::string& host, uint16_t port)
-		{ return get_session(address(host, port)); }
+		{ return get_session(ip_address(host, port)); }
 
-private:
-	MP_UTILIZE;
-
-private:
-	typedef mp::unordered_map<address, weak_session, address::hash> table_t;
-	typedef mp::sync<table_t>::ref table_ref;
-	mp::sync<table_t> m_table;
-
-	void start_timeout_timer(double timeout_step_interval_sec);
-	void timeout_callback();
+	const loop& get_loop() const;
+	loop get_loop();
 
 protected:
-	virtual shared_session create_session(const address& addr);
+	session_pool(shared_session_pool pimpl);
+	shared_session_pool m_pimpl;
 
-	option m_default_opt;
+	MP_UTILIZE;
 
 private:
 	session_pool(const session_pool&);

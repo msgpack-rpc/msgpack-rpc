@@ -19,91 +19,29 @@ module MessagePack
 module RPC
 
 
-class AsyncResult
-	def initialize
-		@responder = nil
-		@sent = false
-	end
-
-	def result(retval, err = nil)
-		unless @sent
-			if @responder
-				@responder.result(retval, err)
-			else
-				@result = [retval, err]
-			end
-			@sent = true
-		end
-		nil
-	end
-
-	def error(err)
-		result(nil, err)
-		nil
-	end
-
-	def set_responder(res)  #:nodoc:
-		@responder = res
-		if @sent && @result
-			@responder.result(*@result)
-			@result = nil
-		end
-	end
+module Dispatcher
 end
 
 
 class ObjectDispatcher
+	include Dispatcher
+
 	def initialize(obj, accept = obj.public_methods)
 		@obj = obj
 		@accept = accept.map {|m| m.is_a?(Integer) ? m : m.to_s }
 	end
 
-	def dispatch_request(session, method, param, responder)
-		begin
-			sent = false
-			early_result = nil
-			result = forward_method(session, method, param) do |result_|
-				unless result_.is_a?(AsyncResult)
-					responder.result(result_)
-					sent = true
-				end
-				early_result = result_
-			end
-
-		# FIXME on NoMethodError
-		# res.error(NO_METHOD_ERROR); return
-
-		# FIXME on ArgumentError
-		# res.error(ArgumentError); return
-
-		rescue
-			responder.error($!.to_s)
-			return
-		end
-
-		if early_result.is_a?(AsyncResult)
-			early_result.set_responder(responder)
-		elsif sent
-			return
-		elsif result.is_a?(AsyncResult)
-			result.set_responder(responder)
-		else
-			responder.result(result)
-		end
-	end
-
-	def dispatch_notify(session, method, param)
-		forward_method(session, method, param)
-	rescue
-	end
-
-	private
-	def forward_method(session, method, param, &block)
+	def dispatch(method, param, &block)
 		unless @accept.include?(method)
 			raise NoMethodError, "method `#{method}' is not accepted"
 		end
 		@obj.send(method, *param, &block)
 	end
+end
+
+
+#:nodoc:
+class MethodForwarder
 end
 
 

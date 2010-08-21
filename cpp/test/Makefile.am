@@ -16,7 +16,13 @@ check_PROGRAMS = \
 		callback \
 		notify \
 		async_server \
-		error
+		error \
+		udp \
+		unix \
+		attack_connect \
+		attack_pipeline \
+		attack_huge \
+		attack_callback
 
 TESTS = $(check_PROGRAMS)
 
@@ -31,4 +37,16 @@ notify_SOURCES = notify.cc
 async_server_SOURCES = async_server.cc
 
 error_SOURCES = error.cc
+
+udp_SOURCES = udp.cc
+
+unix_SOURCES = unix.cc
+
+attack_connect_SOURCES = attack_connect.cc
+
+attack_pipeline_SOURCES = attack_pipeline.cc
+
+attack_huge_SOURCES = attack_huge.cc
+
+attack_callback_SOURCES = attack_callback.cc
 
