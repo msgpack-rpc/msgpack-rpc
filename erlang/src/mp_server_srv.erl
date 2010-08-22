@@ -45,7 +45,7 @@
 %%--------------------------------------------------------------------
 start_link(Mod, Options) ->
     Name = proplists:get_value(name, Options, Mod),
-%    gen_server:start_link({local, ?SERVER}, ?MODULE, [Argv], [{debug,[trace,log,statistics]}]).
+%    gen_server:start_link({local, Name}, ?MODULE, [Mod, Options], [{debug,[trace,log,statistics]}]).
     gen_server:start_link({local, Name}, ?MODULE, [Mod,Options], []).
 
 %%====================================================================
@@ -60,22 +60,32 @@ start_link(Mod, Options) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([Mod, Options]) ->
-    Addr = proplists:get_value(addr, Options, localhost),
+    Addr = proplists:get_value(addr, Options, {0,0,0,0}),
     Port = proplists:get_value(port, Options, 65500),
-    Opts = [binary, {packet, raw}, {reuseaddr, true},
-            {keepalive, true}, {backlog, 30}, {active, false},
-            {ip, Addr}],
+    init_(Mod,Addr,Port).
 
+
+init_(Mod, Host, Port) when is_atom(Host)->
+    {ok,Addr} = inet:getaddr(Host, inet),
+    init_(Mod, Addr, Port);
+init_(Mod, Host, Port) when is_list(Host)->
+    {ok,Addr} = inet:getaddr(Host, inet),
+    init_(Mod, Addr, Port);
+init_(Mod, Addr, Port) when is_atom(Mod), 0<Port, Port<65535, is_tuple(Addr)->
+    Opts = [binary, {packet, raw}, {reuseaddr, true},
+            {keepalive, true}, {backlog, 30}, {active, false}, {ip, Addr}
+	   ],
+    
     process_flag(trap_exit, true),
     case gen_tcp:listen(Port, Opts) of
-    {ok, ListenSocket} ->
-        %%Create first accepting process
+	{ok, ListenSocket} ->
+	    %%Create first accepting process
 	    {ok, Ref} = prim_inet:async_accept(ListenSocket, -1),
 	    {ok, #state{listener = ListenSocket,
 			acceptor = Ref,
 			module = Mod}};
-    {error, Reason} ->
-        {stop, Reason}
+	{error, Reason} ->
+	    {stop, Reason}
     end.
 
 %%--------------------------------------------------------------------

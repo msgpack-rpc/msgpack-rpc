@@ -24,7 +24,7 @@ suite() ->
 %% Reason = term()
 %%--------------------------------------------------------------------
 init_per_suite(Config) ->
-    sample_app:start(),
+    ok=sample_app:start(),
     Config.
     
 %%--------------------------------------------------------------------
@@ -32,7 +32,7 @@ init_per_suite(Config) ->
 %% Config0 = Config1 = [tuple()]
 %%--------------------------------------------------------------------
 end_per_suite(_Config) ->
-    sample_app:stop().
+    ok=sample_app:stop().
 
 %%--------------------------------------------------------------------
 %% Function: init_per_group(GroupName, Config0) ->

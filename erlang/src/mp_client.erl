@@ -166,7 +166,6 @@ code_change(_OldVsn, State, _Extra) ->
 my_test()->
     {ok,Pid}=mp_client:connect(localhost,65500),
     {ok,Reply}=mp_client:call(Pid, hoge, []),
-    elrang:display(Reply),
     mp_client:close().
 
 -endif.

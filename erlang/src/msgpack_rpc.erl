@@ -34,7 +34,6 @@ stop()->
 
 add_server(Mod, Options)->
     mp_server_listener_sup:add_server(Mod, Options).
-%    mp_server_sup:start_link(Name, Mod,Addr,Port).
 
 del_server(Name)->
     mp_server_listener_sup:del_server(Name).

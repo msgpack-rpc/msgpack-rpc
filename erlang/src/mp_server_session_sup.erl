@@ -64,9 +64,7 @@ start_client(Module, Socket) ->
 init([]) ->
     AChild = {mp_session,{mp_session,start_link,[]},
 	      temporary,brutal_kill,worker,[mp_session]},
-    erlang:display(AChild),
     ok=supervisor:check_childspecs([AChild]),
-    erlang:display(AChild),
     {ok,{{simple_one_for_one,0,1}, [AChild]}}.
 
 %%====================================================================
