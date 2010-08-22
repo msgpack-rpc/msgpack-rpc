@@ -64,7 +64,7 @@ start_link() ->
 %%--------------------------------------------------------------------
 init([]) ->
     AChild = {mp_server_srv,{mp_server_srv,start_link,[]},
-	      temporary,brutal_kill,worker,[mp_server_srv]},
+	      permanent,2000,worker,[mp_server_srv]},
     ok=supervisor:check_childspecs([AChild]),
     {ok,{{simple_one_for_one,0,1}, [AChild]}}.
 

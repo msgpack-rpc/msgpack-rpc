@@ -25,6 +25,13 @@ ct: $(beams) $(apps)
 	  -dir $(ROOT)/test -logdir $(ROOT)/test/log \
 	  -I $(ROOT)/include -I $(ROOT)/src -cover $(ROOT)/test/my.coverspec  -pa $(ROOT)/ebin
 
+doc: $(erls) $(SRCDIR)/overview.edoc
+	erl -noshell -pa ebin -eval \
+	 'ok=edoc:application(msgpack_rpc, filename:absname("src"), [{dir,"edoc"}]), init:stop().'
+#	 'ok=edoc:files(["src/msgpack.erl", "src/mp_session.erl", "src/mp_client.erl", "src/msgpack_rpc.erl"], [{dir,"edoc"}]), init:stop().'
+#	@echo "  - building edoc done. see edoc/index.html"
+#	 'ok=edoc:application(msgpack_rpc, [{dir,"edoc"}]), init:stop().'
+
 .DEFAULT:  $(beams) $(apps)
 #        $(ERL) -pa $(EBIN) -noshell -eval 'eunit:test().' -s init stop
 

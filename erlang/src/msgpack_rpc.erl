@@ -19,22 +19,25 @@
 %%% File    : mp_server.erl
 %%% Author  : UENISHI Kota <kuenishi@gmail.com>
 %%% Description : MessagePack server
-%%%
+%%% 
 %%% Created : 30 May 2010 by UENISHI Kota <kuenishi@gmail.com>
 %%%-------------------------------------------------------------------
 -module(msgpack_rpc).
 
 -export([start/0, stop/0, add_server/2, del_server/1]).
 
+-spec start()-> ok | {error, any()}.
 start()->
     application:start(?MODULE).
 
+-spec stop()-> ok | {error, any()}.
 stop()->
     application:stop(?MODULE).
 
+-spec add_server( Mod::atom(), Options::proplists:proplists())-> {ok, pid()}.
 add_server(Mod, Options)->
     mp_server_listener_sup:add_server(Mod, Options).
 
+-spec del_server( Name::atom())-> ok.
 del_server(Name)->
     mp_server_listener_sup:del_server(Name).
-    

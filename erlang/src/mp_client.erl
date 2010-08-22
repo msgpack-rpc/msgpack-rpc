@@ -24,7 +24,8 @@
 -define(SERVER, ?MODULE).
 
 %% external API
--export([connect/2, connect/3, call/3, call/4, close/0, close/1]).
+-export([connect/2, connect/3, close/0, close/1,
+	 call/3, call/4, call_async/4, watch/2]).
 
 %% internal: gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -76,6 +77,19 @@ call(Client, CallID, Method, Argv) when is_atom(Method), is_list(Argv) ->
 	{error, Reason}-> {error, Reason}
     end.
 
+% afterwards, the caller will receive the response as a message
+-spec call_async(Client::server_ref(), CallID::non_neg_integer(),
+		 Method::atom(), Argv::list()) -> ok | {error, {atom(), any()}}.
+call_async(Client, CallID, Method, Argv) when is_atom(Method), is_list(Argv)->
+    _Pid = self(),
+    not_yet.
+
+% set a callback for notification from server.
+-spec watch(Client::server_ref(),
+	    Callback::fun( (atom(),list()) -> any() )) -> ok | {error, any()}.
+watch(Client, Callback) when is_function(Callback,2)->
+    not_yet.
+
 % users can set any identifier to the connection
 -spec close(Identifier::server_name())-> any().
 close(Identifier)->  gen_server:call(Identifier, stop).
@@ -88,7 +102,8 @@ close()-> close(?SERVER).
 %% gen_server callbacks
 %%====================================================================
 -record(state, {socket, addr, port}).
-%%--------------------------------------------------------------------
+
+%% @private
 %% Function: init(Args) -> {ok, State} |
 %%                         {ok, State, Timeout} |
 %%                         ignore               |
@@ -101,7 +116,7 @@ init(Config)->
     {ok, S}=gen_tcp:connect(Address, Port, [binary, {active,false},{packet,raw}]),
     {ok, #state{socket=S, addr=Address, port=Port}}.
 
-%%--------------------------------------------------------------------
+%% @private
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
 %%                                      {reply, Reply, State, Timeout} |
 %%                                      {noreply, State} |
@@ -120,7 +135,7 @@ handle_call(_oRequest, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
 
-%%--------------------------------------------------------------------
+%% @private
 %% Function: handle_cast(Msg, State) -> {noreply, State} |
 %%                                      {noreply, State, Timeout} |
 %%                                      {stop, Reason, State}
@@ -129,7 +144,7 @@ handle_call(_oRequest, _From, State) ->
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
-%%--------------------------------------------------------------------
+%% @private
 %% Function: handle_info(Info, State) -> {noreply, State} |
 %%                                       {noreply, State, Timeout} |
 %%                                       {stop, Reason, State}
@@ -140,7 +155,7 @@ handle_cast(_Msg, State) ->
 handle_info(_Info, State) ->
     {noreply, State}.
 
-%%--------------------------------------------------------------------
+%% @private
 %% Function: terminate(Reason, State) -> void()
 %% Description: This function is called by a gen_server when it is about to
 %% terminate. It should be the opposite of Module:init/1 and do any necessary
@@ -151,7 +166,7 @@ terminate(_Reason, State) ->
     gen_tcp:close(State#state.socket),
     ok.
 
-%%--------------------------------------------------------------------
+%% @private
 %% Func: code_change(OldVsn, State, Extra) -> {ok, NewState}
 %% Description: Convert process state when code is changed
 %%--------------------------------------------------------------------
@@ -165,7 +180,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 my_test()->
     {ok,Pid}=mp_client:connect(localhost,65500),
-    {ok,Reply}=mp_client:call(Pid, hoge, []),
+    {ok,_Reply}=mp_client:call(Pid, hoge, []),
     mp_client:close().
 
 -endif.

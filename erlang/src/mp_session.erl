@@ -54,8 +54,9 @@ start_link(Module,Socket) when is_atom(Module), is_port(Socket)->
 %    gen_server:start_link(?MODULE, [Module,Socket], [{debug,[trace,log,statistics]}]).
     gen_server:start_link(?MODULE, [Module,Socket], []).
 
-% TBF:
-% notify(Node, Type, Method, Parms)->
+% TODO/TBF
+% notify(Node, Type, Method, Argv)->
+%   
 
 %%====================================================================
 %% gen_server callbacks

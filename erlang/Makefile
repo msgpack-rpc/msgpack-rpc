@@ -17,7 +17,7 @@ ebin/%.beam: src/%.erl $(HEADERS) Makefile
 
 doc: $(SOURCES) $(HEADERS)
 	erl -noshell -eval \
-	 'ok=edoc:files(["src/msgpack.erl", src/mp_session.erl", "src/mp_client.erl"], [{dir,"edoc"}]).'\
+	 'ok=edoc:files(["src/msgpack.erl", "src/msgpack_rpc.erl", "src/mp_session.erl", "src/mp_client.erl"], [{dir,"edoc"}]).'\
 	 -s init stop
 	@echo "  - building edoc done. see edoc/index.html"
 

@@ -1,0 +1,9 @@
+@title Test Project
+@doc Hello, EDoc!!
+wow aaaa -P
+@end
+
+<a href='/docs/?class=ColumnModel&member=configs'>ColumnModel
+configuration</a>
+
+@see 'http://www.msgpack.org'
