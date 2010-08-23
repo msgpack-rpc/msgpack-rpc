@@ -17,7 +17,7 @@
 ########################################################################
 # Phony targets are scoped, so you probably want to declare them first.
 #
-.PHONY: ct all clean
+.PHONY: ct all clean doc
 
 ct: $(beams) $(apps)
 	mkdir -p test/log
@@ -27,10 +27,9 @@ ct: $(beams) $(apps)
 
 doc: $(erls) $(SRCDIR)/overview.edoc
 	erl -noshell -pa ebin -eval \
-	 'ok=edoc:application(msgpack_rpc, filename:absname("src"), [{dir,"edoc"}]), init:stop().'
-#	 'ok=edoc:files(["src/msgpack.erl", "src/mp_session.erl", "src/mp_client.erl", "src/msgpack_rpc.erl"], [{dir,"edoc"}]), init:stop().'
-#	@echo "  - building edoc done. see edoc/index.html"
-#	 'ok=edoc:application(msgpack_rpc, [{dir,"edoc"}]), init:stop().'
+	  'ok=edoc:application(msgpack_rpc, filename:absname("src"), [{dir,"edoc"}]).' \
+	  -s init stop
+	eprintln(building edoc done. see edoc/index.html)
 
 .DEFAULT:  $(beams) $(apps)
 #        $(ERL) -pa $(EBIN) -noshell -eval 'eunit:test().' -s init stop

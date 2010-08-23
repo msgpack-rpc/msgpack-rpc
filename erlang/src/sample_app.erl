@@ -2,7 +2,7 @@
 %%% File    : sample_app.erl
 %%% Author  : UENISHI Kota <kuenishi@gmail.com>
 %%% Description : 
-%%%
+%%% @hidden
 %%% Created : 30 May 2010 by UENISHI Kota <kuenishi@gmail.com>
 %%%-------------------------------------------------------------------
 -module(sample_app).

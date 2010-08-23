@@ -2,7 +2,7 @@
 %%% File    : sample_srv.erl
 %%% Author  : UENISHI Kota <kuenishi@gmail.com>
 %%% Description : 
-%%%
+%%% @hidden
 %%% Created :  5 Jun 2010 by UENISHI Kota <kuenishi@gmail.com>
 %%%-------------------------------------------------------------------
 -module(sample_srv).

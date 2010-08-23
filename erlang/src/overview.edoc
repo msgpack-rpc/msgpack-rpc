@@ -1,9 +1,9 @@
-@title Test Project
-@doc Hello, EDoc!!
-wow aaaa -P
+@title MessagePack-RPC/Erlang
+@doc MessagePack-RPC/Erlang is an Erlang implementation of <a href="http://redmine.msgpack.org/projects/msgpack/wiki/RPCDesign">MessagePack-RPC</a>.
+<h2>Prequisites</h2>
+<h2>Installation</h2>
+<h2>Usage/Programming Guide</h2>
+<h2>Current Status</h2>
+<h2>Overall Design</h2>
+<h2>See Also</h2>
 @end
-
-<a href='/docs/?class=ColumnModel&member=configs'>ColumnModel
-configuration</a>
-
-@see 'http://www.msgpack.org'
