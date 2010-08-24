@@ -1,9 +1,28 @@
 @title MessagePack-RPC/Erlang
 @doc MessagePack-RPC/Erlang is an Erlang implementation of <a href="http://redmine.msgpack.org/projects/msgpack/wiki/RPCDesign">MessagePack-RPC</a>.
 <h2>Prequisites</h2>
+All you need is <a href="http://erlang.org">Erlang</a> (and BSD/GNU make). 
+<a href="http://omake.metaprl.org/">OMake</a> will let you write code in a more confortable way.
 <h2>Installation</h2>
+<pre>
+$ git clone git://github.com/msgpack/msgpack-rpc.git
+$ cd msgpack-rpc/erlang
+$ make
+# escript scripts/setup.es install
+</pre>
 <h2>Usage/Programming Guide</h2>
+See <a href="http://redmine.msgpack.org/projects/msgpack/wiki/QuickStartErlang">wiki</a>, please.
 <h2>Current Status</h2>
+Now developing. First release (0.0.1) is coming soon.
 <h2>Overall Design</h2>
+<h3>Client</h3>
+<h3>Server</h3>
+<h3>Message Protocol</h3>
+<h4>Request</h4>
+<h4>Response</h4>
+<h4>Notification</h4>
 <h2>See Also</h2>
+<ul>
+  <li><a href="http://www.slideshare.net/frsyuki/architecture-of-messagepack">Architecture of MessagePack</a></li>
+</ul>
 @end
