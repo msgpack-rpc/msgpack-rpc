@@ -80,7 +80,7 @@ case_add(Config)->
     Config.
 
 bgn()->
-    Port = open_port({spawn, "ruby -rubygems ../../../scripts/test_server.rb"}, []),
+    Port = open_port({spawn, "ruby -rubygems ../../../priv/test_server.rb"}, []),
     receive
 	{Port, {data, Data}}-> 
 	    ct:log("~p", [Data]);

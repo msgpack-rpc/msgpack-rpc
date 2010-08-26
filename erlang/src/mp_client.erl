@@ -15,6 +15,14 @@
 %%    See the License for the specific language governing permissions and
 %%    limitations under the License.
 
+%%%-------------------------------------------------------------------
+%%% @author UENISHI Kota <kuenishi@gmail.com>
+%%% @copyright (C) 2010, UENISHI Kota
+%%% @doc
+%%%
+%%% @end
+%%% Created : 26 Aug 2010 by UENISHI Kota <kuenishi@gmail.com>
+%%%-------------------------------------------------------------------
 -module(mp_client).
 
 -behaviour(gen_server).
