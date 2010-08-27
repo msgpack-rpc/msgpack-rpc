@@ -110,7 +110,6 @@ class ServerError < RPCError
 end
 
 class RemoteError < RPCError
-	CODE = ".RemoteError"
 	def initialize(code, *data)
 		super(code, *data)
 	end
@@ -129,7 +128,7 @@ class ConnectionRefusedError < TransportError
 end
 
 class ConnectionTimeoutError < TransportError
-	CODE = ".TransportError.ConnectionRefusedError"
+	CODE = ".TransportError.ConnectionTimeoutError"
 end
 
 class MalformedMessageError < TransportError
