@@ -67,22 +67,26 @@ call(CallID, Method, Argv) ->   call(?SERVER, CallID, Method, Argv).
 		  {ok, any()} | {error, {atom(), any()}}.
 call(Client, CallID, Method, Argv) when is_atom(Method), is_list(Argv) ->
     Meth = <<(atom_to_binary(Method,latin1))/binary>>,
-    Pack = msgpack:pack([?MP_TYPE_REQUEST,CallID,Meth,Argv]),
-    case gen_server:call(Client, {call,Pack}) of
-	{ok, ResPack}->
-	    case msgpack:unpack(ResPack) of
-		{error, Reason} -> {error, {unpack_fail, Reason}};
-		{Reply, <<>>} ->
-		    case Reply of
-			[?MP_TYPE_RESPONSE,CallID,nil,Result]->
-			    {ok, Result};
-			[?MP_TYPE_RESPONSE,CallID,ResCode,Result] ->
-			    {error,{ResCode, Result}};
-			_Other ->
-			    {error, {unknown, _Other}}
-		    end
-	    end;
-	{error, Reason}-> {error, Reason}
+    case msgpack:pack([?MP_TYPE_REQUEST,CallID,Meth,Argv]) of
+	{error, Reason}->
+	    {error, Reason};
+	Pack ->
+	    case gen_server:call(Client, {call,Pack}) of
+		{ok, ResPack}->
+		    case msgpack:unpack(ResPack) of
+			{error, Reason} -> {error, {unpack_fail, Reason}};
+			{Reply, <<>>} ->
+			    case Reply of
+				[?MP_TYPE_RESPONSE,CallID,nil,Result]->
+				    {ok, Result};
+				[?MP_TYPE_RESPONSE,CallID,ResCode,Result] ->
+				    {error,{ResCode, Result}};
+				_Other ->
+				    {error, {unknown, _Other}}
+			    end
+		    end;
+		{error, Reason}-> {error, Reason}
+	    end
     end.
 
 % afterwards, the caller will receive the response as a message
