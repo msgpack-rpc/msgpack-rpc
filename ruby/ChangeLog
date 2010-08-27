@@ -1,5 +1,15 @@
 
-XXXX-XX-XX version 0.4.0
+2010-08-27 version 0.4.1
+
+  * Adds MultiFuture class
+  * New exception mechanism
+  * Rescues all errors on_readable not to stop event loop
+  * Future: doesn't wrap callback_handler but check on calling for backward compatibility
+  * Responder: adds a guard not to send results twice
+  * Session: adds call_apply and notify_apply
+  * Uses jeweler and Rakefile for packaging
+
+2010-05-28 version 0.4.0
 
   * updates dispatch mechanism
   * adds Session#call_apply and notify_apply
