@@ -139,7 +139,7 @@ handle_call({call, Pack}, _From, State)->
     {reply, Reply, State};
 handle_call(stop, _From, State)->
     {stop, normal, ok, State};
-handle_call(_oRequest, _From, State) ->
+handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
 

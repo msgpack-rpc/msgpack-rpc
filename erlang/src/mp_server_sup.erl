@@ -61,11 +61,11 @@ start_link()->
 %%--------------------------------------------------------------------
 init(StartProps) ->
     Children = [{mp_server_session_sup,
-	   { mp_server_session_sup,start_link,[]},
-	   permanent,2000,supervisor,[]},
+		 { mp_server_session_sup,start_link,[]},
+		 permanent,2000,supervisor,[]},
                 {mp_server_listener_sup,
-	   {mp_server_listener_sup,start_link,[]},
-	    permanent,2000,supervisor,[]}],
+		 {mp_server_listener_sup,start_link,[]},
+		 permanent,2000,supervisor,[]}],
     ok=supervisor:check_childspecs(Children),
 %    io:format("~p~p: ~p~n", [?FILE, ?LINE, Children]),
     {ok,{{one_for_all,0,1}, Children}}.
