@@ -1,4 +1,8 @@
 
+2010-08-28 version 0.4.2
+
+  * Fixes exception.rb
+
 2010-08-27 version 0.4.1
 
   * Adds MultiFuture class
