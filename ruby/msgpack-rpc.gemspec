@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{msgpack-rpc}
-  s.version = "0.4.1"
+  s.version = "0.4.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["FURUHASHI Sadayuki"]
-  s.date = %q{2010-08-27}
+  s.date = %q{2010-08-28}
   s.email = %q{frsyuki@users.sourceforge.jp}
   s.files = [
     "AUTHORS",
@@ -21,7 +21,6 @@ Gem::Specification.new do |s|
      "lib/msgpack/rpc/client.rb",
      "lib/msgpack/rpc/dispatcher.rb",
      "lib/msgpack/rpc/exception.rb",
-     "lib/msgpack/rpc/exception.rb.old",
      "lib/msgpack/rpc/future.rb",
      "lib/msgpack/rpc/loop.rb",
      "lib/msgpack/rpc/message.rb",
