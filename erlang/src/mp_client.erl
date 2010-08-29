@@ -33,7 +33,9 @@
 
 %% external API
 -export([connect/2, connect/3, close/0, close/1,
-	 call/3, call/4, call_async/4, watch/2]).
+	 call/3, call/4,
+	 call_async/3, call_async/4, cancel_async_call/1, cancel_async_call/2,
+	 watch/2, watch/3]).
 
 %% internal: gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -48,11 +50,13 @@
 -spec connect(Address::address(), Port::(0..65535))-> {ok, pid()}.
 connect(Address, Port)->
     gen_server:start_link({local,?SERVER}, ?MODULE, [{address,Address},{port,Port}], []).
+% for debug			  [{debug,[trace,log,statistics]}]).
 
 % users can set any identifier to the connection
 -spec connect(Identifier::server_name(),  Address::address(), Port::(0..65535)) ->  {ok, pid()}.
 connect(Identifier, Address, Port)->
-    gen_server:start_link(Identifier, ?MODULE, [{address,Address},{port,Port}], []).
+    gen_server:start_link(Identifier, ?MODULE, [{address,Address},{port,Port}],
+			  []).
 
 % synchronous calls
 % when method 'Method' doesn't exist in server implementation,
@@ -66,41 +70,49 @@ call(CallID, Method, Argv) ->   call(?SERVER, CallID, Method, Argv).
 	   Method::atom(), Argv::list()) -> 
 		  {ok, any()} | {error, {atom(), any()}}.
 call(Client, CallID, Method, Argv) when is_atom(Method), is_list(Argv) ->
+    ok=call_async(Client,CallID,Method,Argv),
+    receive
+	{ok, nil,Result }->     {ok, Result};
+	{ok, ResCode,Result }-> {error,{ResCode, Result}};
+	{error, Reason2}->       {error, Reason2};
+	_Other ->               {error, {unknown, _Other}}
+    end.
+
+% TODO: write test code for call_async/3
+% afterwards, the caller will receive the response {ok, ResCode, Result} as a message
+-spec call_async(CallID::non_neg_integer(),
+		 Method::atom(), Argv::list()) -> ok | {error, {atom(), any()}}.
+call_async(CallID, Method, Argv)->
+    call_async(?SERVER, CallID, Method, Argv).
+
+-spec call_async(Client::server_ref(), CallID::non_neg_integer(),
+		 Method::atom(), Argv::list()) -> ok | {error, {atom(), any()}}.
+call_async(Client, CallID, Method, Argv) when is_atom(Method), is_list(Argv)->
     Meth = <<(atom_to_binary(Method,latin1))/binary>>,
+    Pid = self(),
     case msgpack:pack([?MP_TYPE_REQUEST,CallID,Meth,Argv]) of
 	{error, Reason}->
 	    {error, Reason};
 	Pack ->
-	    case gen_server:call(Client, {call,Pack}) of
-		{ok, ResPack}->
-		    case msgpack:unpack(ResPack) of
-			{error, Reason} -> {error, {unpack_fail, Reason}};
-			{Reply, <<>>} ->
-			    case Reply of
-				[?MP_TYPE_RESPONSE,CallID,nil,Result]->
-				    {ok, Result};
-				[?MP_TYPE_RESPONSE,CallID,ResCode,Result] ->
-				    {error,{ResCode, Result}};
-				_Other ->
-				    {error, {unknown, _Other}}
-			    end
-		    end;
-		{error, Reason}-> {error, Reason}
-	    end
+	    ok=gen_server:call(Client, {call, {CallID, Pid} ,Pack})
     end.
 
-% afterwards, the caller will receive the response as a message
--spec call_async(Client::server_ref(), CallID::non_neg_integer(),
-		 Method::atom(), Argv::list()) -> ok | {error, {atom(), any()}}.
-call_async(Client, CallID, Method, Argv) when is_atom(Method), is_list(Argv)->
-    _Pid = self(),
-    not_yet.
+% TODO: write test code for cancellation
+-spec cancel_async_call(CallID::non_neg_integer())->ok.
+cancel_async_call(CallID)-> cancel_async_call(?SERVER, CallID).
+
+-spec cancel_async_call(Client::server_ref(), CallID::non_neg_integer())->ok.
+cancel_async_call(Client, CallID)->
+    gen_server:call(Client, {cancel, CallID}).
 
 % set a callback for notification from server.
--spec watch(Client::server_ref(),
+-spec watch(Method::atom(), Callback::fun( (atom(),list()) -> any() )) -> ok | {error, any()}.
+watch(Method, Callback) ->   watch(?SERVER, Method, Callback).
+
+-spec watch(Client::server_ref(), Method::atom(),
 	    Callback::fun( (atom(),list()) -> any() )) -> ok | {error, any()}.
-watch(Client, Callback) when is_function(Callback,2)->
-    not_yet.
+watch(Client, Method, Callback) when is_atom(Method), is_function(Callback,2)->
+    gen_server:call(Client, {watch, Method, Callback}).
 
 % users can set any identifier to the connection
 -spec close(Identifier::server_name())-> any().
@@ -113,7 +125,12 @@ close()-> close(?SERVER).
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
--record(state, {socket, addr, port}).
+-record(state, {socket :: inet:sockt(),
+		addr,
+		port :: 1..65536,
+		reqs = [] :: [{integer(), pid()}],
+		events = [] :: [{atom(), fun()}]
+	       }).
 
 %% @private
 %% Function: init(Args) -> {ok, State} |
@@ -125,7 +142,7 @@ close()-> close(?SERVER).
 init(Config)->
     Address = proplists:get_value(address, Config, localhost),
     Port = proplists:get_value(port, Config, 65500),
-    {ok, S}=gen_tcp:connect(Address, Port, [binary, {active,false},{packet,raw}]),
+    {ok, S}=gen_tcp:connect(Address, Port, [binary, {active,once},{packet,raw}]),
     {ok, #state{socket=S, addr=Address, port=Port}}.
 
 %% @private
@@ -137,10 +154,20 @@ init(Config)->
 %%                                      {stop, Reason, State}
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
-handle_call({call, Pack}, _From, State)->
+handle_call({call, {Id, Pid}, Pack}, _From, State)->
+    Reqs = [{Id, Pid}|State#state.reqs],
     ok = gen_tcp:send(State#state.socket, Pack),
-    Reply = gen_tcp:recv(State#state.socket,0),
-    {reply, Reply, State};
+    ok = inet:setopts(State#state.socket, [{active,once}]),
+    {reply, ok, State#state{reqs=Reqs}};
+
+handle_call({cancel, Id}, _From, State)->
+    List=proplists:delete(Id, State#state.reqs),
+    {repoly, ok, List};
+
+handle_call({watch, Method, Callback}, _From, State)->
+    List = [{Method,Callback}|State#state.events],
+    {repoly, ok, List};
+
 handle_call(stop, _From, State)->
     {stop, normal, ok, State};
 handle_call(_Request, _From, State) ->
@@ -162,8 +189,39 @@ handle_cast(_Msg, State) ->
 %%                                       {stop, Reason, State}
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
-%handle_info({tcp, Socket, Pack}, State)->
-    
+handle_info({tcp, _Socket, Pack}, State)->
+    case msgpack:unpack(Pack) of
+	{error, _Reason} ->
+	    ok = inet:setopts(State#state.socket, [{active,once}]),
+	    {noreply, State};
+	{[?MP_TYPE_NOTIFICATION,Method,Params],_RemBin}->
+	    Meth = binary_to_atom(Method, latin1),
+	    case proplists:get_value(Meth, State#state.events) of
+		undefined->	    ok;
+		Callback when is_function(Callback,2)->
+		    try Callback(Params) catch _:E -> io:format("~p~n", [E]) end;
+		_Other ->
+		    io:format("error ~s~p: ~p~n", [?FILE, ?LINE, _Other])
+	    end,
+	    ok = inet:setopts(State#state.socket, [{active,once}]),
+	    {noreply, State};
+%     get method from State -> callback them
+	{[?MP_TYPE_RESPONSE,CallID,ResCode,Result],_RemBin} ->
+	    case proplists:get_value(CallID, State#state.reqs) of
+		undefined->
+		    ok = inet:setopts(State#state.socket, [{active,once}]),
+		    {noreply, State};
+		Pid when is_pid(Pid)->
+		    Pid ! {ok, ResCode, Result},
+		    ok = inet:setopts(State#state.socket, [{active,once}]),
+		    {noreply, State#state{reqs=proplists:delete(CallID, State#state.reqs)}};
+		_Other ->		% Error
+		    io:format("error ~s~p: ~p~n", [?FILE, ?LINE, _Other]),
+		    ok = inet:setopts(State#state.socket, [{active,once}]),
+		    {noreply, State#state{reqs=proplists:delete(CallID, State#state.reqs)}}
+	    end
+    end;
+
 handle_info(_Info, State) ->
     {noreply, State}.
 
