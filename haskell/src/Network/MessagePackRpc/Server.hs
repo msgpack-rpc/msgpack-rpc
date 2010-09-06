@@ -8,10 +8,12 @@ import Control.Applicative
 import Control.Concurrent
 import Control.Exception
 import Control.Monad
+import Control.Monad.IO.Class
 import Data.Maybe
 import Data.MessagePack
 import Network
 import System.IO
+import Text.Printf
 
 import Prelude hiding (catch)
 
@@ -38,32 +40,28 @@ serve :: Int -> [(String, RpcMethod)] -> IO ()
 serve port methods = withSocketsDo $ do
   sock <- listenOn (PortNumber $ fromIntegral port)
   forever $ do
-    (h, host, port) <- accept sock
+    (h, host, hostport) <- accept sock
     forkIO $
-      processRequests h `finally` hClose h
-      `catch` \(SomeException e) -> print e
+      (processRequests h >> print "owata") `finally` hClose h
+      `catch` \(SomeException e) -> printf "%s:%s: %s" host (show hostport) (show e)
   
   where
-    processRequests h =
-      forever $ processRequest h
+    processRequests h = unpackFromHandleI h $ do
+      forever $ do
+        processRequest h
+        liftIO $ print "done."
     
     processRequest h = do
-      (msgid, method, args) <- unpackFromHandle h $ do
-        [ rtype, rmsgid, rmethod, rargs ] <- get
-        0      <- return (fromObject' rtype :: Int)
-        msgid  <- return (fromObject' rmsgid :: Int)
-        method <- return (fromObject' rmethod :: String)
-        args   <- return (fromObject' rargs :: [Object])
-        return (msgid, method, args)
+      liftIO $ print "reading req"
+      (rtype, msgid, method, args) <- getI
+      when (rtype /= (0 :: Int)) $
+        fail "request type is not 0"
       
-      ret <- callMethod method args
-      
-      packToHandle h $ do
-        put [ toObject (1 :: Int)
-            , toObject msgid
-            , toObject ()
-            , ret
-            ]
+      liftIO $ do
+        print (msgid, method, args)
+        ret <- callMethod (method :: String) (args :: [Object])
+        packToHandle h $ put (1 :: Int, msgid :: Int, (), ret)
+        hFlush h
     
     callMethod methodName args = do
       let method = fromJust $ lookup methodName methods
