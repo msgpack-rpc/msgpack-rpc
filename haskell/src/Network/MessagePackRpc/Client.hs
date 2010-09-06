@@ -13,26 +13,30 @@ import Data.MessagePack
 import Network
 import System.IO
 import System.Random
+import Text.Printf
 
 data Connection
   = Connection
     { connHandle :: Handle }
-
+    
 connect :: String -> Int -> IO Connection
 connect addr port = withSocketsDo $ do
   h <- connectTo addr (PortNumber $ fromIntegral port)
   return $ Connection
     { connHandle = h
     }
-  
+
 class RpcType r where
   rpcc :: Connection -> String -> [Object] -> r
 
-fromObject' :: OBJECT o => Object -> o
-fromObject' o = let Right r = fromObject o in r
+fromObject' :: OBJECT o => Object -> IO o
+fromObject' o =
+  case fromObject o of
+    Left err -> fail err
+    Right r -> return r
 
 instance OBJECT o => RpcType (IO o) where
-  rpcc c m args = fromObject' <$> rpcCall c m (reverse args)
+  rpcc c m args = fromObject' =<< rpcCall c m (reverse args)
 
 instance (OBJECT o, RpcType r) => RpcType (o -> r) where
   rpcc c m args arg = rpcc c m (toObject arg:args)
@@ -40,20 +44,19 @@ instance (OBJECT o, RpcType r) => RpcType (o -> r) where
 rpcCall :: Connection -> String -> [Object] -> IO Object
 rpcCall Connection{ connHandle = h } m args = do
   msgid <- (`mod`2^(32::Int)) <$> randomIO :: IO Int
-  packToHandle h $ do
-    put [ toObject (0 :: Int)
-        , toObject msgid
-        , toObject m
-        , toObject args
-        ]
-  unpackFromHandle h $ do
-    [ rtype, rmsgid, rerror, rresult ] <- get
-    Right 1 <- return (fromObject rtype :: Result Int)
-    Right rmsgid <- return $ fromObject rmsgid
-    when (rmsgid /= msgid) $ fail $ "msgid mismatch: " ++ show msgid ++ " <-> " ++ show rmsgid
-    Right () <- return $ fromObject rerror
-    Right rresult <- return $ fromObject rresult
-    return rresult
+  packToHandle h $ put (0 ::Int, msgid, m, args)
+  hFlush h
+  unpackFromHandleI h $ do
+    (rtype, rmsgid, rerror, rresult) <- getI
+    when (rtype /= (1 :: Int)) $
+      fail "response type is not 1"
+    when (rmsgid /= msgid) $
+      fail $ printf "msgid mismatch: expect %d but got %d" msgid rmsgid
+    case fromObject rerror of
+      Left _ ->
+        fail $ printf "server error: %s" (show rerror)
+      Right () ->
+        return rresult
 
 --
 
