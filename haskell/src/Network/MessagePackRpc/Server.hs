@@ -1,6 +1,35 @@
+-------------------------------------------------------------------
+-- |
+-- Module    : Network.MessagePackRpc.Server
+-- Copyright : (c) Hideyuki Tanaka, 2010
+-- License   : BSD3
+--
+-- Maintainer:  tanaka.hideyuki@gmail.com
+-- Stability :  experimental
+-- Portability: portable
+--
+-- This module is server library of MessagePack-RPC.
+-- The specification of MessagePack-RPC is at <http://redmine.msgpack.org/projects/msgpack/wiki/RPCProtocolSpec>.
+--
+-- A simple example:
+--
+-- >import Network.MessagePackRpc.Server
+-- >
+-- >add :: Int -> Int -> IO Int
+-- >add x y = return $ x + y
+-- >
+-- >main =
+-- >  serve 1234 [("add", fun add)]
+--
+--------------------------------------------------------------------
+
 module Network.MessagePackRpc.Server (
+  -- * RPC method types
   RpcMethod,
+  RpcMethodType(..),
+  -- * Create RPC method
   fun,
+  -- * Start RPC server
   serve,
   ) where
 
@@ -37,10 +66,14 @@ fromObject' o =
 
 --
 
+-- | Create a RPC method from a Haskell function.
 fun :: RpcMethodType f => f -> RpcMethod
 fun = toRpcMethod
 
-serve :: Int -> [(String, RpcMethod)] -> IO ()
+-- | Start RPC server with a set of RPC methods.
+serve :: Int -- ^ Port number
+         -> [(String, RpcMethod)] -- ^ list of (method name, RPC method)
+         -> IO ()
 serve port methods = withSocketsDo $ do
   sock <- listenOn (PortNumber $ fromIntegral port)
   forever $ do
