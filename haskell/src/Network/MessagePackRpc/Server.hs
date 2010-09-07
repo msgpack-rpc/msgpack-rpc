@@ -6,14 +6,15 @@ module Network.MessagePackRpc.Server (
 
 import Control.Applicative
 import Control.Concurrent
-import Control.Exception
+import Control.DeepSeq
+import Control.Exception as E
 import Control.Monad
 import Control.Monad.IO.Class
+import Data.Iteratee.Exception as I
 import Data.Maybe
 import Data.MessagePack
 import Network
 import System.IO
-import Text.Printf
 
 import Prelude hiding (catch)
 
@@ -26,10 +27,13 @@ instance OBJECT o => RpcMethodType (IO o) where
   toRpcMethod m = \[] -> toObject <$> m
 
 instance (OBJECT o, RpcMethodType r) => RpcMethodType (o -> r) where
-  toRpcMethod f = \(x:xs) -> toRpcMethod (f (fromObject' x)) xs
+  toRpcMethod f = \(x:xs) -> toRpcMethod (f $! fromObject' x) xs
 
 fromObject' :: OBJECT o => Object -> o
-fromObject' o = let Right r = fromObject o in r
+fromObject' o =
+  case fromObject o of
+    Left err -> error $ "argument type error: " ++ err
+    Right r -> r
 
 --
 
@@ -42,27 +46,36 @@ serve port methods = withSocketsDo $ do
   forever $ do
     (h, host, hostport) <- accept sock
     forkIO $
-      (processRequests h >> print "owata") `finally` hClose h
-      `catch` \(SomeException e) -> printf "%s:%s: %s" host (show hostport) (show e)
-  
+      (processRequests h `finally` hClose h) `catches`
+      [ Handler $ \e -> let _ = (e :: I.EofException) in return ()
+      , Handler $ \e -> hPutStrLn stderr $ host ++ ":" ++ show hostport ++ ": "++ show (e :: SomeException)]
+
   where
-    processRequests h = unpackFromHandleI h $ do
-      forever $ do
-        processRequest h
-        liftIO $ print "done."
+    processRequests h =
+      unpackFromHandleI h $ forever $ processRequest h
     
     processRequest h = do
-      liftIO $ print "reading req"
       (rtype, msgid, method, args) <- getI
+      liftIO $ do
+        resp <- try $ getResponse rtype method args
+        case resp of
+          Left err ->
+            packToHandle' h $
+            put (1 :: Int, msgid :: Int, show (err :: SomeException), ())
+          Right ret ->
+            packToHandle' h $
+            put (1 :: Int, msgid :: Int, (), ret)
+
+    getResponse rtype method args = do
       when (rtype /= (0 :: Int)) $
         fail "request type is not 0"
       
-      liftIO $ do
-        print (msgid, method, args)
-        ret <- callMethod (method :: String) (args :: [Object])
-        packToHandle h $ put (1 :: Int, msgid :: Int, (), ret)
-        hFlush h
+      r <- callMethod (method :: String) (args :: [Object])
+      r `deepseq` return r
     
-    callMethod methodName args = do
-      let method = fromJust $ lookup methodName methods
-      method args
+    callMethod methodName args =
+      case lookup methodName methods of
+        Nothing ->
+          fail $ "method '" ++ methodName ++ "' not found"
+        Just method ->
+          method args
