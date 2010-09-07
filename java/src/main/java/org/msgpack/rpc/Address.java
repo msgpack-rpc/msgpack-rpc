@@ -1,7 +1,7 @@
 //
 // MessagePack-RPC for Java
 //
-// Copyright (C) 2010 Kazuki Ohta
+// Copyright (C) 2010 FURUHASHI Sadayuki
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
@@ -15,20 +15,12 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-package org.msgpack.rpc.client.transport;
+package org.msgpack.rpc;
 
-import org.msgpack.rpc.client.EventLoop;
-import org.msgpack.rpc.client.Session;
+import java.net.*;
 
-abstract public class Transport {
-    protected final Session session;
-    protected final EventLoop loop;
-    
-    public Transport(Session session, EventLoop loop) {
-        this.session = session;
-        this.loop = loop;
-    }
-
-    abstract public void sendMessage(Object msg) throws Exception;
-    abstract public void tryClose();
+// FIXME package scope
+public abstract class Address {
+	abstract public SocketAddress getSocketAddress();
 }
+
