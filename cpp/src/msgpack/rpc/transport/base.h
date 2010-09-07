@@ -313,9 +313,19 @@ try {
 			auto_zone z( m_pac.release_zone() );
 			m_pac.reset();
 
-			e.more();  // FIXME next()?
+			//if(m_pac.nonparsed_size() > 0) {
+			//	e.more();
+			//} else {
+			//	e.next();
+			//}
+			//stream_handler<MixIn>::on_message(msg, z);
+			//return;
+
+			// FIXME
 			stream_handler<MixIn>::on_message(msg, z);
-			return;
+			if(m_pac.nonparsed_size() > 0) {
+				continue;
+			}
 		}
 
 		m_pac.reserve_buffer(MSGPACK_RPC_STREAM_RESERVE_SIZE);

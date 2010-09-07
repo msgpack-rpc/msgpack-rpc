@@ -37,10 +37,16 @@ public:
 	session get_session(const std::string& host, uint16_t port)
 		{ return get_session(ip_address(host, port)); }
 
+	loop get_loop()
+		{ return m_loop; }
+
 	const loop& get_loop() const
 		{ return m_loop; }
 
-	loop get_loop()
+	loop& get_loop_ref()
+		{ return m_loop; }
+
+	const loop& get_loop_ref() const
 		{ return m_loop; }
 
 public:
