@@ -1,9 +1,40 @@
 {-# Language DeriveDataTypeable #-}
 
+-------------------------------------------------------------------
+-- |
+-- Module    : Network.MessagePackRpc.Client
+-- Copyright : (c) Hideyuki Tanaka, 2010
+-- License   : BSD3
+--
+-- Maintainer:  tanaka.hideyuki@gmail.com
+-- Stability :  experimental
+-- Portability: portable
+--
+-- This module is client library of MessagePack-RPC.
+-- The specification of MessagePack-RPC is at <http://redmine.msgpack.org/projects/msgpack/wiki/RPCProtocolSpec>.
+--
+-- A simple example:
+--
+-- >import Network.MessagePackRpc.Client
+-- >
+-- >add :: RpcMethod (Int -> Int -> IO Int)
+-- >add = method "add"
+-- >
+-- >main = do
+-- >  conn <- connect "127.0.0.1" 1234
+-- >  print =<< add conn 123 456
+--
+--------------------------------------------------------------------
+
 module Network.MessagePackRpc.Client (
+  -- * RPC connection
   Connection,
   connect,
   
+  -- * RPC error
+  RpcError(..),
+  
+  -- * Call RPC method
   RpcMethod,
   call,
   method,
@@ -18,22 +49,26 @@ import Network
 import System.IO
 import System.Random
 
+-- | RPC connection type
 data Connection
   = Connection
     { connHandle :: Handle }
-    
-connect :: String -> Int -> IO Connection
+
+-- | Connect to RPC server
+connect :: String -- ^ Host name
+           -> Int -- ^ Port number
+           -> IO Connection -- ^ Connection
 connect addr port = withSocketsDo $ do
   h <- connectTo addr (PortNumber $ fromIntegral port)
   return $ Connection
     { connHandle = h
     }
 
+-- | RPC error type
 data RpcError
-  = ServerError Object
-  | ResultTypeError String
-  | InvalidResponseType Int
-  | InvalidMessageId Int Int
+  = ServerError Object -- ^ An error occurred at server
+  | ResultTypeError String -- ^ Result type mismatch
+  | ProtocolError String -- ^ A protocol error occurred
   deriving (Eq, Ord, Typeable)
 
 instance Exception RpcError
@@ -43,10 +78,8 @@ instance Show RpcError where
     "server error: " ++ show err
   show (ResultTypeError err) =
     "result type error: " ++ err
-  show (InvalidResponseType rtype) =
-    "response type is not 1 (got " ++ show rtype ++ ")"
-  show (InvalidMessageId expect got) =
-    "message id mismatch: expect " ++ show expect ++ ", but got " ++ show got
+  show (ProtocolError err) =
+    "protocol error: " ++ err
 
 class RpcType r where
   rpcc :: Connection -> String -> [Object] -> r
@@ -70,9 +103,9 @@ rpcCall Connection{ connHandle = h } m args = do
   unpackFromHandleI h $ do
     (rtype, rmsgid, rerror, rresult) <- getI
     when (rtype /= (1 :: Int)) $
-      throw $ InvalidResponseType rtype
+      throw $ ProtocolError $ "response type is not 1 (got " ++ show rtype ++ ")"
     when (rmsgid /= msgid) $
-      throw $ InvalidMessageId msgid rmsgid
+      throw $ ProtocolError $ "message id mismatch: expect " ++ show msgid ++ ", but got " ++ show rmsgid
     case fromObject rerror of
       Left _ ->
         throw $ ServerError rerror
@@ -81,10 +114,15 @@ rpcCall Connection{ connHandle = h } m args = do
 
 --
 
-call :: RpcType a => Connection -> String -> a
+-- | Call an RPC Method
+call :: RpcType a =>
+        Connection -- ^ Connection
+        -> String -- ^ Method name
+        -> a
 call c m = rpcc c m []
 
-method :: RpcType a => String -> Connection -> a
+-- | Create an RPC Method (call c m == method m c)
+method :: RpcType a => String -> RpcMethod a
 method c m = call m c
 
 type RpcMethod a = Connection -> a

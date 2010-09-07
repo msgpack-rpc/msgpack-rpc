@@ -2,14 +2,14 @@ Name:                msgpack-rpc
 Version:             0.3.1
 Synopsis:            A MessagePack-RPC Implementation
 Description:
-  A MessagePack-RPC Implementation http://msgpack.org/
+  A MessagePack-RPC Implementation <http://msgpack.org/>
 
 License:             BSD3
 License-file:        LICENSE
 Copyright:           Copyright (c) 2010, Hideyuki Tanaka
 Category:            Network
 Author:              Hideyuki Tanaka
-Maintainer:          tanaka.hideyuki@gmail.com
+Maintainer:          Hideyuki Tanaka <tanaka.hideyuki@gmail.com>
 Homepage:            http://github.com/msgpack/msgpack-rpc
 Stability:	     Experimental
 Tested-with:	     GHC == 6.12.3
