@@ -31,7 +31,7 @@ MP_UTIL_DEF(client) {
 
 void MP_UTIL_IMPL(client)::start_timeout()
 {
-	get_loop()->add_timer(1.0, 1.0, mp::bind(
+	m_pimpl->get_loop_ref()->add_timer(1.0, 1.0, mp::bind(
 				&MP_UTIL_IMPL(client)::step_timeout,
 				weak_session(session::m_pimpl)
 				));

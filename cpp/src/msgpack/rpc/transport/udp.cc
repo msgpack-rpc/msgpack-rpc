@@ -73,7 +73,7 @@ private:
 
 
 client_socket::client_socket(int sock, session_impl* s) :
-	dgram_handler<client_socket>(sock, s->get_loop()),
+	dgram_handler<client_socket>(sock, s->get_loop_ref()),
 	m_session(s->shared_from_this()) { }
 
 client_socket::~client_socket() { }
@@ -105,7 +105,7 @@ client_transport::client_transport(session_impl* s, const address& addr, const u
 			throw mp::system_error(errno, "failed to connect UDP socket");
 		}
 
-		m_sock = s->get_loop()->add_handler<client_socket>(sock, s);
+		m_sock = s->get_loop_ref()->add_handler<client_socket>(sock, s);
 
 	} catch(...) {
 		::close(sock);
@@ -168,7 +168,7 @@ private:
 
 
 server_socket::server_socket(int sock, shared_server svr) :
-	dgram_handler<server_socket>(sock, svr->get_loop()),
+	dgram_handler<server_socket>(sock, svr->get_loop_ref()),
 	m_svr(svr) { }
 
 server_socket::~server_socket() { }
@@ -212,7 +212,7 @@ server_transport::server_transport(server_impl* svr, const address& addr)
 			throw mp::system_error(errno, "failed to bind UDP socket");
 		}
 
-		m_sock = svr->get_loop()->add_handler<server_socket>(
+		m_sock = svr->get_loop_ref()->add_handler<server_socket>(
 				sock,
 				mp::static_pointer_cast<server_impl>(svr->shared_from_this())
 				);
