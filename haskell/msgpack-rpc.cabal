@@ -17,12 +17,13 @@ Cabal-version:       >=1.2
 Build-type:          Simple
 
 Library
-  Build-depends:     base>=4 && <5,
-                     network,
-                     random,
-                     mtl,
+  Build-depends:     base >= 4 && <5,
+                     msgpack >= 0.3.1 && < 0.4,
+                     network >= 2.2.1.7 && < 2.2.2,
+                     random >= 1.0.0.2 && < 1.1,
                      transformers >= 0.2.1 && < 0.2.2,
-                     msgpack >= 0.3.1 && < 0.4
+                     iteratee >= 0.4.0.2 && < 0.4.1,
+                     deepseq >= 1.1 && < 1.2
 
   Ghc-options:	     -O2 -Wall
   Hs-source-dirs:    src
