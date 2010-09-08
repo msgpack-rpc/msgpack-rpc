@@ -24,6 +24,12 @@
 #include <mp/utilize.h>
 #include <vector>
 
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+
+
 namespace msgpack {
 namespace rpc {
 namespace transport {
@@ -99,7 +105,7 @@ private:
 
 
 client_socket::client_socket(int sock, client_transport* tran, session_impl* s) :
-	stream_handler<client_socket>(sock, s->get_loop()),
+	stream_handler<client_socket>(sock, s->get_loop_ref()),
 	m_tran(tran), m_session(s->shared_from_this()) { }
 
 client_socket::~client_socket()
@@ -148,11 +154,11 @@ inline void client_transport::on_connect_success(int fd, sync_ref& ref)
 	LOG_DEBUG("connect success to ",m_session->get_address()," fd=",fd);
 
 	mp::shared_ptr<client_socket> cs =
-		m_session->get_loop()->add_handler<client_socket>(fd, this, m_session);
+		m_session->get_loop_ref()->add_handler<client_socket>(fd, this, m_session);
 
 	ref->sockpool.push_back(cs.get());
 
-	m_session->get_loop()->commit(fd, &ref->pending_xf);
+	m_session->get_loop_ref()->commit(fd, &ref->pending_xf);
 	ref->pending_xf.clear();
 
 	ref->connecting = 0;
@@ -185,6 +191,10 @@ void client_transport::on_connect(int fd, int err, weak_session ws, client_trans
 		return;
 	}
 
+	// FIXME
+	int on = 1;
+	::setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on));
+
 	sync_ref ref(self->m_sync);
 
 	if(fd >= 0) {
@@ -210,7 +220,7 @@ void client_transport::try_connect(sync_ref& lk_ref)
 	char addrbuf[addr.get_addrlen()];
 	addr.get_addr((sockaddr*)addrbuf);
 
-	m_session->get_loop()->connect(
+	m_session->get_loop_ref()->connect(
 			PF_INET, SOCK_STREAM, 0,
 			(sockaddr*)addrbuf, sizeof(addrbuf),
 			m_connect_timeout,
@@ -233,6 +243,11 @@ void client_transport::on_close(client_socket* sock)
 
 void client_transport::send_data(sbuffer* sbuf)
 {
+	// FIXME
+	if(!m_session->get_loop_ref()->is_running()) {
+		m_session->get_loop_ref()->run_nonblock();
+	}
+
 	sync_ref ref(m_sync);
 	if(ref->sockpool.empty()) {
 		if(ref->connecting == 0) {
@@ -251,6 +266,11 @@ void client_transport::send_data(sbuffer* sbuf)
 
 void client_transport::send_data(auto_vreflife vbuf)
 {
+	// FIXME
+	if(!m_session->get_loop_ref()->is_running()) {
+		m_session->get_loop_ref()->run_nonblock();
+	}
+
 	sync_ref ref(m_sync);
 	if(ref->sockpool.empty()) {
 		if(ref->connecting == 0) {
@@ -308,7 +328,7 @@ private:
 
 
 server_socket::server_socket(int sock, shared_server svr) :
-	stream_handler<server_socket>(sock, svr->get_loop()),
+	stream_handler<server_socket>(sock, svr->get_loop_ref()),
 	m_svr(svr) { }
 
 server_socket::~server_socket() { }
@@ -336,7 +356,7 @@ void server_socket::on_notify(
 
 
 server_transport::server_transport(server_impl* svr, const address& addr) :
-	m_lsock(-1), m_loop(svr->get_loop())
+	m_lsock(-1), m_loop(svr->get_loop_ref())
 {
 	char addrbuf[addr.get_addrlen()];
 	addr.get_addr((sockaddr*)addrbuf);
@@ -379,8 +399,12 @@ void server_transport::on_accept(int fd, int err, weak_server wsvr)
 	}
 	LOG_TRACE("accepted fd=",fd);
 
+	// FIXME
+	int on = 1;
+	::setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on));
+
 	try {
-		svr->get_loop()->add_handler<server_socket>(fd, svr);
+		svr->get_loop_ref()->add_handler<server_socket>(fd, svr);
 	} catch (...) {
 		::close(fd);
 		throw;

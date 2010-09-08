@@ -1,7 +1,7 @@
 //
 // MessagePack-RPC for Java
 //
-// Copyright (C) 2010 Kazuki Ohta
+// Copyright (C) 2010 FURUHASHI Sadayuki
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
@@ -17,10 +17,7 @@
 //
 package org.msgpack.rpc;
 
-public class Constants {
-    public static final int TYPE_REQUEST = 0;
-    public static final int TYPE_RESPONSE = 1;
-    public static final int TYPE_NOTIFICATION = 2;
-    
-    public static double DEFAULT_TIMEOUT_SEC = 5.0;
+public interface Dispatcher {
+	void dispatch(Request request);
 }
+

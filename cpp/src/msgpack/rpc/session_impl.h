@@ -40,29 +40,25 @@ private:
 
 public:
 	const address& get_address() const
-	{
-		return m_addr;
-	}
+		{ return m_addr; }
 
 	loop get_loop()
-	{
-		return m_loop;
-	}
+		{ return m_loop; }
 
 	const loop& get_loop() const
-	{
-		return m_loop;
-	}
+		{ return m_loop; }
+
+	loop& get_loop_ref()
+		{ return m_loop; }
+
+	const loop& get_loop_ref() const
+		{ return m_loop; }
 
 	void set_timeout(unsigned int sec)
-	{
-		m_timeout = sec;
-	}
+		{ m_timeout = sec; }
 
 	unsigned int get_timeout() const
-	{
-		return m_timeout;
-	}
+		{ return m_timeout; }
 
 	msgid_t next_msgid();
 

@@ -1,0 +1,149 @@
+//
+// MessagePack-RPC for Java
+//
+// Copyright (C) 2010 FURUHASHI Sadayuki
+//
+//    Licensed under the Apache License, Version 2.0 (the "License");
+//    you may not use this file except in compliance with the License.
+//    You may obtain a copy of the License at
+//
+//        http://www.apache.org/licenses/LICENSE-2.0
+//
+//    Unless required by applicable law or agreed to in writing, software
+//    distributed under the License is distributed on an "AS IS" BASIS,
+//    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//    See the License for the specific language governing permissions and
+//    limitations under the License.
+//
+package org.msgpack.rpc.transport;
+
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import java.nio.*;
+import org.msgpack.*;
+import org.msgpack.rpc.*;
+import org.jboss.xnio.*;
+import org.jboss.xnio.channels.*;
+
+abstract class AbstractStreamChannel implements MessageSendable {
+	protected Unpacker pac = new Unpacker();
+	protected ConnectedStreamChannel<InetSocketAddress> channel;
+
+	public AbstractStreamChannel(ConnectedStreamChannel<InetSocketAddress> channel) {
+		this.channel = channel;
+		channel.getReadSetter().set(new ChannelListener<ConnectedStreamChannel<InetSocketAddress>>() {
+				public void handleEvent(ConnectedStreamChannel<InetSocketAddress> channel) {
+					onRead();
+				}
+			});
+		channel.getCloseSetter().set(new ChannelListener<ConnectedStreamChannel<InetSocketAddress>>() {
+				public void handleEvent(ConnectedStreamChannel<InetSocketAddress> channel) {
+					onClose();
+				}
+			});
+		channel.resumeReads();
+	}
+
+	public void close() {
+		try {
+			channel.close();
+		} catch (IOException e) {
+			// FIXME
+		}
+	}
+
+	public synchronized void sendPending(VectorOutputStream buffer) {
+		// FIXME
+		try {
+			Channels.writeBlocking(channel, ByteBuffer.wrap(buffer.getBuffer(), 0, buffer.size()));
+			Channels.flushBlocking(channel);
+		} catch (IOException e) {
+		}
+	}
+
+	public void sendMessage(Object msg) {
+		// FIXME
+		VectorOutputStream out = new VectorOutputStream();
+		try {
+			new Packer(out).pack(msg);
+		} catch (IOException e) {
+		}
+		sendPending(out);
+	}
+
+	public void onRead() {
+		try {
+			pac.reserveBuffer(32*1024);  // FIXME
+			ByteBuffer out = ByteBuffer.wrap(pac.getBuffer(), pac.getBufferOffset(), pac.getBufferCapacity());
+			int count = channel.read(out);
+
+			if(count <= 0) {
+				// FIXME log
+				try {
+					channel.close();
+				} catch (IOException e) {
+					// ignore
+				}
+				return;
+			}
+
+			pac.bufferConsumed(count);
+
+			while(pac.execute()) {
+				MessagePackObject msg = pac.getData();
+				onMessage(msg);
+				pac.reset();
+			}
+
+			channel.resumeReads();
+
+		} catch(IOException e) {
+			// FIXME
+			try {
+				channel.close();
+			} catch (IOException ex) {
+				// ignore
+			}
+			return;
+		}
+	}
+
+	public void onMessage(MessagePackObject msg) {
+		MessagePackObject[] array = msg.asArray();
+		int type = array[0].asInt();
+		if(type == 0) {
+			// REQUEST
+			int msgid = array[1].asInt();
+			String method = array[2].asString();
+			MessagePackObject[] args = array[3].asArray();
+			onRequest(msgid, method, args);
+
+		} else if(type == 1) {
+			// RESPONSE
+			int msgid = array[1].asInt();
+			MessagePackObject error = array[2];
+			MessagePackObject result = array[3];
+			onResponse(msgid, error, result);
+
+		} else if(type == 2) {
+			// NOTIFY
+			String method = array[1].asString();
+			MessagePackObject[] args = array[2].asArray();
+			onNotify(method, args);
+
+		} else {
+			// FIXME
+			throw new RuntimeException("unknown message type: "+type);
+		}
+	}
+
+	abstract public void onClose();
+
+	abstract public void onRequest(int msgid, String method, MessagePackObject[] args);
+
+	abstract public void onNotify(String method, MessagePackObject[] args);
+
+	abstract public void onResponse(int msgid, MessagePackObject error, MessagePackObject result);
+}
+
