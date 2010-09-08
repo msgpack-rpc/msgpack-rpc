@@ -1,5 +1,5 @@
 Name:                msgpack-rpc
-Version:             0.3.1
+Version:             0.3.1.1
 Synopsis:            A MessagePack-RPC Implementation
 Description:
   A MessagePack-RPC Implementation <http://msgpack.org/>
@@ -12,8 +12,7 @@ Author:              Hideyuki Tanaka
 Maintainer:          Hideyuki Tanaka <tanaka.hideyuki@gmail.com>
 Homepage:            http://github.com/msgpack/msgpack-rpc
 Stability:	     Experimental
-Tested-with:	     GHC == 6.12.3
-Cabal-version:       >=1.2
+Cabal-version:       >=1.6
 Build-type:          Simple
 
 Library
@@ -25,9 +24,13 @@ Library
                      iteratee >= 0.4.0.2 && < 0.4.1,
                      deepseq >= 1.1 && < 1.2
 
-  Ghc-options:	     -O2 -Wall
+  Ghc-options:	     -Wall
   Hs-source-dirs:    src
 
   Exposed-modules:
     Network.MessagePackRpc.Server
     Network.MessagePackRpc.Client
+
+Source-repository head
+  Type:     git
+  Location: git://github.com/msgpack/msgpack-rpc.git
