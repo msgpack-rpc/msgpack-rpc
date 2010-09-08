@@ -44,11 +44,11 @@ class TCPClientTransportPeer implements MessageSendable {
 	public void close() {
 		synchronized(lock) {
 			pending.reset();
+			connecting = -1;
 			for(TCPClientSocket sock : sockpool) {
 				sock.close();
 			}
 			sockpool.clear();
-			connecting = -1;
 		}
 	}
 
@@ -103,8 +103,7 @@ class TCPClientTransportPeer implements MessageSendable {
 			if(connecting == -1) { sock.close(); return; }  // already closed
 			sockpool.add(sock);
 			if(!pending.isEmpty()) {
-				sock.sendPending(pending);
-				pending.reset();
+				sock.migratePending(pending);
 			}
 			connecting = 0;
 		}

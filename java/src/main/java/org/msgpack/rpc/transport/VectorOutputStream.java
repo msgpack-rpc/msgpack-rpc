@@ -35,14 +35,14 @@ class VectorOutputStream extends OutputStream {
 	}
 
 	private OpenByteArrayOutputStream out = new OpenByteArrayOutputStream();
-	int offset = 0;
+	int sentOffset = 0;
 
 	public VectorOutputStream() {
 		super();
 	}
 
 	public boolean isEmpty() {
-		return out.size() == 0;
+		return out.size() <= sentOffset;
 	}
 
 	public void write(byte[] b) {
@@ -61,19 +61,33 @@ class VectorOutputStream extends OutputStream {
 
 	public void reset() {
 		out.reset();
-		offset = 0;
+		sentOffset = 0;
 	}
 
-	public int read(GatheringByteChannel to) throws IOException {
-		int maxSize = out.size() - offset;
-		int count = to.write(ByteBuffer.wrap(out.getBuffer(), offset, maxSize));
+	public int writeTo(GatheringByteChannel to) throws IOException {
+		int maxSize = out.size() - sentOffset;
+		int count = to.write(ByteBuffer.wrap(out.getBuffer(), sentOffset, maxSize));
 		if(maxSize <= count) {
 			out.reset();
-			offset = 0;
+			sentOffset = 0;
 		} else {
 			count += maxSize;
 		}
 		return count;
+	}
+
+	public void swap(VectorOutputStream other) {
+		OpenByteArrayOutputStream outTmp = out;
+		int sentOffsetTmp = sentOffset;
+		out = other.out;
+		sentOffset = other.sentOffset;
+		other.out = outTmp;
+		other.sentOffset = sentOffsetTmp;
+	}
+
+	public void migrate(VectorOutputStream to) {
+		to.write(out.getBuffer(), sentOffset, out.size() - sentOffset);
+		out.reset();
 	}
 
 	// FIXME

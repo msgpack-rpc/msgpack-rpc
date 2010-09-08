@@ -37,6 +37,11 @@ abstract class AbstractStreamChannel implements MessageSendable {
 					onRead();
 				}
 			});
+		channel.getWriteSetter().set(new ChannelListener<ConnectedStreamChannel<InetSocketAddress>>() {
+				public void handleEvent(ConnectedStreamChannel<InetSocketAddress> channel) {
+					onWrite();
+				}
+			});
 		channel.getCloseSetter().set(new ChannelListener<ConnectedStreamChannel<InetSocketAddress>>() {
 				public void handleEvent(ConnectedStreamChannel<InetSocketAddress> channel) {
 					onClose();
@@ -53,26 +58,49 @@ abstract class AbstractStreamChannel implements MessageSendable {
 		}
 	}
 
-	public synchronized void sendPending(VectorOutputStream buffer) {
-		// FIXME
-		try {
-			Channels.writeBlocking(channel, ByteBuffer.wrap(buffer.getBuffer(), 0, buffer.size()));
-			Channels.flushBlocking(channel);
-		} catch (IOException e) {
+	private VectorOutputStream buffer = new VectorOutputStream();
+
+	public synchronized void migratePending(VectorOutputStream from) {
+		synchronized(buffer) {
+			boolean empty = buffer.isEmpty();
+			if(empty) {
+				from.swap(buffer);
+			} else {
+				from.migrate(buffer);
+			}
+			if(empty) {
+				onWrite();
+			}
 		}
 	}
 
 	public void sendMessage(Object msg) {
-		// FIXME
-		VectorOutputStream out = new VectorOutputStream();
-		try {
-			new Packer(out).pack(msg);
-		} catch (IOException e) {
+		synchronized(buffer) {
+			boolean empty = buffer.isEmpty();
+			try {
+				new Packer(buffer).pack(msg);
+			} catch (IOException e) {
+			}
+			if(empty) {
+				onWrite();
+			}
 		}
-		sendPending(out);
 	}
 
-	public void onRead() {
+	void onWrite() {
+		synchronized(buffer) {
+			try {
+				buffer.writeTo(channel);
+			} catch (IOException e) {
+				// FIXME
+			}
+			if(!buffer.isEmpty()) {
+				channel.resumeWrites();
+			}
+		}
+	}
+
+	void onRead() {
 		try {
 			pac.reserveBuffer(32*1024);  // FIXME
 			ByteBuffer out = ByteBuffer.wrap(pac.getBuffer(), pac.getBufferOffset(), pac.getBufferCapacity());
@@ -138,7 +166,7 @@ abstract class AbstractStreamChannel implements MessageSendable {
 		}
 	}
 
-	abstract public void onClose();
+	abstract void onClose();
 
 	abstract public void onRequest(int msgid, String method, MessagePackObject[] args);
 

@@ -33,7 +33,11 @@ public class SessionPool implements Closeable {
 	}
 
 	public SessionPool(ClientTransport transport) {
-		this(transport, new EventLoop());
+		this(transport, EventLoop.defaultEventLoop());
+	}
+
+	public SessionPool(EventLoop loop) {
+		this(new TCPClientTransport(), loop);
 	}
 
 	public SessionPool(ClientTransport transport, EventLoop loop) {
