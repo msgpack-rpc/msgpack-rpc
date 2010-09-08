@@ -105,6 +105,10 @@ public class Session {
 		return sendRequest(method, args);
 	}
 
+	public void notifyApply(String method, Object[] args) {
+		sendNotify(method, args);
+	}
+
 	public Future sendRequest(String method, Object[] args) {
 		int msgid = seqid.getAndAdd(1);
 		RequestMessage msg = new RequestMessage(msgid, method, args);
@@ -116,6 +120,11 @@ public class Session {
 		transport.sendMessage(msg);
 
 		return f;
+	}
+
+	public void sendNotify(String method, Object[] args) {
+		NotificationMessage msg = new NotificationMessage(method, args);
+		transport.sendMessage(msg);
 	}
 
 	void stepTimeout() {

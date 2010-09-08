@@ -25,11 +25,11 @@ import org.msgpack.rpc.transport.*;
 
 public class Client extends Session implements Closeable {
 	public Client(String host, int port) throws UnknownHostException {
-		this(new TCPClientTransport(), new IPAddress(host, port), new EventLoop());
+		this(new TCPClientTransport(), new IPAddress(host, port), EventLoop.defaultEventLoop());
 	}
 
 	public Client(ClientTransport transport, InetSocketAddress address) {
-		this(transport, address, new EventLoop());
+		this(transport, address, EventLoop.defaultEventLoop());
 	}
 
 	public Client(ClientTransport transport, InetSocketAddress address, EventLoop loop) {

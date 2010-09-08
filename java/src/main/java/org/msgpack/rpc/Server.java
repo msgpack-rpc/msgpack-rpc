@@ -35,6 +35,10 @@ public class Server extends SessionPool {
 		super(transport);
 	}
 
+	public Server(EventLoop loop) {
+		super(loop);
+	}
+
 	public Server(ClientTransport transport, EventLoop loop) {
 		super(transport, loop);
 	}
