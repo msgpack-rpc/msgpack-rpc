@@ -26,8 +26,8 @@ import org.junit.Test;
 public class ServerTest extends TestCase {
 	private static MessagePackObject MESSAGE = RawType.create("ok");
 
-	private static class TestDispatcher implements Dispatcher {
-		public void dispatch(Request request) {
+	private static class TestHandler {
+		public void test(Request request) {
 			request.sendResult(MESSAGE);
 		}
 	}
@@ -39,7 +39,7 @@ public class ServerTest extends TestCase {
 		Client c = new Client("127.0.0.1", 19850);
 
 		try {
-			svr.serve(new TestDispatcher());
+			svr.serve(new ReflectionDispatcher(new TestHandler()));
 			svr.listen(19850);
 
 			int num = 1000;
@@ -68,7 +68,7 @@ public class ServerTest extends TestCase {
 		Client c = new Client("127.0.0.1", 19850);
 
 		try {
-			svr.serve(new TestDispatcher());
+			svr.serve(new ReflectionDispatcher(new TestHandler()));
 			svr.listen(19850);
 
 			int num = 100000;

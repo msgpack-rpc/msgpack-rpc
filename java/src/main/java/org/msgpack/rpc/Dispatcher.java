@@ -18,6 +18,6 @@
 package org.msgpack.rpc;
 
 public interface Dispatcher {
-	void dispatch(Request request);
+	void dispatch(Request request) throws Exception;
 }
 
