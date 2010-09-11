@@ -71,9 +71,9 @@ disconnect Connection { connHandle = h } =
 
 -- | RPC error type
 data RpcError
-  = ServerError Object -- ^ An error occurred at server
+  = ServerError Object -- ^ Server error
   | ResultTypeError String -- ^ Result type mismatch
-  | ProtocolError String -- ^ A protocol error occurred
+  | ProtocolError String -- ^ Protocol error
   deriving (Eq, Ord, Typeable)
 
 instance Exception RpcError
@@ -103,7 +103,7 @@ instance (OBJECT o, RpcType r) => RpcType (o -> r) where
 
 rpcCall :: Connection -> String -> [Object] -> IO Object
 rpcCall Connection{ connHandle = h } m args = do
-  msgid <- (`mod`2^(32::Int)) <$> randomIO :: IO Int
+  msgid <- (`mod`2^(30::Int)) <$> randomIO :: IO Int
   packToHandle' h $ put (0 ::Int, msgid, m, args)
   unpackFromHandleI h $ do
     (rtype, rmsgid, rerror, rresult) <- getI
