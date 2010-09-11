@@ -30,6 +30,7 @@ module Network.MessagePackRpc.Client (
   -- * RPC connection
   Connection,
   connect,
+  disconnect,
   
   -- * RPC error
   RpcError(..),
