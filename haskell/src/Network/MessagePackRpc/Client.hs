@@ -64,6 +64,11 @@ connect addr port = withSocketsDo $ do
     { connHandle = h
     }
 
+-- | Disconnect a connection
+disconnect :: Connection -> IO ()
+disconnect Connection { connHandle = h } =
+  hClose h
+
 -- | RPC error type
 data RpcError
   = ServerError Object -- ^ An error occurred at server
