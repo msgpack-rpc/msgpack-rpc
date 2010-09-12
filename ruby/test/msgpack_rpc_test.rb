@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
-require File.dirname(__FILE__) + '/test_helper.rb'
+
+require File.expand_path(File.dirname(__FILE__)) + '/test_helper.rb'
+
 
 $port = 65500
 
@@ -92,8 +94,8 @@ class MessagePackRPCTest < Test::Unit::TestCase
 	def test_send
 		svr, cli = start_server
 
-		req1 = cli.send(:hello)
-		req2 = cli.send(:sum, 1, 2)
+		req1 = cli.call_async(:hello)
+		req2 = cli.call_async(:sum, 1, 2)
 
 		req1.join
 		req2.join
