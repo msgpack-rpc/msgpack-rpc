@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+
 begin
 require 'rubygems'
 rescue LoadError

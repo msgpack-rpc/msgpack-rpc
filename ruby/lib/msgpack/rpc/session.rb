@@ -84,7 +84,14 @@ class Session
 	end
 
 	# backward compatibility
-	alias send call_async  #:nodoc:
+	alias_method :send_without_call_async, :send
+	def send(method, *args)
+	    if caller.first =~ /.*_test.rb/ || caller.first =~ /.*_spec.rb/ then
+	    	    warn "\n Don't use send method. Use 'call_async' method."
+            end
+	    call_async(method, *args)
+	end
+
 
 	# call-seq:
 	#   callback(symbol, *args) {|future| }
