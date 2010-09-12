@@ -238,17 +238,4 @@ public class DynamicCodegenDispatcher implements Dispatcher {
         }
         invoker.invoke(request);
     }
-
-    public static void main(String[] args) throws Exception {
-        Class c = Invoker.class;
-        System.out.println("class name1: " + c.getName());
-        System.out.println("class name2: " + c.getCanonicalName());
-        System.out.println("class name3: " + c.getSimpleName());
-
-        CtClass cc = ClassPool.getDefault().get(Invoker.class.getName());
-        System.out.println("ct class name1: " + cc.getName());
-        System.out.println("ct class name2: " + cc.getSimpleName());
-        System.out
-                .println("ct class name3: " + cc.getComponentType().getName());
-    }
 }
