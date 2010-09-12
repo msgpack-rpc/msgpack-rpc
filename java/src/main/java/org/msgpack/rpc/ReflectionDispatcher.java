@@ -20,6 +20,7 @@ package org.msgpack.rpc;
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
+import org.msgpack.*;
 
 public class ReflectionDispatcher implements Dispatcher {
 	private Object target;
@@ -29,10 +30,31 @@ public class ReflectionDispatcher implements Dispatcher {
 		this.target = target;
 		Method[] methods = target.getClass().getMethods();
 		for (Method method : methods) {
-			Invoker ivk;
-			ivk = new DirectInvoker(method);
-			methodMap.put(method.getName(), ivk);
+			Invoker ivk = createInvoker(method);
+			if(ivk != null) {
+				methodMap.put(method.getName(), ivk);
+			}
 		}
+	}
+
+	private Invoker createInvoker(Method method) {
+		if(!method.isAccessible()) {
+			return null;
+		}
+
+		Class<?>[] types = method.getParameterTypes();
+
+		if(types.length == 0) {
+			// FIXME error?
+			return null;
+		}
+
+		if(types.length == 1 && types[0] == Request.class) {
+			return new DirectInvoker(method);
+		}
+
+		// FIXME other
+		return new MessagePackObjectInvoker(method);
 	}
 
 	private interface Invoker {
@@ -46,6 +68,27 @@ public class ReflectionDispatcher implements Dispatcher {
 		}
 		public void invoke(Request request) throws Exception {
 			method.invoke(target, request);
+		}
+	}
+
+	private class MessagePackObjectInvoker implements Invoker {
+		private Method method;
+		private int num;
+		public MessagePackObjectInvoker(Method method) {
+			this.method = method;
+			this.num = method.getParameterTypes().length;
+		}
+		public void invoke(Request request) throws Exception {
+			MessagePackObject[] args = request.getArguments();
+			if(args.length < num) {
+				throw new IOException(".CallError.ArgumentError");
+			}
+			if(args.length > num) {
+				MessagePackObject[] args2 = new MessagePackObject[num];
+				System.arraycopy(args, 0, args2, 0, num);
+				args = args2;
+			}
+			method.invoke(target, args);
 		}
 	}
 
