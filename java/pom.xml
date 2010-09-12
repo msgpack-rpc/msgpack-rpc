@@ -147,9 +147,9 @@
     </dependency>
     -->
     <dependency>
-      <groupId>jboss</groupId>
+      <groupId>javassist</groupId>
       <artifactId>javassist</artifactId>
-      <version>3.8.0.GA</version>
+      <version>3.12.1.GA</version>
       <scope>compile</scope>
     </dependency>
   </dependencies>
