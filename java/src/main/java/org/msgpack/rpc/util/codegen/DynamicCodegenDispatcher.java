@@ -3,7 +3,9 @@ package org.msgpack.rpc.util.codegen;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javassist.CannotCompileException;
 import javassist.ClassPool;
@@ -68,37 +70,55 @@ public class DynamicCodegenDispatcher implements Dispatcher {
     public static class InvokersGenerator {
         private ClassPool pool;
 
+        private ConcurrentHashMap<String, Map<String, Class<?>>> invokersCache;
+
         public InvokersGenerator() {
             pool = ClassPool.getDefault();
+            invokersCache = new ConcurrentHashMap<String, Map<String, Class<?>>>();
+        }
+
+        private Map<String, Class<?>> getCache(String origName) {
+            return invokersCache.get(origName);
+        }
+
+        private void setCache(String origName,
+                Map<String, Class<?>> invokerClasses) {
+            invokersCache.putIfAbsent(origName, invokerClasses);
         }
 
         public Map<String, Invoker> generateInvokers(Object target) {
             Class<?> origClass = target.getClass();
             String origName = origClass.getName();
-            CtClass origCtClass = null;
-            try {
-                origCtClass = pool.get(origName);
-            } catch (NotFoundException e) {
-                throw new DynamicCodegenException(e.getMessage(), e);
-            }
-            // TODO
-            // add methods in superclass, and add only methods that has a
-            // <code>Request</code> type as a 1st parameter type
-            CtMethod[] methods = origCtClass.getDeclaredMethods();
-            Map<String, Invoker> invokers = new HashMap<String, Invoker>();
-            for (CtMethod method : methods) {
+            Map<String, Class<?>> cache = getCache(origName);
+            if (cache == null) {
+                CtClass origCtClass = null;
                 try {
-                    Invoker invoker = generateInvoker(target, origClass, method);
-                    invokers.put(method.getName(), invoker);
-                } catch (Exception e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
+                    origCtClass = pool.get(origName);
+                } catch (NotFoundException e) {
+                    throw new DynamicCodegenException(e.getMessage(), e);
                 }
+                // TODO
+                // add methods in superclass, and add only methods that has a
+                // <code>Request</code> type as a 1st parameter type
+                CtMethod[] methods = origCtClass.getDeclaredMethods();
+                Map<String, Class<?>> invokerClasses = new HashMap<String, Class<?>>();
+                for (CtMethod method : methods) {
+                    try {
+                        Class<?> invokerClass = generateInvokerClasses(
+                                origClass, method);
+                        invokerClasses.put(method.getName(), invokerClass);
+                    } catch (Exception e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+                setCache(origName, invokerClasses);
+                cache = invokerClasses;
             }
-            return invokers;
+            return newInvokerInstances(target, origClass, cache);
         }
 
-        private Invoker generateInvoker(Object target, Class<?> origClass,
+        private Class<?> generateInvokerClasses(Class<?> origClass,
                 CtMethod method) throws NotFoundException,
                 CannotCompileException, Exception {
             String origName = origClass.getName();
@@ -108,11 +128,11 @@ public class DynamicCodegenDispatcher implements Dispatcher {
             addField(invokerCtClass, origName);
             addConstructor(invokerCtClass, origName);
             addMethod(invokerCtClass, methodName);
-            Class<?> invokerClass = createClass(invokerCtClass);
-            return newInvokerInstance(target, origClass, invokerClass);
+            return createClass(invokerCtClass);
         }
 
-        private CtClass makeClass(String origName, String methodName) {
+        private CtClass makeClass(String origName, String methodName)
+                throws NotFoundException {
             StringBuilder sb = new StringBuilder();
             sb.append(origName).append(Constants.CHAR_NAME_UNDERSCORE).append(
                     methodName).append(Constants.POSTFIX_TYPE_NAME_INVOKER);
@@ -210,6 +230,25 @@ public class DynamicCodegenDispatcher implements Dispatcher {
             return invokerCtClass.toClass(null, null);
         }
 
+        private Map<String, Invoker> newInvokerInstances(Object target,
+                Class<?> origClass, Map<String, Class<?>> invokerClasses) {
+            Map<String, Invoker> invokers = new HashMap<String, Invoker>();
+            for (Iterator<String> iter = invokerClasses.keySet().iterator(); iter
+                    .hasNext();) {
+                try {
+                    String methodName = iter.next();
+                    Class<?> invokerClass = invokerClasses.get(methodName);
+                    Invoker invoker = newInvokerInstance(target, origClass,
+                            invokerClass);
+                    invokers.put(methodName, invoker);
+                } catch (Exception e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+            return invokers;
+        }
+
         private Invoker newInvokerInstance(Object target, Class<?> origClass,
                 Class<?> invokerClass) throws Exception {
             Constructor<?> cons = invokerClass
@@ -222,10 +261,14 @@ public class DynamicCodegenDispatcher implements Dispatcher {
         void invoke(Request reqest) throws Exception;
     }
 
+    private static InvokersGenerator gen;
+
     private Map<String, Invoker> invokers;
 
     public DynamicCodegenDispatcher(Object target) {
-        InvokersGenerator gen = new InvokersGenerator();
+        if (gen == null) {
+            gen = new InvokersGenerator();
+        }
         invokers = gen.generateInvokers(target);
     }
 
