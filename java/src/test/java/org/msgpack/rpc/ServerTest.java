@@ -39,7 +39,8 @@ public class ServerTest extends TestCase {
 		Client c = new Client("127.0.0.1", 19850);
 
 		try {
-			svr.serve(new ReflectionDispatcher(new TestHandler()));
+			//svr.serve(new ReflectionDispatcher(new TestHandler()));
+		    svr.serve(new org.msgpack.rpc.util.codegen.DynamicCodegenDispatcher(new TestHandler()));
 			svr.listen(19850);
 
 			int num = 1000;
@@ -68,7 +69,8 @@ public class ServerTest extends TestCase {
 		Client c = new Client("127.0.0.1", 19850);
 
 		try {
-			svr.serve(new ReflectionDispatcher(new TestHandler()));
+			//svr.serve(new ReflectionDispatcher(new TestHandler()));
+			svr.serve(new org.msgpack.rpc.util.codegen.DynamicCodegenDispatcher(new TestHandler()));
 			svr.listen(19850);
 
 			int num = 100000;
