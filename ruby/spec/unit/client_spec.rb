@@ -16,7 +16,7 @@ describe 'MessagePack::RPC::Client' do
 	    @client.call(:sum,1,2).should == 3
 	 end
 	 
-	 it 'call(:hello) and call(:sum,1,2) with async' do
+	 it 'call_async(:hello) and call_async(:sum,1,2)' do
 	    req1 = @client.call_async(:hello)
 	    req2 = @client.call_async(:sum,1,2)
 	    req1.join
