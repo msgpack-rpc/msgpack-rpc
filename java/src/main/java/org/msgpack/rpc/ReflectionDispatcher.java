@@ -38,7 +38,7 @@ public class ReflectionDispatcher implements Dispatcher {
 	}
 
 	private Invoker createInvoker(Method method) {
-		if(!method.isAccessible()) {
+		if(!Modifier.isPublic(method.getModifiers())) {
 			return null;
 		}
 

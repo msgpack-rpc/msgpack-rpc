@@ -47,7 +47,7 @@ public class ServerTest extends TestCase {
 			long start = System.currentTimeMillis();
 			for(int i=0; i < num; i++) {
 				MessagePackObject result = c.callApply("test", new Object[]{});
-				//assertEquals(MESSAGE, result);
+				assertEquals(MESSAGE, result);
 			}
 			long finish = System.currentTimeMillis();
 
