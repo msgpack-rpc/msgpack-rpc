@@ -21,9 +21,12 @@ import javassist.CtNewConstructor;
 import javassist.CtNewMethod;
 import javassist.NotFoundException;
 
+import org.msgpack.MessageConvertable;
 import org.msgpack.MessagePackObject;
+import org.msgpack.MessageTypeException;
 import org.msgpack.rpc.Dispatcher;
 import org.msgpack.rpc.Request;
+import org.msgpack.util.annotation.PackUnpackUtil;
 
 public class DynamicCodegenDispatcher implements Dispatcher {
 
@@ -131,7 +134,7 @@ public class DynamicCodegenDispatcher implements Dispatcher {
                             method);
                     invokerClasses.put(method.getName(), invokerClass);
                 } catch (Exception e) { // ignore
-                    //e.printStackTrace();
+                    // e.printStackTrace();
                 }
             }
             return invokerClasses;
@@ -213,7 +216,6 @@ public class DynamicCodegenDispatcher implements Dispatcher {
 
         private Class<?> generateInvokerClass(Class<?> origClass, Method method)
                 throws NotFoundException, CannotCompileException, Exception {
-            // TODO must refine the logic for enhanced class 
             String origName = origClass.getName();
             CtClass invokerCtClass = makeClass(origName, method);
             setInterface(invokerCtClass);
@@ -252,7 +254,7 @@ public class DynamicCodegenDispatcher implements Dispatcher {
             sb.append(Constants.CHAR_NAME_SPACE);
             sb.append(Constants.FIELD_NAME_TARGET);
             sb.append(Constants.CHAR_NAME_SEMICOLON);
-            //System.out.println("invoker field: " + sb.toString());
+            // System.out.println("invoker field: " + sb.toString());
             CtField targetCtField = CtField.make(sb.toString(), invokerCtClass);
             invokerCtClass.addField(targetCtField);
         }
@@ -279,7 +281,7 @@ public class DynamicCodegenDispatcher implements Dispatcher {
             sb.append(Constants.CHAR_NAME_SEMICOLON);
             sb.append(Constants.CHAR_NAME_SPACE);
             sb.append(Constants.CHAR_NAME_RIGHT_CURLY_BRACKET);
-            //System.out.println("invoker constructor: " + sb.toString());
+            // System.out.println("invoker constructor: " + sb.toString());
             CtConstructor newCtConstructor = CtNewConstructor.make(sb
                     .toString(), invokerCtClass);
             invokerCtClass.addConstructor(newCtConstructor);
@@ -303,7 +305,7 @@ public class DynamicCodegenDispatcher implements Dispatcher {
             sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
             sb.append(Constants.CHAR_NAME_SPACE);
             insertInvokeMethodBody(sb, method);
-            //System.out.println("invoker method: " + sb.toString());
+            System.out.println("invoker method: " + sb.toString());
             CtMethod newCtMethod = CtNewMethod.make(sb.toString(),
                     invokerCtClass);
             invokerCtClass.addMethod(newCtMethod);
@@ -357,157 +359,170 @@ public class DynamicCodegenDispatcher implements Dispatcher {
         }
 
         private void insertTypeConversionOfLocalVariable(StringBuilder sb,
-                int index, Class<?> type) {
+                int i, Class<?> c) {
+            if (c.isPrimitive()) {
+                // primitive type
+                insertTypeConvOfLocalVarForPrimTypes(sb, i, c);
+            } else {
+                // reference type
+                if (c.equals(Boolean.class) || c.equals(Byte.class)
+                        || c.equals(Short.class) || c.equals(Integer.class)
+                        || c.equals(Float.class) || c.equals(Long.class)
+                        || c.equals(Double.class)) {
+                    // wrapper type
+                    insertTypeConvOfLocalVarForWrapTypes(sb, i, c);
+                } else if (c.equals(String.class) || c.equals(byte[].class)
+                        || c.equals(BigInteger.class)) {
+                    insertTypeConvOfLocalVarForPrimTypes(sb, i, c);
+                } else if (List.class.isAssignableFrom(c)) {
+                    throw new MessageTypeException("UnsupportedType error: "
+                            + c.getName());
+                } else if (Map.class.isAssignableFrom(c)) {
+                    throw new MessageTypeException("UnsupportedType error: "
+                            + c.getName());
+                } else if (PackUnpackUtil.isRegistered(c)) {
+                    insertTypeConvOfLocalVarEnhancedTypes(sb, i, c);
+                } else if (MessageConvertable.class.isAssignableFrom(c)) {
+                    insertTypeConvOfLocalVarForMsgConvtblType(sb, i, c);
+                } else {
+                    throw new MessageTypeException("Type error: " + c.getName());
+                }
+            }
+        }
+
+        private void insertTypeConvOfLocalVarForPrimTypes(StringBuilder sb,
+                int i, Class<?> c) {
             // int _$$_0 = packObjs[0].intValue();
-            sb.append(type.getName());
+            sb.append(c.getName());
             sb.append(Constants.CHAR_NAME_SPACE);
             sb.append(Constants.VARIABLE_NAME_ARGS);
-            sb.append(index);
+            sb.append(i);
             sb.append(Constants.CHAR_NAME_SPACE);
             sb.append(Constants.CHAR_NAME_EQUAL);
             sb.append(Constants.CHAR_NAME_SPACE);
-            StringBuilder varsb = new StringBuilder();
-            varsb.append(Constants.VARIABLE_NAME_MESSAGEPACKOBJECTS);
-            varsb.append(Constants.CHAR_NAME_LEFT_SQUARE_BRACKET);
-            varsb.append(index);
-            varsb.append(Constants.CHAR_NAME_RIGHT_SQUARE_BRACKET);
-            insertJavaType(sb, varsb.toString(), type);
+            sb.append(Constants.VARIABLE_NAME_MESSAGEPACKOBJECTS);
+            sb.append(Constants.CHAR_NAME_LEFT_SQUARE_BRACKET);
+            sb.append(i);
+            sb.append(Constants.CHAR_NAME_RIGHT_SQUARE_BRACKET);
+            sb.append(Constants.CHAR_NAME_DOT);
+            if (c.equals(boolean.class)) { // boolean
+                sb.append("asBoolean");
+            } else if (c.equals(byte.class)) { // byte
+                sb.append("asByte");
+            } else if (c.equals(short.class)) { // short
+                sb.append("asShort");
+            } else if (c.equals(int.class)) { // int
+                sb.append("asInt");
+            } else if (c.equals(long.class)) { // long
+                sb.append("asLong");
+            } else if (c.equals(float.class)) { // float
+                sb.append("asFloat");
+            } else if (c.equals(double.class)) { // double
+                sb.append("asDouble");
+            } else if (c.equals(String.class)) { // String
+                sb.append("asString");
+            } else if (c.equals(byte[].class)) { // byte[]
+                sb.append("asByteArray");
+            } else if (c.equals(BigInteger.class)) { // BigInteger
+                sb.append("asBigInteger");
+            } else {
+                throw new MessageTypeException("Type error: " + c.getName());
+            }
+            sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
+            sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
             sb.append(Constants.CHAR_NAME_SEMICOLON);
             sb.append(Constants.CHAR_NAME_SPACE);
         }
 
-        private void insertJavaType(StringBuilder sb, String name, Class<?> type) {
-            if (type.isPrimitive()) { // primitive type
-                sb.append(name);
-                sb.append(Constants.CHAR_NAME_DOT);
-                if (type.equals(boolean.class)) { // boolean
-                    sb.append("asBoolean");
-                } else if (type.equals(byte.class)) { // byte
-                    sb.append("byteValue");
-                } else if (type.equals(short.class)) { // short
-                    sb.append("shortValue");
-                } else if (type.equals(int.class)) { // int
-                    sb.append("intValue");
-                } else if (type.equals(long.class)) { // long
-                    sb.append("longValue");
-                } else if (type.equals(float.class)) { // float
-                    sb.append("floatValue");
-                } else if (type.equals(double.class)) { // double
-                    sb.append("doubleValue");
-                } else if (type.equals(void.class)) { // void
-                    throw new DynamicCodegenException("fatal error: "
-                            + type.getName());
-                } else {
-                    throw new DynamicCodegenException("fatal error: "
-                            + type.getName());
-                }
-                sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
-                sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
-            } else { // reference type
-                // wrapper type
-                // new Boolean(name.asBoolean())
-                if (type.equals(Boolean.class)) {
-                    sb.append(Constants.KEYWORD_NEW);
-                    sb.append(Constants.CHAR_NAME_SPACE);
-                    sb.append(Boolean.class.getName());
-                    sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
-                    sb.append(name);
-                    sb.append(Constants.CHAR_NAME_DOT);
-                    sb.append("asBoolean");
-                    sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
-                    sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
-                    sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
-                } else if (type.equals(Byte.class)) {
-                    sb.append(Constants.KEYWORD_NEW);
-                    sb.append(Constants.CHAR_NAME_SPACE);
-                    sb.append(Byte.class.getName());
-                    sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
-                    sb.append(name);
-                    sb.append(Constants.CHAR_NAME_DOT);
-                    sb.append("byteValue");
-                    sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
-                    sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
-                    sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
-                } else if (type.equals(Short.class)) {
-                    sb.append(Constants.KEYWORD_NEW);
-                    sb.append(Constants.CHAR_NAME_SPACE);
-                    sb.append(Short.class.getName());
-                    sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
-                    sb.append(name);
-                    sb.append(Constants.CHAR_NAME_DOT);
-                    sb.append("shortValue");
-                    sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
-                    sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
-                    sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
-                } else if (type.equals(Integer.class)) {
-                    sb.append(Constants.KEYWORD_NEW);
-                    sb.append(Constants.CHAR_NAME_SPACE);
-                    sb.append(Integer.class.getName());
-                    sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
-                    sb.append(name);
-                    sb.append(Constants.CHAR_NAME_DOT);
-                    sb.append("intValue");
-                    sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
-                    sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
-                    sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
-                } else if (type.equals(Long.class)) {
-                    sb.append(Constants.KEYWORD_NEW);
-                    sb.append(Constants.CHAR_NAME_SPACE);
-                    sb.append(Long.class.getName());
-                    sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
-                    sb.append(name);
-                    sb.append(Constants.CHAR_NAME_DOT);
-                    sb.append("longValue");
-                    sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
-                    sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
-                    sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
-                } else if (type.equals(Float.class)) {
-                    sb.append(Constants.KEYWORD_NEW);
-                    sb.append(Constants.CHAR_NAME_SPACE);
-                    sb.append(Float.class.getName());
-                    sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
-                    sb.append(name);
-                    sb.append(Constants.CHAR_NAME_DOT);
-                    sb.append("floatValue");
-                    sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
-                    sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
-                    sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
-                } else if (type.equals(Double.class)) {
-                    sb.append(Constants.KEYWORD_NEW);
-                    sb.append(Constants.CHAR_NAME_SPACE);
-                    sb.append(Double.class.getName());
-                    sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
-                    sb.append(name);
-                    sb.append(Constants.CHAR_NAME_DOT);
-                    sb.append("doubleValue");
-                    sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
-                    sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
-                    sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
-                } else {
-                    if (type.equals(String.class)) {
-                        sb.append(name);
-                        sb.append(Constants.CHAR_NAME_DOT);
-                        sb.append("asString");
-                        sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
-                        sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
-                    } else if (type.equals(BigInteger.class)) {
-                        sb.append(name);
-                        sb.append(Constants.CHAR_NAME_DOT);
-                        sb.append("bigIntegerValue");
-                        sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
-                        sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
-                    } else if (type.equals(byte[].class)) {
-                        sb.append(name);
-                        sb.append(Constants.CHAR_NAME_DOT);
-                        sb.append("asByteArray");
-                        sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
-                        sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
-                    } else { // TODO
-                        throw new UnsupportedOperationException("fatal error: "
-                                + type.getName());
-                    }
-                }
+        private void insertTypeConvOfLocalVarForWrapTypes(StringBuilder sb,
+                int i, Class<?> c) {
+            // Integer _$$_0 = new Integer(packObjs[0].intValue());
+            sb.append(c.getName());
+            sb.append(Constants.CHAR_NAME_SPACE);
+            sb.append(Constants.VARIABLE_NAME_ARGS);
+            sb.append(i);
+            sb.append(Constants.CHAR_NAME_SPACE);
+            sb.append(Constants.CHAR_NAME_EQUAL);
+            sb.append(Constants.CHAR_NAME_SPACE);
+            sb.append(Constants.KEYWORD_NEW);
+            sb.append(Constants.CHAR_NAME_SPACE);
+            sb.append(c.getName());
+            sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
+            sb.append(Constants.VARIABLE_NAME_MESSAGEPACKOBJECTS);
+            sb.append(Constants.CHAR_NAME_LEFT_SQUARE_BRACKET);
+            sb.append(i);
+            sb.append(Constants.CHAR_NAME_RIGHT_SQUARE_BRACKET);
+            sb.append(Constants.CHAR_NAME_DOT);
+            if (c.equals(Boolean.class)) { // boolean
+                sb.append("asBoolean");
+            } else if (c.equals(Byte.class)) { // byte
+                sb.append("asByte");
+            } else if (c.equals(Short.class)) { // short
+                sb.append("asShort");
+            } else if (c.equals(Integer.class)) { // int
+                sb.append("asInt");
+            } else if (c.equals(Long.class)) { // long
+                sb.append("asLong");
+            } else if (c.equals(Float.class)) { // float
+                sb.append("asFloat");
+            } else if (c.equals(Double.class)) { // double
+                sb.append("asDouble");
+            } else {
+                throw new MessageTypeException("Type error: " + c.getName());
             }
+            sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
+            sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
+            sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
+            sb.append(Constants.CHAR_NAME_SEMICOLON);
+            sb.append(Constants.CHAR_NAME_SPACE);
+        }
+
+        private void insertTypeConvOfLocalVarEnhancedTypes(StringBuilder sb,
+                int i, Class<?> c) {
+            // Foo _$$_0 = new Foo_$$_Enhanced();
+            // ((MessageConvertable)_$$_0).messageConvert(packObjs[0]);
+
+            c = PackUnpackUtil.getEnhancedClass(c);
+            insertTypeConvOfLocalVarForMsgConvtblType(sb, i, c);
+        }
+
+        private void insertTypeConvOfLocalVarForMsgConvtblType(
+                StringBuilder sb, int i, Class<?> c) {
+            // Foo _$$_0 = new Foo();
+            // ((MessageConvertable)_$$_0).messageConvert(packObjs[0]);
+
+            sb.append(c.getName());
+            sb.append(Constants.CHAR_NAME_SPACE);
+            sb.append(Constants.VARIABLE_NAME_ARGS);
+            sb.append(i);
+            sb.append(Constants.CHAR_NAME_SPACE);
+            sb.append(Constants.CHAR_NAME_EQUAL);
+            sb.append(Constants.CHAR_NAME_SPACE);
+            sb.append(Constants.KEYWORD_NEW);
+            sb.append(Constants.CHAR_NAME_SPACE);
+            sb.append(c.getName());
+            sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
+            sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
+            sb.append(Constants.CHAR_NAME_SEMICOLON);
+            sb.append(Constants.CHAR_NAME_SPACE);
+
+            sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
+            sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
+            sb.append(MessageConvertable.class.getName());
+            sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
+            sb.append(Constants.VARIABLE_NAME_ARGS);
+            sb.append(i);
+            sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
+            sb.append(Constants.CHAR_NAME_DOT);
+            sb.append("messageConvert");
+            sb.append(Constants.CHAR_NAME_LEFT_PARENTHESIS);
+            sb.append(Constants.VARIABLE_NAME_MESSAGEPACKOBJECTS);
+            sb.append(Constants.CHAR_NAME_LEFT_SQUARE_BRACKET);
+            sb.append(i);
+            sb.append(Constants.CHAR_NAME_RIGHT_SQUARE_BRACKET);
+            sb.append(Constants.CHAR_NAME_RIGHT_PARENTHESIS);
+            sb.append(Constants.CHAR_NAME_SEMICOLON);
+            sb.append(Constants.CHAR_NAME_SPACE);
         }
 
         private void insertLocalErrorAndResultVariables(StringBuilder sb) {
