@@ -92,7 +92,7 @@ class RpcType r where
 
 fromObject' :: OBJECT o => Object -> o
 fromObject' o =
-  case fromObject o of
+  case tryFromObject o of
     Left err -> throw $ ResultTypeError err
     Right r -> r
 
@@ -112,7 +112,7 @@ rpcCall Connection{ connHandle = h } m args = do
       throw $ ProtocolError $ "response type is not 1 (got " ++ show rtype ++ ")"
     when (rmsgid /= msgid) $
       throw $ ProtocolError $ "message id mismatch: expect " ++ show msgid ++ ", but got " ++ show rmsgid
-    case fromObject rerror of
+    case tryFromObject rerror of
       Left _ ->
         throw $ ServerError rerror
       Right () ->
