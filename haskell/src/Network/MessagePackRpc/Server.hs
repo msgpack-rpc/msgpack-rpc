@@ -60,7 +60,7 @@ instance (OBJECT o, RpcMethodType r) => RpcMethodType (o -> r) where
 
 fromObject' :: OBJECT o => Object -> o
 fromObject' o =
-  case fromObject o of
+  case tryFromObject o of
     Left err -> error $ "argument type error: " ++ err
     Right r -> r
 
