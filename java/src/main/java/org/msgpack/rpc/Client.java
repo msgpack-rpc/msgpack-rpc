@@ -24,6 +24,8 @@ import java.util.concurrent.*;
 import org.msgpack.rpc.transport.*;
 
 public class Client extends Session implements Closeable {
+	private ScheduledFuture<?> timer;
+
 	public Client(String host, int port) throws UnknownHostException {
 		this(new TCPClientTransport(), new IPAddress(host, port), EventLoop.defaultEventLoop());
 	}
@@ -45,13 +47,13 @@ public class Client extends Session implements Closeable {
 		Runnable command = new Runnable() {
 			public void run() {
 				stepTimeout();
-				// FIXME 終わるタイミング step if closed
 			}
 		};
-		loop.getExecutor().scheduleAtFixedRate(command, 1000, 1000, TimeUnit.MILLISECONDS);
+		timer = loop.getExecutor().scheduleAtFixedRate(command, 1000, 1000, TimeUnit.MILLISECONDS);
 	}
 
 	public void close() {
+		timer.cancel(false);
 		closeSession();
 	}
 
