@@ -27,6 +27,7 @@ public class SessionPool implements Closeable {
 	private ClientTransport transport;
 	private EventLoop loop;
 	private Map<Address, Session> pool = new HashMap<Address, Session>();
+	private ScheduledFuture<?> timer;
 
 	public SessionPool() {
 		this(new TCPClientTransport());
@@ -55,10 +56,9 @@ public class SessionPool implements Closeable {
 		Runnable command = new Runnable() {
 			public void run() {
 				stepTimeout();
-				// FIXME 終わるタイミング step if closed
 			}
 		};
-		loop.getExecutor().scheduleAtFixedRate(command, 1000, 1000, TimeUnit.MILLISECONDS);
+		timer = loop.getExecutor().scheduleAtFixedRate(command, 1000, 1000, TimeUnit.MILLISECONDS);
 	}
 
 	public Session getSession(Address address) {
@@ -73,6 +73,7 @@ public class SessionPool implements Closeable {
 	}
 
 	public void close() {
+		timer.cancel(false);
 		synchronized(pool) {
 			for(Map.Entry<Address,Session> pair : pool.entrySet()) {
 				Session s = pair.getValue();
