@@ -40,12 +40,12 @@ class TCPClientSocket extends AbstractStreamChannel {
 		transport.removeSocket(this);
 	}
 
-	public void onRequest(int msgid, String method, MessagePackObject[] args) {
-		return;  // FIXME
+	public void onRequest(int msgid, String method, MessagePackObject args) {
+		return;  // FIXME error result
 	}
 
-	public void onNotify(String method, MessagePackObject[] args) {
-		return;  // FIXME
+	public void onNotify(String method, MessagePackObject args) {
+		return;  // FIXME error result?
 	}
 
 	public void onResponse(int msgid, MessagePackObject error, MessagePackObject result) {

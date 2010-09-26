@@ -79,7 +79,7 @@ public class ReflectionDispatcher implements Dispatcher {
 			this.num = method.getParameterTypes().length;
 		}
 		public void invoke(Request request) throws Exception {
-			MessagePackObject[] args = request.getArguments();
+			MessagePackObject[] args = request.getArguments().asArray();
 			if(args.length < num) {
 				throw new IOException(".CallError.ArgumentError");
 			}
