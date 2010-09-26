@@ -54,7 +54,7 @@ abstract class AbstractStreamChannel implements MessageSendable {
 		try {
 			channel.close();
 		} catch (IOException e) {
-			// FIXME
+			// FIXME exception
 		}
 	}
 
@@ -92,7 +92,7 @@ abstract class AbstractStreamChannel implements MessageSendable {
 			try {
 				buffer.writeTo(channel);
 			} catch (IOException e) {
-				// FIXME
+				// FIXME exception
 			}
 			if(!buffer.isEmpty()) {
 				channel.resumeWrites();
@@ -102,7 +102,7 @@ abstract class AbstractStreamChannel implements MessageSendable {
 
 	void onRead() {
 		try {
-			pac.reserveBuffer(32*1024);  // FIXME
+			pac.reserveBuffer(32*1024);  // FIXME buffer size
 			ByteBuffer out = ByteBuffer.wrap(pac.getBuffer(), pac.getBufferOffset(), pac.getBufferCapacity());
 			int count = channel.read(out);
 
@@ -127,7 +127,7 @@ abstract class AbstractStreamChannel implements MessageSendable {
 			channel.resumeReads();
 
 		} catch(IOException e) {
-			// FIXME
+			// FIXME exception
 			try {
 				channel.close();
 			} catch (IOException ex) {
@@ -144,7 +144,7 @@ abstract class AbstractStreamChannel implements MessageSendable {
 			// REQUEST
 			int msgid = array[1].asInt();
 			String method = array[2].asString();
-			MessagePackObject[] args = array[3].asArray();
+			MessagePackObject args = array[3];
 			onRequest(msgid, method, args);
 
 		} else if(type == 1) {
@@ -157,20 +157,20 @@ abstract class AbstractStreamChannel implements MessageSendable {
 		} else if(type == 2) {
 			// NOTIFY
 			String method = array[1].asString();
-			MessagePackObject[] args = array[2].asArray();
+			MessagePackObject args = array[2];
 			onNotify(method, args);
 
 		} else {
-			// FIXME
+			// FIXME error result
 			throw new RuntimeException("unknown message type: "+type);
 		}
 	}
 
 	abstract void onClose();
 
-	abstract public void onRequest(int msgid, String method, MessagePackObject[] args);
+	abstract public void onRequest(int msgid, String method, MessagePackObject args);
 
-	abstract public void onNotify(String method, MessagePackObject[] args);
+	abstract public void onNotify(String method, MessagePackObject args);
 
 	abstract public void onResponse(int msgid, MessagePackObject error, MessagePackObject result);
 }

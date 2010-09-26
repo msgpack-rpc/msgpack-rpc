@@ -67,7 +67,7 @@ public class Server extends SessionPool {
 
 	// FIXME package local scope
 	public void onRequest(MessageSendable ms, int msgid,
-			String method, MessagePackObject[] args) {
+			String method, MessagePackObject args) {
 		Request request = new Request(ms, msgid, method, args);
 		try {
 			dp.dispatch(request);
@@ -78,7 +78,7 @@ public class Server extends SessionPool {
 	}
 
 	// FIXME package local scope
-	public void onNotify(String method, MessagePackObject[] args) {
+	public void onNotify(String method, MessagePackObject args) {
 		Request request = new Request(method, args);
 		try {
 			dp.dispatch(request);
