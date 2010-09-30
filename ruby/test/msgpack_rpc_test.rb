@@ -42,6 +42,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 
 		private
 		def hidden
+		
 		end
 	end
 
