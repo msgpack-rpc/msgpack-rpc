@@ -19,7 +19,7 @@ class MessagePackRPC_Server
       $sockList = array($sockItem);
 
       if ($sockItem === FALSE) {
-	throw new Exception(); // TODO:
+        throw new Exception(); // TODO:
       }
 
       // TODO : Server connection check
@@ -27,22 +27,22 @@ class MessagePackRPC_Server
       while (TRUE) {
         $moveList = $sockList;
         $moveNums = socket_select($moveList, $w = null, $e = null, null);
-	foreach ($moveList as $moveItem) {
+        foreach ($moveList as $moveItem) {
           if ($moveItem == $sockItem) {
-	    $acptItem   = socket_accept($sockItem);
+            $acptItem   = socket_accept($sockItem);
             $sockList[] = $acptItem;
           } else {
             $data = socket_read($moveItem, $this->back->size);
 
-	    list($code, $func, $args) = $this->back->serverRecvObject($data);
-	    $hand = $this->hand;
+            list($code, $func, $args) = $this->back->serverRecvObject($data);
+            $hand = $this->hand;
             $send = $this->back->serverSendObject($code, call_user_func_array(array($hand, $func), $args), "");
-	    socket_write($moveItem, $send);
+            socket_write($moveItem, $send);
 
-            unset($sockList[array_search($moveItem, $sockList)]);
+            $move = unset($sockList[array_search($moveItem, $sockList)]);
             socket_close($moveItem);
-	  }
-	}
+          }
+        }
       }
 
       socket_close($sockItem);
