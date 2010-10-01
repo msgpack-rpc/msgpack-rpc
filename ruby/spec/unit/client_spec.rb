@@ -40,7 +40,7 @@ describe 'MessagePack::RPC::Client test' do
 	    end
 	 end
 
-	 it "should return "3" when you set callback(:sum)' do
+	 it 'should return "3" when you set callback(:sum)' do
 
 	    @client.callback(:sum) do |error, result|
 	    	result.shouble equal 3
