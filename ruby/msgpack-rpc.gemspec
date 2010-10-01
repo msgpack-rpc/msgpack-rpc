@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["FURUHASHI Sadayuki"]
-  s.date = %q{2010-09-12}
+  s.date = %q{2010-10-01}
   s.email = %q{frsyuki@users.sourceforge.jp}
   s.files = [
     "AUTHORS",
@@ -33,6 +33,11 @@ Gem::Specification.new do |s|
      "lib/msgpack/rpc/transport/udp.rb",
      "lib/msgpack/rpc/transport/unix.rb",
      "lib/msgpack/rpc/version.rb",
+     "spec/spec.opts",
+     "spec/unit/client_spec.rb",
+     "spec/unit/my_server.rb",
+     "spec/unit/spec_helper.rb",
+     "tasks/msgpack_rpc_tasks.rake",
      "test/msgpack_rpc_test.rb",
      "test/test_helper.rb"
   ]
