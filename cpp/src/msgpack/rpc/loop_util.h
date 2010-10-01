@@ -43,10 +43,10 @@ public:
 		{ static_cast<MixIn*>(this)->get_loop()->join(); }
 
 	bool is_running() const
-		{ return static_cast<MixIn*>(this)->get_loop()->is_running(); }
+		{ return static_cast<const MixIn*>(this)->get_loop()->is_running(); }
 
 	bool is_end() const
-		{ return static_cast<MixIn*>(this)->get_loop()->is_end(); }
+		{ return static_cast<const MixIn*>(this)->get_loop()->is_end(); }
 };
 
 
