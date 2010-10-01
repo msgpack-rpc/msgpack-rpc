@@ -98,6 +98,6 @@ class MessagePackRPC_Back
 
   public function msgpackEncode($data)
   {
-    return msgpack_pack  ($data);
+    return   msgpack_pack($data);
   }
 }
