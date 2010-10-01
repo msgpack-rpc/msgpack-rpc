@@ -28,8 +28,11 @@ public class EventLoop {
 	private ScheduledExecutorService workerExecutor;
 
 	public EventLoop() {
-		this(Executors.newScheduledThreadPool(
-					Runtime.getRuntime().availableProcessors()*2));
+		this(Runtime.getRuntime().availableProcessors()*2);
+	}
+
+	public EventLoop(int numThreads) {
+		this(Executors.newScheduledThreadPool(numThreads));
 	}
 
 	public EventLoop(ScheduledExecutorService workerExecutor) {
