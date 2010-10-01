@@ -45,6 +45,7 @@ abstract class AbstractStreamChannel implements MessageSendable {
 		channel.getCloseSetter().set(new ChannelListener<ConnectedStreamChannel<InetSocketAddress>>() {
 				public void handleEvent(ConnectedStreamChannel<InetSocketAddress> channel) {
 					onClose();
+					close();
 				}
 			});
 		channel.resumeReads();
