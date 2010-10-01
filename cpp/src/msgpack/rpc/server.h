@@ -33,6 +33,7 @@ public:
 
 class server : public session_pool {
 public:
+	typedef msgpack::rpc::session session;
 	server(loop lo = loop());
 	server(const builder& b, loop lo = loop());
 
