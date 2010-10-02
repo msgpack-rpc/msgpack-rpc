@@ -38,11 +38,11 @@ class TCPServerSocket extends AbstractStreamChannel {
 		// FIXME
 	}
 
-	public void onRequest(int msgid, String method, MessagePackObject[] args) {
+	public void onRequest(int msgid, String method, MessagePackObject args) {
 		server.onRequest(this, msgid, method, args);
 	}
 
-	public void onNotify(String method, MessagePackObject[] args) {
+	public void onNotify(String method, MessagePackObject args) {
 		server.onNotify(method, args);
 	}
 

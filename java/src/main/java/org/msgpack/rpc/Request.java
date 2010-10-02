@@ -26,17 +26,17 @@ public class Request {
 	private MessageSendable ms;  // synchronized?
 	private int msgid;
 	private String method;
-	private MessagePackObject[] args;
+	private MessagePackObject args;
 
 	public Request(MessageSendable ms, int msgid,
-			String method, MessagePackObject[] args) {
+			String method, MessagePackObject args) {
 		this.ms = ms;
 		this.msgid = msgid;
 		this.method = method;
 		this.args = args;
 	}
 
-	public Request(String method, MessagePackObject[] args) {
+	public Request(String method, MessagePackObject args) {
 		this.ms = null;
 		this.msgid = 0;
 		this.method = method;
@@ -47,7 +47,7 @@ public class Request {
 		return method;
 	}
 
-	public MessagePackObject[] getArguments() {
+	public MessagePackObject getArguments() {
 		return args;
 	}
 

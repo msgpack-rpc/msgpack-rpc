@@ -27,7 +27,7 @@ public class Future {
 	private MessagePackObject result;
 	private MessagePackObject error;
 	private int timeout;
-	private Runnable callback;
+	private Runnable callback = null;
 
 	public Future(Session session) {
 		this.session = session;
@@ -36,6 +36,7 @@ public class Future {
 
 	public MessagePackObject get() {
 		join();
+		// FIXME throw error unless getError().isNull()
 		return getResult();
 	}
 
@@ -46,7 +47,7 @@ public class Future {
 					lock.wait();
 				}
 			} catch(InterruptedException e) {
-				// FIXME
+				// FIXME exception
 			}
 		}
 	}
@@ -54,7 +55,9 @@ public class Future {
 	public void attachCallback(Runnable callback) {
 		synchronized(lock) {
 			this.callback = callback;
-			// FIXME
+		}
+		if(set) {
+			session.getEventLoop().getExecutor().submit(callback);
 		}
 	}
 
@@ -72,7 +75,11 @@ public class Future {
 			this.error = error;
 			this.set = true;
 			lock.notifyAll();
-			// FIXME callback
+		}
+		if(callback != null) {
+			// FIXME submit?
+			//session.getEventLoop().getExecutor().submit(callback);
+			callback.run();
 		}
 	}
 

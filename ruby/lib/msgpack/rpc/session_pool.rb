@@ -67,7 +67,7 @@ class SessionPool
 	end
 
 	# backward compatibility
-	alias get_session_addr get_session   #:nodoc:
+	alias_method :get_session_addr,:get_session   #:nodoc:
 
 	def close
 		@pool.reject! {|addr, s|

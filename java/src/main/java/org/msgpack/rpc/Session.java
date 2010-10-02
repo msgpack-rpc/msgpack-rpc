@@ -28,15 +28,14 @@ import org.msgpack.*;
 public class Session {
 	protected Address address;
 	protected EventLoop loop;
-	private int timeout = 3;  // FIXME
-	private AtomicInteger seqid = new AtomicInteger(0);
+	private int timeout = 3;  // FIXME default timeout time
+	private AtomicInteger seqid = new AtomicInteger(0);  // FIXME rand()?
 	private MessageSendable transport;
 	private Map<Integer, Future> reqtable = new HashMap<Integer, Future>();
 
 	protected Session(ClientTransport transport, Address address, EventLoop loop) {
 		this.address = address;
 		this.loop = loop;
-		// FIXME
 		this.transport = transport.createPeer(this);
 	}
 
@@ -65,7 +64,7 @@ public class Session {
 		transport.close();
 		synchronized(reqtable) {
 			for(Map.Entry<Integer,Future> pair : reqtable.entrySet()) {
-				// FIXME
+				// FIXME error result
 				Future f = pair.getValue();
 				f.setResult(null,org.msgpack.object.RawType.create("session closed"));
 			}
@@ -73,7 +72,7 @@ public class Session {
 		}
 	}
 
-	public void transportConnectFailed() {  // FIXME
+	public void transportConnectFailed() {  // FIXME error rseult
 	//	synchronized(reqtable) {
 	//		for(Map.Entry<Integer,Future> pair : reqtable.entrySet()) {
 	//			// FIXME
@@ -140,7 +139,7 @@ public class Session {
 			}
 		}
 		for(Future f : timedout) {
-			// FIXME
+			// FIXME error result
 			f.setResult(null,org.msgpack.object.RawType.create("timedout"));
 		}
 	}

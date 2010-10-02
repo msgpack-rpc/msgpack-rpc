@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["FURUHASHI Sadayuki"]
-  s.date = %q{2010-08-28}
+  s.date = %q{2010-10-01}
   s.email = %q{frsyuki@users.sourceforge.jp}
   s.files = [
     "AUTHORS",
@@ -33,6 +33,11 @@ Gem::Specification.new do |s|
      "lib/msgpack/rpc/transport/udp.rb",
      "lib/msgpack/rpc/transport/unix.rb",
      "lib/msgpack/rpc/version.rb",
+     "spec/spec.opts",
+     "spec/unit/client_spec.rb",
+     "spec/unit/my_server.rb",
+     "spec/unit/spec_helper.rb",
+     "tasks/msgpack_rpc_tasks.rake",
      "test/msgpack_rpc_test.rb",
      "test/test_helper.rb"
   ]
@@ -51,15 +56,18 @@ Gem::Specification.new do |s|
     s.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_runtime_dependency(%q<msgpack>, [">= 0.4.1"])
+      s.add_runtime_dependency(%q<msgpack>, [">= 0.4.3"])
       s.add_runtime_dependency(%q<rev>, [">= 0.3.0"])
+      s.add_development_dependency(%q<rspec>, [">= 0"])
     else
-      s.add_dependency(%q<msgpack>, [">= 0.4.1"])
+      s.add_dependency(%q<msgpack>, [">= 0.4.3"])
       s.add_dependency(%q<rev>, [">= 0.3.0"])
+      s.add_dependency(%q<rspec>, [">= 0"])
     end
   else
-    s.add_dependency(%q<msgpack>, [">= 0.4.1"])
+    s.add_dependency(%q<msgpack>, [">= 0.4.3"])
     s.add_dependency(%q<rev>, [">= 0.3.0"])
+    s.add_dependency(%q<rspec>, [">= 0"])
   end
 end
 

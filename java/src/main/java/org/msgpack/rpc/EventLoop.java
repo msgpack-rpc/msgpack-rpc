@@ -28,8 +28,11 @@ public class EventLoop {
 	private ScheduledExecutorService workerExecutor;
 
 	public EventLoop() {
-		this(Executors.newScheduledThreadPool(
-					Runtime.getRuntime().availableProcessors()*2));
+		this(Runtime.getRuntime().availableProcessors()*2);
+	}
+
+	public EventLoop(int numThreads) {
+		this(Executors.newScheduledThreadPool(numThreads));
 	}
 
 	public EventLoop(ScheduledExecutorService workerExecutor) {
@@ -43,7 +46,7 @@ public class EventLoop {
 		try {
 			this.xnio = Xnio.create(config);
 		} catch (IOException e) {
-			// FIXME
+			// FIXME exception
 			throw new RuntimeException(e.getMessage());
 		}
 		this.workerExecutor = workerExecutor;
@@ -62,7 +65,7 @@ public class EventLoop {
 		try {
 			xnio.close();
 		} catch (IOException e) {
-			// FIXME
+			// FIXME exception
 		}
 	}
 
