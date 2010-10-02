@@ -2,12 +2,10 @@ package org.msgpack.rpc.util.codegen;
 
 import org.msgpack.util.codegen.BasicConstants;
 
-public interface InvokersGenConstants extends BasicConstants {
+public interface Constants extends BasicConstants {
     String POSTFIX_TYPE_NAME_INVOKER = "_$$_Invoker";
-    
+
     String FIELD_NAME_TARGET = "_$$_target";
-    
-//    String VARIABLE_NAME_TARGET = "_$$_t";
 
     String VARIABLE_NAME_ARGS = "_$$_";
 

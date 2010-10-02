@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.msgpack.rpc.Dispatcher;
 import org.msgpack.rpc.Request;
-import org.msgpack.rpc.util.codegen.InvokersGenerator;
+import org.msgpack.rpc.util.codegen.DynamicInvokersGen;
 import org.msgpack.util.codegen.DynamicCodeGenException;
 
 public class DynamicCodeGenDispatcher implements Dispatcher {
@@ -16,7 +16,7 @@ public class DynamicCodeGenDispatcher implements Dispatcher {
         void invoke(Request reqest);
     }
 
-    private static InvokersGenerator gen;
+    private static DynamicInvokersGen gen;
 
     private Map<String, Invoker> invokersCache = new ConcurrentHashMap<String, Invoker>();
 
@@ -32,7 +32,7 @@ public class DynamicCodeGenDispatcher implements Dispatcher {
 
     public DynamicCodeGenDispatcher(Object origObj) throws DynamicCodeGenException {
         if (gen == null) {
-            gen = new InvokersGenerator();
+            gen = new DynamicInvokersGen();
         }
 
         Class<?> origClass = origObj.getClass();
