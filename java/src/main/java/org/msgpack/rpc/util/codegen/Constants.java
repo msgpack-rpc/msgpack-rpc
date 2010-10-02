@@ -11,7 +11,7 @@ public interface Constants extends BasicConstants {
 
     String VARIABLE_NAME_REQUEST = "_$$_r";
 
-    String VARIABLE_NAME_MESSAGEPACKOBJECTS = "_$$_mpos";
+    String VARIABLE_NAME_MPOS = "_$$_mpos";
 
     String VARIABLE_NAME_ERROR = "_$$_err";
 

@@ -22,23 +22,32 @@ import javassist.CtNewMethod;
 import javassist.NotFoundException;
 
 import org.msgpack.CustomConverter;
+import org.msgpack.CustomMessage;
 import org.msgpack.MessageConvertable;
 import org.msgpack.MessagePackObject;
+import org.msgpack.Template;
+import org.msgpack.annotation.MessagePackDelegate;
+import org.msgpack.annotation.MessagePackMessage;
+import org.msgpack.annotation.MessagePackOrdinalEnum;
 import org.msgpack.rpc.Request;
 import org.msgpack.rpc.util.codegen.DynamicCodeGenDispatcher.Invoker;
 import org.msgpack.util.codegen.DynamicCodeGenBase;
 import org.msgpack.util.codegen.DynamicCodeGenException;
+import org.msgpack.util.codegen.DynamicCodeGenOrdinalEnumTemplate;
+import org.msgpack.util.codegen.DynamicCodeGenTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants {
-    private static Logger LOG = LoggerFactory.getLogger(DynamicInvokersGen.class);
-    
+    private static Logger LOG = LoggerFactory
+            .getLogger(DynamicInvokersGen.class);
+
     private ClassPool pool;
 
     private ConcurrentHashMap<String, Map<String, Class<?>>> classesCache;
 
     public DynamicInvokersGen() {
+        LOG.info("create an instance of " + DynamicInvokersGen.class.getName());
         pool = ClassPool.getDefault();
         classesCache = new ConcurrentHashMap<String, Map<String, Class<?>>>();
     }
@@ -53,6 +62,7 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
 
     public Map<String, Class<?>> generateInvokerClasses(Object origObj,
             Class<?> origClass) throws DynamicCodeGenException {
+        LOG.debug("generate invokers for a class: " + origClass.getName());
         String origName = origClass.getName();
         Map<String, Class<?>> cache = classesCache.get(origName);
         if (cache != null) {
@@ -62,8 +72,7 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
         try {
             classes = generateInvokerClasses(origName, origClass);
         } catch (DynamicCodeGenException e) {
-            // TODO for debug
-            e.printStackTrace();
+            LOG.error(e.getMessage(), e);
             throw e;
         }
         if (classes != null) {
@@ -168,8 +177,7 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
     }
 
     private Class<?> generateInvokerClass(Class<?> origClass, Method method)
-            throws NotFoundException, CannotCompileException,
-            DynamicCodeGenException {
+            throws NotFoundException, CannotCompileException {
         String origName = origClass.getName();
         CtClass invokerCtClass = makeClass(origName, method);
         setInterface(invokerCtClass);
@@ -197,19 +205,25 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
         invokerCtClass.addInterface(invokerInf);
     }
 
-    private void addField(CtClass invokerCtClass, Class<?> origClass)
-            throws CannotCompileException {
+    private void addField(CtClass invokerCtClass, Class<?> origClass) {
         // in this part, a created field is not initialized
         StringBuilder sb = new StringBuilder();
         addPublicFieldDecl(sb, origClass, FIELD_NAME_TARGET);
         insertSemicolon(sb);
-        // System.out.println("invoker field: " + sb.toString());
-        CtField targetCtField = CtField.make(sb.toString(), invokerCtClass);
-        invokerCtClass.addField(targetCtField);
+        LOG.trace("invoker field src: " + sb.toString());
+        try {
+            CtField targetCtField = CtField.make(sb.toString(), invokerCtClass);
+            invokerCtClass.addField(targetCtField);
+        } catch (CannotCompileException e) {
+            DynamicCodeGenException ex = new DynamicCodeGenException(e
+                    .getMessage()
+                    + ": " + sb.toString(), e);
+            LOG.error(ex.getMessage(), ex);
+            throw ex;
+        }
     }
 
-    private void addConstructor(CtClass invokerCtClass, Class<?> origClass)
-            throws CannotCompileException {
+    private void addConstructor(CtClass invokerCtClass, Class<?> origClass) {
         StringBuilder sb = new StringBuilder();
         sb.append(KEYWORD_MODIFIER_PUBLIC);
         sb.append(CHAR_NAME_SPACE);
@@ -223,20 +237,24 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
         sb.append(CHAR_NAME_LEFT_CURLY_BRACKET);
         sb.append(CHAR_NAME_SPACE);
         sb.append(FIELD_NAME_TARGET);
-        sb.append(CHAR_NAME_SPACE);
-        sb.append(CHAR_NAME_EQUAL);
-        sb.append(CHAR_NAME_SPACE);
-        sb.append(VARIABLE_NAME_TARGET);
+        insertValueInsertion(sb, VARIABLE_NAME_TARGET);
         insertSemicolon(sb);
         sb.append(CHAR_NAME_RIGHT_CURLY_BRACKET);
-        // System.out.println("invoker constructor: " + sb.toString());
-        CtConstructor newCtConstructor = CtNewConstructor.make(sb.toString(),
-                invokerCtClass);
-        invokerCtClass.addConstructor(newCtConstructor);
+        LOG.trace("invoker constructor src: " + sb.toString());
+        try {
+            CtConstructor newCtConstructor = CtNewConstructor.make(sb
+                    .toString(), invokerCtClass);
+            invokerCtClass.addConstructor(newCtConstructor);
+        } catch (CannotCompileException e) {
+            DynamicCodeGenException ex = new DynamicCodeGenException(e
+                    .getMessage()
+                    + ": " + sb.toString(), e);
+            LOG.error(ex.getMessage(), ex);
+            throw ex;
+        }
     }
 
-    private void addInvokeMethod(CtClass invokerCtClass, Method method)
-            throws CannotCompileException, DynamicCodeGenException {
+    private void addInvokeMethod(CtClass invokerCtClass, Method method) {
         StringBuilder sb = new StringBuilder();
         sb.append(KEYWORD_MODIFIER_PUBLIC);
         sb.append(CHAR_NAME_SPACE);
@@ -250,9 +268,19 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
         sb.append(CHAR_NAME_RIGHT_PARENTHESIS);
         sb.append(CHAR_NAME_SPACE);
         insertInvokeMethodBody(sb, method);
-        System.out.println("invoker method: " + sb.toString());
-        CtMethod newCtMethod = CtNewMethod.make(sb.toString(), invokerCtClass);
-        invokerCtClass.addMethod(newCtMethod);
+        LOG.trace("invoker method src: " + sb.toString());
+        try {
+            CtMethod newCtMethod = CtNewMethod.make(sb.toString(),
+                    invokerCtClass);
+            invokerCtClass.addMethod(newCtMethod);
+        } catch (CannotCompileException e) {
+            DynamicCodeGenException ex = new DynamicCodeGenException(e
+                    .getMessage()
+                    + ": " + sb.toString(), e);
+            LOG.error(ex.getMessage(), ex);
+            throw ex;
+        }
+
     }
 
     private void insertInvokeMethodBody(StringBuilder sb, Method m)
@@ -268,17 +296,20 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
     }
 
     private void insertGetArgumentsCall(StringBuilder sb) {
-        // MessagePackObject[] packObjs = req.getArguments();
-        sb.append(MessagePackObject.class.getName());
-        sb.append(CHAR_NAME_LEFT_SQUARE_BRACKET);
-        sb.append(CHAR_NAME_RIGHT_SQUARE_BRACKET);
-        sb.append(CHAR_NAME_SPACE);
-        sb.append(VARIABLE_NAME_MESSAGEPACKOBJECTS);
-        sb.append(CHAR_NAME_SPACE);
-        sb.append(CHAR_NAME_EQUAL);
-        sb.append(CHAR_NAME_SPACE);
-        insertMethodCall(sb, VARIABLE_NAME_REQUEST, METHOD_NAME_GETARGUMENTS,
+        // MessagePackObject packObj = req.getArguments();
+        // MessagePackObject[] packObjs = packObj.asArray();
+        StringBuilder mc = new StringBuilder();
+        insertLocalVariableDecl(sb, MessagePackObject.class, VARIABLE_NAME_MPO);
+        insertMethodCall(mc, VARIABLE_NAME_REQUEST, METHOD_NAME_GETARGUMENTS,
                 new String[0]);
+        insertValueInsertion(sb, mc.toString());
+        insertSemicolon(sb);
+        mc = new StringBuilder();
+        insertLocalVariableDecl(sb, MessagePackObject.class,
+                VARIABLE_NAME_MPOS, 1);
+        insertMethodCall(mc, VARIABLE_NAME_MPO, METHOD_NAME_ASARRAY,
+                new String[0]);
+        insertValueInsertion(sb, mc.toString());
         insertSemicolon(sb);
     }
 
@@ -295,59 +326,79 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
     }
 
     private void insertTypeConvOfLocalVar(StringBuilder sb, int i, Method m,
-            Class<?> c, String n) throws DynamicCodeGenException {
+            Class<?> c, String n) {
         if (c.isPrimitive()) {
             // primitive type
             insertTypeConvOfLocalVarForPrimTypes(sb, i, m, c, n);
+        } else if (c.equals(Boolean.class) || c.equals(Byte.class)
+                || c.equals(Short.class) || c.equals(Integer.class)
+                || c.equals(Float.class) || c.equals(Long.class)
+                || c.equals(Double.class)) {
+            // reference type (wrapper)
+            insertTypeConvOfLocalVarForWrapTypes(sb, i, m, c, n);
+        } else if (c.equals(String.class) || c.equals(byte[].class)
+                || c.equals(BigInteger.class)) {
+            // other reference types
+            insertTypeConvOfLocalVarForPrimTypes(sb, i, m, c, n);
+        } else if (List.class.isAssignableFrom(c)) {
+            // List type
+            ParameterizedType pt = (ParameterizedType) m
+                    .getGenericParameterTypes()[i];
+            Class<?> vc = (Class<?>) pt.getActualTypeArguments()[0];
+            insertTypeConvOfLocalVarForListType(sb, i, c, vc);
+        } else if (Map.class.isAssignableFrom(c)) {
+            // Map type
+            ParameterizedType pt = (ParameterizedType) m
+                    .getGenericParameterTypes()[i];
+            Class<?> kc = (Class<?>) pt.getActualTypeArguments()[0];
+            Class<?> vc = (Class<?>) pt.getActualTypeArguments()[1];
+            insertTypeConvOfLocalVarForMapType(sb, i, c, kc, vc);
+        } else if (CustomConverter.isRegistered(c)) {
+            insertTypeConvOfLocalVarForRegisteredTypes(sb, i, c);
+        } else if (CustomMessage.isAnnotated(c, MessagePackMessage.class)) {
+            // @MessagePackMessage
+            Template tmpl = DynamicCodeGenTemplate.create(c);
+            CustomMessage.registerTemplate(c, tmpl);
+            insertTypeConvOfLocalVarForRegisteredTypes(sb, i, c);
+        } else if (CustomMessage.isAnnotated(c, MessagePackDelegate.class)) {
+            // FIXME DelegatePacker
+            UnsupportedOperationException e = new UnsupportedOperationException(
+                    "not supported yet. : " + c.getName());
+            LOG.error(e.getMessage(), e);
+            throw e;
+        } else if (CustomMessage.isAnnotated(c, MessagePackOrdinalEnum.class)) {
+            // @MessagePackOrdinalEnum
+            Template tmpl = DynamicCodeGenOrdinalEnumTemplate.create(c);
+            CustomMessage.registerTemplate(c, tmpl);
+            insertTypeConvOfLocalVarForRegisteredTypes(sb, i, c);
+        } else if (MessageConvertable.class.isAssignableFrom(c)) {
+            insertTypeConvOfLocalVarForMsgConvtblType(sb, i, c);
         } else {
-            // reference type
-            if (c.equals(Boolean.class) || c.equals(Byte.class)
-                    || c.equals(Short.class) || c.equals(Integer.class)
-                    || c.equals(Float.class) || c.equals(Long.class)
-                    || c.equals(Double.class)) {
-                // wrapper type
-                insertTypeConvOfLocalVarForWrapTypes(sb, i, m, c, n);
-            } else if (c.equals(String.class) || c.equals(byte[].class)
-                    || c.equals(BigInteger.class)) {
-                insertTypeConvOfLocalVarForPrimTypes(sb, i, m, c, n);
-            } else if (List.class.isAssignableFrom(c)) {
-                ParameterizedType pt = (ParameterizedType) m
-                        .getGenericParameterTypes()[i];
-                Class<?> vc = (Class<?>) pt.getActualTypeArguments()[0];
-                insertTypeConvOfLocalVarForListType(sb, i, c, vc);
-            } else if (Map.class.isAssignableFrom(c)) {
-                ParameterizedType pt = (ParameterizedType) m
-                        .getGenericParameterTypes()[i];
-                Class<?> kc = (Class<?>) pt.getActualTypeArguments()[0];
-                Class<?> vc = (Class<?>) pt.getActualTypeArguments()[1];
-                insertTypeConvOfLocalVarForMapType(sb, i, c, kc, vc);
-            } else if (CustomConverter.isRegistered(c)) {
-                insertTypeConvOfLocalVarEnhancedTypes(sb, i, c);
-            } else if (MessageConvertable.class.isAssignableFrom(c)) {
-                insertTypeConvOfLocalVarForMsgConvtblType(sb, i, c);
-            } else {
-                throw new DynamicCodeGenException("Type error: " + c.getName());
-            }
+            DynamicCodeGenException e = new DynamicCodeGenException(
+                    "Type error: " + c.getName());
+            LOG.error(e.getMessage(), e);
+            throw e;
         }
     }
 
     private void insertTypeConvOfLocalVarForPrimTypes(StringBuilder sb, int i,
             Method m, Class<?> c, String n) throws DynamicCodeGenException {
         // int _$$_0 = packObjs[0].asInt();
-        StringBuilder mc = new StringBuilder();
         if (m != null) {
             insertLocalVariableDecl(sb, c, VARIABLE_NAME_ARGS + i);
-            sb.append(CHAR_NAME_SPACE);
-            sb.append(CHAR_NAME_EQUAL);
-            sb.append(CHAR_NAME_SPACE);
-            mc.append(VARIABLE_NAME_MESSAGEPACKOBJECTS);
-            mc.append(CHAR_NAME_LEFT_SQUARE_BRACKET);
-            mc.append(i);
-            mc.append(CHAR_NAME_RIGHT_SQUARE_BRACKET);
-        } else {
-            mc.append(n);
+            insertInsertion(sb);
         }
-        insertMethodCall(sb, mc.toString(), getAsMethodName(c), new String[0]);
+        StringBuilder tname = new StringBuilder();
+        if (m != null) {
+            tname.append(VARIABLE_NAME_MPOS);
+            tname.append(CHAR_NAME_LEFT_SQUARE_BRACKET);
+            tname.append(i);
+            tname.append(CHAR_NAME_RIGHT_SQUARE_BRACKET);
+        } else {
+            tname.append(n);
+        }
+        insertMethodCall(sb, tname.toString(), getAsMethodName(c),
+                new String[0]);
         if (m != null) {
             insertSemicolon(sb);
         }
@@ -355,17 +406,14 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
 
     private void insertTypeConvOfLocalVarForWrapTypes(StringBuilder sb, int i,
             Method m, Class<?> c, String n) throws DynamicCodeGenException {
-        StringBuilder mc = null;
         // Integer _$$_0 = new Integer(packObjs[0].intValue());
         if (m != null) {
             insertLocalVariableDecl(sb, c, VARIABLE_NAME_ARGS + i);
-            sb.append(CHAR_NAME_SPACE);
-            sb.append(CHAR_NAME_EQUAL);
-            sb.append(CHAR_NAME_SPACE);
+            insertInsertion(sb);
         }
-        mc = new StringBuilder();
+        StringBuilder mc = new StringBuilder();
         if (m != null) {
-            mc.append(VARIABLE_NAME_MESSAGEPACKOBJECTS);
+            mc.append(VARIABLE_NAME_MPOS);
             mc.append(CHAR_NAME_LEFT_SQUARE_BRACKET);
             mc.append(i);
             mc.append(CHAR_NAME_RIGHT_SQUARE_BRACKET);
@@ -381,31 +429,42 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
         }
     }
 
-    private void insertTypeConvOfLocalVarEnhancedTypes(StringBuilder sb, int i,
-            Class<?> c) {
-        // Foo _$$_0 = new Foo_$$_Enhanced();
-        // ((MessageConvertable)_$$_0).messageConvert(packObjs[0]);
-        // c = PackUnpackUtil.getEnhancedClass(c);
-        insertTypeConvOfLocalVarForMsgConvtblType(sb, i, c);
+    private void insertTypeConvOfLocalVarForRegisteredTypes(StringBuilder sb,
+            int i, Class<?> c) {
+        // args[i] = (C) CustomConverter.get(C.class).convert(mpos[i]);
+        insertLocalVariableDecl(sb, c, VARIABLE_NAME_ARGS + i);
+        insertInsertion(sb);
+        StringBuilder mc = new StringBuilder();
+        insertMethodCall(mc, CustomConverter.class.getName(), METHOD_NAME_GET,
+                new String[] { c.getName() + ".class" });
+        String tname = mc.toString();
+        mc = new StringBuilder();
+        mc.append(VARIABLE_NAME_MPOS);
+        mc.append(CHAR_NAME_LEFT_SQUARE_BRACKET);
+        mc.append(i);
+        mc.append(CHAR_NAME_RIGHT_SQUARE_BRACKET);
+        String[] anames = new String[] { mc.toString() };
+        mc = new StringBuilder();
+        insertMethodCall(mc, tname, METHOD_NAME_CONVERT, anames);
+        insertTypeCast(sb, c, mc.toString());
+        insertSemicolon(sb);
     }
 
     private void insertTypeConvOfLocalVarForMsgConvtblType(StringBuilder sb,
             int i, Class<?> c) {
         StringBuilder mc;
-
-        // Foo _$$_0 = new Foo();
-        // ((MessageConvertable)_$$_0).messageConvert(packObjs[0]);
+        // Foo _$$_i = new Foo();
+        // ((MessageConvertable)_$$_i).messageConvert(mpos[i]);
         insertLocalVariableDecl(sb, c, VARIABLE_NAME_ARGS + i);
         mc = new StringBuilder();
         insertDefaultConsCall(mc, c);
         insertValueInsertion(sb, mc.toString());
         insertSemicolon(sb);
-
         mc = new StringBuilder();
         insertTypeCast(mc, MessageConvertable.class, VARIABLE_NAME_ARGS + i);
         String tname = mc.toString();
         mc = new StringBuilder();
-        mc.append(VARIABLE_NAME_MESSAGEPACKOBJECTS);
+        mc.append(VARIABLE_NAME_MPOS);
         mc.append(CHAR_NAME_LEFT_SQUARE_BRACKET);
         mc.append(i);
         mc.append(CHAR_NAME_RIGHT_SQUARE_BRACKET);
@@ -416,12 +475,10 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
 
     private void insertTypeConvOfLocalVarForListType(StringBuilder sb, int i,
             Class<?> c, Class<?> gc) throws DynamicCodeGenException {
-        StringBuilder mc;
-
-        // List<MessagePackObject> _$$_list = packObjs[0].asList();
+        // List<MessagePackObject> _$$_list = packObjs[i].asList();
         insertLocalVariableDecl(sb, List.class, VARIABLE_NAME_LIST);
-        mc = new StringBuilder();
-        mc.append(VARIABLE_NAME_MESSAGEPACKOBJECTS);
+        StringBuilder mc = new StringBuilder();
+        mc.append(VARIABLE_NAME_MPOS);
         mc.append(CHAR_NAME_LEFT_SQUARE_BRACKET);
         mc.append(i);
         mc.append(CHAR_NAME_RIGHT_SQUARE_BRACKET);
@@ -502,7 +559,7 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
         // Map _$$_map = packObjs[0].asMap();
         insertLocalVariableDecl(sb, Map.class, VARIABLE_NAME_MAP);
         mc = new StringBuilder();
-        mc.append(VARIABLE_NAME_MESSAGEPACKOBJECTS);
+        mc.append(VARIABLE_NAME_MPOS);
         mc.append(CHAR_NAME_LEFT_SQUARE_BRACKET);
         mc.append(i);
         mc.append(CHAR_NAME_RIGHT_SQUARE_BRACKET);
