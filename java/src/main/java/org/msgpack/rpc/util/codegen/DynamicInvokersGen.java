@@ -28,14 +28,17 @@ import org.msgpack.rpc.Request;
 import org.msgpack.rpc.util.codegen.DynamicCodeGenDispatcher.Invoker;
 import org.msgpack.util.codegen.DynamicCodeGenBase;
 import org.msgpack.util.codegen.DynamicCodeGenException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class InvokersGenerator extends DynamicCodeGenBase implements
-        InvokersGenConstants {
+public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants {
+    private static Logger LOG = LoggerFactory.getLogger(DynamicInvokersGen.class);
+    
     private ClassPool pool;
 
     private ConcurrentHashMap<String, Map<String, Class<?>>> classesCache;
 
-    public InvokersGenerator() {
+    public DynamicInvokersGen() {
         pool = ClassPool.getDefault();
         classesCache = new ConcurrentHashMap<String, Map<String, Class<?>>>();
     }
@@ -382,7 +385,7 @@ public class InvokersGenerator extends DynamicCodeGenBase implements
             Class<?> c) {
         // Foo _$$_0 = new Foo_$$_Enhanced();
         // ((MessageConvertable)_$$_0).messageConvert(packObjs[0]);
-//        c = PackUnpackUtil.getEnhancedClass(c);
+        // c = PackUnpackUtil.getEnhancedClass(c);
         insertTypeConvOfLocalVarForMsgConvtblType(sb, i, c);
     }
 
@@ -557,7 +560,7 @@ public class InvokersGenerator extends DynamicCodeGenBase implements
                 new String[] { VARIABLE_NAME_KEY });
         insertValueInsertion(sb, mc.toString());
         insertSemicolon(sb);
-        
+
         // _$$_0.add(_$$_key.intValue(), _$$_val.intValue());
         mc = new StringBuilder();
         insertTypeConvOfLocalVar(mc, -1, null, gkc, VARIABLE_NAME_KEY);
