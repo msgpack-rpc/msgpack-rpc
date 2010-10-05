@@ -5,10 +5,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.msgpack.Template;
 import org.msgpack.rpc.Dispatcher;
 import org.msgpack.rpc.Request;
 import org.msgpack.rpc.util.codegen.DynamicInvokersGen;
 import org.msgpack.util.codegen.DynamicCodeGenException;
+import org.msgpack.util.codegen.DynamicCodeGenBase.TemplateAccessor;
 
 public class DynamicCodeGenDispatcher implements Dispatcher {
 
@@ -30,7 +32,8 @@ public class DynamicCodeGenDispatcher implements Dispatcher {
         }
     }
 
-    public DynamicCodeGenDispatcher(Object origObj) throws DynamicCodeGenException {
+    public DynamicCodeGenDispatcher(Object origObj)
+            throws DynamicCodeGenException {
         if (gen == null) {
             gen = new DynamicInvokersGen();
         }
@@ -66,6 +69,9 @@ public class DynamicCodeGenDispatcher implements Dispatcher {
                     continue;
                 }
                 invoker = newInvokerInstance(origObj, origClass, invokerClass);
+                Template[] tmpls = gen.getTemplates(origClass.getName(),
+                        methodName);
+                ((TemplateAccessor) invoker).setTemplates(tmpls);
             } catch (Exception e) {
                 continue;
             }
