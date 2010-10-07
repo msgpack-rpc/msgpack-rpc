@@ -1,6 +1,7 @@
 package org.msgpack.rpc.util.codegen;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,8 +12,12 @@ import org.msgpack.rpc.Request;
 import org.msgpack.rpc.util.codegen.DynamicInvokersGen;
 import org.msgpack.util.codegen.DynamicCodeGenException;
 import org.msgpack.util.codegen.DynamicCodeGenBase.TemplateAccessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DynamicCodeGenDispatcher implements Dispatcher {
+    private static Logger LOG = LoggerFactory
+            .getLogger(DynamicCodeGenDispatcher.class);
 
     public interface Invoker {
         void invoke(Request reqest);
@@ -20,7 +25,7 @@ public class DynamicCodeGenDispatcher implements Dispatcher {
 
     private static DynamicInvokersGen gen;
 
-    private Map<String, Invoker> invokersCache = new ConcurrentHashMap<String, Invoker>();
+    private ConcurrentHashMap<String, Invoker> invokersCache = new ConcurrentHashMap<String, Invoker>();
 
     private Invoker getCache(String methodName) {
         return invokersCache.get(methodName);
@@ -28,29 +33,45 @@ public class DynamicCodeGenDispatcher implements Dispatcher {
 
     private void setCache(String methodName, Invoker invoker) {
         if (invoker != null) {
-            invokersCache.put(methodName, invoker);
+            invokersCache.putIfAbsent(methodName, invoker);
         }
     }
 
-    public DynamicCodeGenDispatcher(Object origObj)
+    public DynamicCodeGenDispatcher(Object handler) {
+        this(handler.getClass(), false, null, handler);
+    }
+
+    public DynamicCodeGenDispatcher(Class<?> handlerType, Object handler)
             throws DynamicCodeGenException {
+        this(handler.getClass(), handlerType.isInterface(), null, handler);
+    }
+
+    public DynamicCodeGenDispatcher(Method[] handlerMethods, Object handler) {
+        this(handler.getClass(), handler.getClass().isInterface(),
+                handlerMethods, handler);
+    }
+
+    private DynamicCodeGenDispatcher(Class<?> handlerType, boolean isInterface,
+            Method[] handlerMethods, Object handler) {
+        LOG.info("create an instance of " + this.getClass().getName()
+                + ": handler type: " + handlerType.getName());
         if (gen == null) {
             gen = new DynamicInvokersGen();
         }
 
-        Class<?> origClass = origObj.getClass();
-        String origName = origClass.getName();
+        String handlerName = handlerType.getName();
         Map<String, Class<?>> classCache = null;
         try {
-            if ((classCache = gen.getCache(origName)) == null) {
+            if ((classCache = gen.getCache(handlerName)) == null) {
                 // generate invoker classes related to the original class
-                classCache = gen.generateInvokerClasses(origObj, origClass);
+                classCache = gen.generateInvokerClasses(handlerType,
+                        isInterface, handlerMethods);
                 // set the generated invoker classes to a cache
-                gen.setCache(origName, classCache);
+                gen.setCache(handlerName, classCache);
             }
             // create a new invoker object
             if (classCache != null) {
-                newInvokerInstances(origObj, origClass, classCache);
+                newInvokerInstances(handler, handlerType, classCache);
             }
         } catch (DynamicCodeGenException e) {
             throw e;

@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javassist.CannotCompileException;
 import javassist.ClassPool;
@@ -20,6 +21,7 @@ import javassist.CtNewMethod;
 import javassist.NotFoundException;
 
 import org.msgpack.MessagePackObject;
+import org.msgpack.MessageTypeException;
 import org.msgpack.Template;
 import org.msgpack.rpc.Request;
 import org.msgpack.rpc.util.codegen.DynamicCodeGenDispatcher.Invoker;
@@ -28,18 +30,23 @@ import org.msgpack.util.codegen.DynamicCodeGenException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants {
+class DynamicInvokersGen extends DynamicCodeGenBase implements Constants {
     private static Logger LOG = LoggerFactory
             .getLogger(DynamicInvokersGen.class);
 
-    private ClassPool pool;
+    private static AtomicInteger COUNTER = new AtomicInteger(0);
+
+    private static int inc() {
+        return COUNTER.addAndGet(1);
+    }
+
+    protected ClassPool pool;
 
     private ConcurrentHashMap<String, Map<String, Class<?>>> classesCache;
 
     private ConcurrentHashMap<String, Map<String, Template[]>> tmplsCache;
 
     public DynamicInvokersGen() {
-        LOG.info("create an instance of " + DynamicInvokersGen.class.getName());
         pool = ClassPool.getDefault();
         classesCache = new ConcurrentHashMap<String, Map<String, Class<?>>>();
         tmplsCache = new ConcurrentHashMap<String, Map<String, Template[]>>();
@@ -61,37 +68,47 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
         tmplsCache.putIfAbsent(origName, tmpls);
     }
 
-    public Map<String, Class<?>> generateInvokerClasses(Object origObj,
-            Class<?> origClass) throws DynamicCodeGenException {
-        LOG.debug("generate invokers for a class: " + origClass.getName());
-        String origName = origClass.getName();
-        Map<String, Class<?>> cache = classesCache.get(origName);
+    public Map<String, Class<?>> generateInvokerClasses(Class<?> handlerClass,
+            boolean isInterface, Method[] handlerMethods) {
+        LOG.debug("generate invokers for a class: " + handlerClass.getName());
+        String handlerName = handlerClass.getName();
+        Map<String, Class<?>> cache = classesCache.get(handlerName);
         if (cache != null) {
             return cache;
         }
         Map<String, Class<?>> classes = null;
         try {
-            classes = generateInvokerClasses(origName, origClass);
+            classes = generateInvokerClasses(handlerName, handlerClass,
+                    isInterface, handlerMethods);
         } catch (DynamicCodeGenException e) {
             LOG.error(e.getMessage(), e);
             throw e;
         }
         if (classes != null) {
-            classesCache.put(origName, classes);
+            classesCache.put(handlerName, classes);
         }
         return classes;
     }
 
-    private Map<String, Class<?>> generateInvokerClasses(String origName,
-            Class<?> origClass) throws DynamicCodeGenException {
-        checkClassValidation(origClass);
-        Method[] methods = getDeclaredMethods(origClass);
-        Map<String, Template[]> tmpls = createTemplates(methods);
-        setTemplates(origName, tmpls);
+    private Map<String, Class<?>> generateInvokerClasses(String handlerName,
+            Class<?> handlerType, boolean isInterface, Method[] handlerMethods)
+            throws DynamicCodeGenException {
+        if (!isInterface && handlerMethods == null) {
+            checkClassValidation(handlerType);
+        }
+        Method[] methods;
+        if (handlerMethods == null) {
+            methods = getDeclaredMethods(handlerType, isInterface);
+        } else {
+            methods = getValidatedMethods(handlerMethods);
+        }
+        Map<String, Template[]> tmpls = createMethodParamTypeTemplates(methods);
+        setTemplates(handlerName, tmpls);
         Map<String, Class<?>> classes = new HashMap<String, Class<?>>();
         for (Method method : methods) {
             try {
-                Class<?> invokerClass = generateInvokerClass(origClass, method);
+                Class<?> invokerClass = generateInvokerClass(handlerType,
+                        method);
                 classes.put(method.getName(), invokerClass);
             } catch (DynamicCodeGenException e) {
                 throw e;
@@ -104,16 +121,16 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
         return classes;
     }
 
-    Map<String, Template[]> createTemplates(Method[] methods) {
+    Map<String, Template[]> createMethodParamTypeTemplates(Method[] methods) {
         Map<String, Template[]> ret = new HashMap<String, Template[]>();
         for (Method method : methods) {
-            Template[] tmpls = createTemplates(method);
+            Template[] tmpls = createMethodParamTypeTemplates(method);
             ret.put(method.getName(), tmpls);
         }
         return ret;
     }
 
-    Template[] createTemplates(Method method) {
+    Template[] createMethodParamTypeTemplates(Method method) {
         Type[] paramTypes = method.getGenericParameterTypes();
         Class<?>[] paramTypes2 = method.getParameterTypes();
         // Template[] tmpls = new Template[paramTypes.length];
@@ -142,19 +159,20 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
         }
     }
 
-    private static void throwClassValidationException(Class<?> origClass,
+    protected static void throwClassValidationException(Class<?> origClass,
             String message) throws DynamicCodeGenException {
         throw new DynamicCodeGenException(message + ": " + origClass.getName());
     }
 
-    private Method[] getDeclaredMethods(Class<?> origClass) {
+    protected Method[] getDeclaredMethods(Class<?> origClass,
+            boolean isInterface) {
         ArrayList<Method> allMethods = new ArrayList<Method>();
         Class<?> nextClass = origClass;
-        while (!nextClass.equals(Object.class)) {
+        while (nextClass != null && !nextClass.equals(Object.class)) {
             Method[] methods = nextClass.getDeclaredMethods();
             for (Method method : methods) {
                 try {
-                    checkMethodValidation(method, allMethods);
+                    checkMethodValidation(method, allMethods, isInterface);
                     allMethods.add(method);
                 } catch (Exception e) { // ignore
                 }
@@ -164,15 +182,33 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
         return allMethods.toArray(new Method[0]);
     }
 
-    private void checkMethodValidation(Method method, List<Method> methods)
-            throws DynamicCodeGenException {
-        // check modifiers (public)
+    private Method[] getValidatedMethods(Method[] methods) {
+        ArrayList<Method> allMethods = new ArrayList<Method>();
+        for (Method method : methods) {
+            try {
+                checkMethodValidation(method, allMethods, false);
+                allMethods.add(method);
+            } catch (Exception e) { // ignore
+            }
+        }
+        return allMethods.toArray(new Method[0]);
+    }
+
+    private void checkMethodValidation(Method method, List<Method> methods,
+            boolean isInterface) throws DynamicCodeGenException {
+        // check modifiers
         int mod = method.getModifiers();
         if ((!Modifier.isPublic(mod)) || Modifier.isStatic(mod)
                 || method.isBridge() || method.isSynthetic()
                 || method.isVarArgs()) {
             throwMethodValidationException(method,
                     "it must be a public non-static method");
+        }
+        if (!isInterface) {
+            if (Modifier.isAbstract(mod)) {
+                throwMethodValidationException(method,
+                        "it must not be an abstract method");
+            }
         }
 
         // check same name
@@ -213,10 +249,10 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
         CtClass invokerCtClass = makeClass(origName, method);
         setInterface(invokerCtClass, Invoker.class);
         setInterface(invokerCtClass, TemplateAccessor.class);
-        addTemplateArrayField(invokerCtClass, origClass);
         addTargetField(invokerCtClass, origClass);
+        addTemplateArrayField(invokerCtClass);
+        addSetTemplatesMethod(invokerCtClass);
         addConstructor(invokerCtClass, origClass);
-        addSetTemplatesMethod(invokerCtClass, origClass);
         addInvokeMethod(invokerCtClass, method);
         return createClass(invokerCtClass);
     }
@@ -228,33 +264,17 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
         sb.append(CHAR_NAME_UNDERSCORE);
         sb.append(method.getName());
         sb.append(POSTFIX_TYPE_NAME_INVOKER);
+        sb.append(inc());
         String invokerName = sb.toString();
         CtClass invokerCtClass = pool.makeClass(invokerName);
         invokerCtClass.setModifiers(Modifier.PUBLIC);
         return invokerCtClass;
     }
 
-    private void setInterface(CtClass packerCtClass, Class<?> infClass)
+    protected void setInterface(CtClass packerCtClass, Class<?> infClass)
             throws NotFoundException {
         CtClass infCtClass = pool.get(infClass.getName());
         packerCtClass.addInterface(infCtClass);
-    }
-
-    private void addTemplateArrayField(CtClass newCtClass, Class<?> origClass) {
-        StringBuilder sb = new StringBuilder();
-        addPublicFieldDecl(sb, Template.class, VARIABLE_NAME_TEMPLATES, 1);
-        insertSemicolon(sb);
-        LOG.trace("templates field src: " + sb.toString());
-        try {
-            CtField templatesCtField = CtField.make(sb.toString(), newCtClass);
-            newCtClass.addField(templatesCtField);
-        } catch (CannotCompileException e) {
-            DynamicCodeGenException ex = new DynamicCodeGenException(e
-                    .getMessage()
-                    + ": " + sb.toString(), e);
-            LOG.error(ex.getMessage(), ex);
-            throw ex;
-        }
     }
 
     private void addTargetField(CtClass invokerCtClass, Class<?> origClass) {
@@ -273,6 +293,26 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
             LOG.error(ex.getMessage(), ex);
             throw ex;
         }
+    }
+
+    protected void addTemplateArrayField(CtClass newCtClass)
+            throws NotFoundException, CannotCompileException {
+        CtClass acsCtClass = pool.get(TemplateAccessorImpl.class.getName());
+        CtField tmplsField = acsCtClass
+                .getDeclaredField(VARIABLE_NAME_TEMPLATES);
+        CtField tmplsField2 = new CtField(tmplsField.getType(), tmplsField
+                .getName(), newCtClass);
+        newCtClass.addField(tmplsField2);
+    }
+
+    protected void addSetTemplatesMethod(CtClass newCtClass)
+            throws NotFoundException, CannotCompileException {
+        CtClass acsCtClass = pool.get(TemplateAccessorImpl.class.getName());
+        CtMethod settmplsMethod = acsCtClass
+                .getDeclaredMethod(METHOD_NAME_SETTEMPLATES);
+        CtMethod settmplsMethod2 = CtNewMethod.copy(settmplsMethod, newCtClass,
+                null);
+        newCtClass.addMethod(settmplsMethod2);
     }
 
     private void addConstructor(CtClass invokerCtClass, Class<?> origClass) {
@@ -297,27 +337,6 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
             CtConstructor newCtConstructor = CtNewConstructor.make(sb
                     .toString(), invokerCtClass);
             invokerCtClass.addConstructor(newCtConstructor);
-        } catch (CannotCompileException e) {
-            DynamicCodeGenException ex = new DynamicCodeGenException(e
-                    .getMessage()
-                    + ": " + sb.toString(), e);
-            LOG.error(ex.getMessage(), ex);
-            throw ex;
-        }
-    }
-
-    private void addSetTemplatesMethod(CtClass newCtClass, Class<?> origClass) {
-        StringBuilder sb = new StringBuilder();
-        StringBuilder body = new StringBuilder();
-        body.append("_$$_templates = _$$_tmpls;");
-        addPublicMethodDecl(sb, METHOD_NAME_SETTEMPLATES, void.class,
-                new Class<?>[] { Template.class }, new int[] { 1 },
-                new String[] { VARIABLE_NAME_TEMPLATES0 }, new Class<?>[0],
-                body.toString());
-        LOG.trace("settemplates method src: " + sb.toString());
-        try {
-            CtMethod newCtMethod = CtNewMethod.make(sb.toString(), newCtClass);
-            newCtClass.addMethod(newCtMethod);
         } catch (CannotCompileException e) {
             DynamicCodeGenException ex = new DynamicCodeGenException(e
                     .getMessage()
@@ -537,8 +556,38 @@ public class DynamicInvokersGen extends DynamicCodeGenBase implements Constants 
         insertSemicolon(sb);
     }
 
-    private Class<?> createClass(CtClass invokerCtClass)
+    protected Class<?> createClass(CtClass newCtClass)
             throws CannotCompileException {
-        return invokerCtClass.toClass(null, null);
+        return newCtClass.toClass(null, null);
+    }
+
+    protected CtClass classToCtClass(Class<?> type) throws NotFoundException {
+        if (type.equals(void.class)) {
+            return CtClass.voidType;
+        } else if (type.isPrimitive()) {
+            if (type.equals(boolean.class)) {
+                return CtClass.booleanType;
+            } else if (type.equals(byte.class)) {
+                return CtClass.byteType;
+            } else if (type.equals(char.class)) {
+                return CtClass.charType;
+            } else if (type.equals(short.class)) {
+                return CtClass.shortType;
+            } else if (type.equals(int.class)) {
+                return CtClass.intType;
+            } else if (type.equals(long.class)) {
+                return CtClass.longType;
+            } else if (type.equals(float.class)) {
+                return CtClass.floatType;
+            } else if (type.equals(double.class)) {
+                return CtClass.doubleType;
+            } else {
+                throw new MessageTypeException("fatal error: " + type.getName());
+            }
+        } else if (type.isArray()) {
+            return pool.get(arrayTypeToString(type));
+        } else {
+            return pool.get(type.getName());
+        }
     }
 }
