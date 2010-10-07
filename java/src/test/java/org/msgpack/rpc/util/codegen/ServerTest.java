@@ -25,7 +25,27 @@ public class ServerTest extends TestCase {
         }
     }
 
-    public static class TestHandler {
+    public static interface ITestHandler {
+        int m0(int i, int j);
+
+        void m1(Request req);
+
+        void m2(Request req, int i, int j);
+
+        int m3(Foo foo);
+
+        List<Integer> m4(List<Integer> list);
+    }
+
+    public static interface ITestHandler2 {
+        int m0(int i, int j);
+
+        int m3(Foo foo);
+
+        List<Integer> m4(List<Integer> list);
+    }
+
+    public static class TestHandler implements ITestHandler {
         public int m0(int i, int j) {
             return i + j;
         }
@@ -56,16 +76,25 @@ public class ServerTest extends TestCase {
 
     @Test
     public void testSyncLoad() throws Exception {
+        CustomMessage.registerPacker(Foo.class, DynamicCodeGenPacker
+                .create(Foo.class));
+        CustomMessage.registerTemplate(Foo.class, DynamicCodeGenTemplate
+                .create(Foo.class));
+        
         EventLoop loop = new EventLoop();
         Server svr = new Server(loop);
         Client c = new Client("127.0.0.1", 19850);
+        ITestHandler2 cc = (ITestHandler2) DynamicCodeGenSyncClient.create(c,
+                ITestHandler2.class);
 
         try {
-            CustomMessage.registerPacker(Foo.class, DynamicCodeGenPacker
-                    .create(Foo.class));
-            CustomMessage.registerTemplate(Foo.class, DynamicCodeGenTemplate
-                    .create(Foo.class));
-            svr.serve(new DynamicCodeGenDispatcher(new TestHandler()));
+            // svr.serve(new DynamicCodeGenDispatcher(new TestHandler()));
+            try {
+                svr.serve(new DynamicCodeGenDispatcher(ITestHandler.class,
+                        new TestHandler()));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             svr.listen(19850);
 
             int num = 1000;
@@ -94,6 +123,12 @@ public class ServerTest extends TestCase {
                         new Object[] { list });
                 List<MessagePackObject> ret40 = ret4.asList();
                 assertEquals(2 * i + 1, ret40.get(0).intValue());
+                int ret5 = cc.m0(i, i + 1);
+                assertEquals(2 * i + 1, ret5);
+                int ret6 = cc.m3(foo);
+                assertEquals(2 * i + 1, ret6);
+                List<Integer> ret7 = cc.m4(list);
+                assertEquals(2 * i + 1, ret7.get(0).intValue());
             }
             long finish = System.currentTimeMillis();
 

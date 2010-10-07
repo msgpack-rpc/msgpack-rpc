@@ -4,6 +4,8 @@ import org.msgpack.util.codegen.BasicConstants;
 
 public interface Constants extends BasicConstants {
     String POSTFIX_TYPE_NAME_INVOKER = "_$$_Invoker";
+    
+    String POSTFIX_TYPE_NAME_CLIENT = "_$$_Client";
 
     String FIELD_NAME_TARGET = "_$$_target";
 
