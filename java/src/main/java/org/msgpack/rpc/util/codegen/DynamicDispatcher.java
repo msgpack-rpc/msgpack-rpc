@@ -9,21 +9,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.msgpack.Template;
 import org.msgpack.rpc.Dispatcher;
 import org.msgpack.rpc.Request;
-import org.msgpack.rpc.util.codegen.DynamicInvokersGen;
+import org.msgpack.rpc.util.codegen.DynamicInvokersCodeGen;
 import org.msgpack.util.codegen.DynamicCodeGenException;
 import org.msgpack.util.codegen.DynamicCodeGenBase.TemplateAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DynamicCodeGenDispatcher implements Dispatcher {
+public class DynamicDispatcher implements Dispatcher {
     private static Logger LOG = LoggerFactory
-            .getLogger(DynamicCodeGenDispatcher.class);
+            .getLogger(DynamicDispatcher.class);
 
     public interface Invoker {
         void invoke(Request reqest);
     }
 
-    private static DynamicInvokersGen gen;
+    private static DynamicInvokersCodeGen gen;
 
     private ConcurrentHashMap<String, Invoker> invokersCache = new ConcurrentHashMap<String, Invoker>();
 
@@ -37,26 +37,26 @@ public class DynamicCodeGenDispatcher implements Dispatcher {
         }
     }
 
-    public DynamicCodeGenDispatcher(Object handler) {
+    public DynamicDispatcher(Object handler) {
         this(handler.getClass(), false, null, handler);
     }
 
-    public DynamicCodeGenDispatcher(Class<?> handlerType, Object handler)
+    public DynamicDispatcher(Class<?> handlerType, Object handler)
             throws DynamicCodeGenException {
         this(handler.getClass(), handlerType.isInterface(), null, handler);
     }
 
-    public DynamicCodeGenDispatcher(Method[] handlerMethods, Object handler) {
+    public DynamicDispatcher(Method[] handlerMethods, Object handler) {
         this(handler.getClass(), handler.getClass().isInterface(),
                 handlerMethods, handler);
     }
 
-    private DynamicCodeGenDispatcher(Class<?> handlerType, boolean isInterface,
+    private DynamicDispatcher(Class<?> handlerType, boolean isInterface,
             Method[] handlerMethods, Object handler) {
         LOG.info("create an instance of " + this.getClass().getName()
                 + ": handler type: " + handlerType.getName());
         if (gen == null) {
-            gen = new DynamicInvokersGen();
+            gen = new DynamicInvokersCodeGen();
         }
 
         String handlerName = handlerType.getName();

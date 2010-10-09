@@ -9,11 +9,11 @@ import org.msgpack.rpc.transport.ClientTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DynamicCodeGenSyncClient {
+public class DynamicSyncClient {
     private static Logger LOG = LoggerFactory
-            .getLogger(DynamicCodeGenSyncClient.class);
+            .getLogger(DynamicSyncClient.class);
 
-    private static DynamicSyncClientGen gen;
+    private static DynamicSyncClientCodeGen gen;
 
     public static Object create(String host, int port, Class<?> handlerType)
             throws UnknownHostException {
@@ -31,18 +31,17 @@ public class DynamicCodeGenSyncClient {
     }
 
     public static Object create(Client client, Class<?> handlerType) {
-        LOG.info("create an instance of "
-                + DynamicCodeGenSyncClient.class.getName() + ": handler type: "
-                + handlerType.getName());
+        LOG.info("create an instance of " + DynamicSyncClient.class.getName()
+                + ": handler type: " + handlerType.getName());
         if (gen == null) {
-            gen = new DynamicSyncClientGen();
+            gen = new DynamicSyncClientCodeGen();
         }
 
         String handlerName = handlerType.getName();
-        Class<?> clientClass = gen.getClientClassCache(handlerName);
+        Class<?> clientClass = gen.getCache(handlerName);
         if (clientClass == null) {
             clientClass = gen.generateClientClass(handlerName, handlerType);
-            gen.setClientClassCache(handlerName, clientClass);
+            gen.setCache(handlerName, clientClass);
         }
         return gen.newClientInstance(clientClass, client, handlerName);
     }
