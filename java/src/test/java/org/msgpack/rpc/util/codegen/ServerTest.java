@@ -12,8 +12,8 @@ import org.msgpack.rpc.Client;
 import org.msgpack.rpc.EventLoop;
 import org.msgpack.rpc.Request;
 import org.msgpack.rpc.Server;
-import org.msgpack.util.codegen.DynamicCodeGenPacker;
-import org.msgpack.util.codegen.DynamicCodeGenTemplate;
+import org.msgpack.util.codegen.DynamicPacker;
+import org.msgpack.util.codegen.DynamicTemplate;
 
 public class ServerTest extends TestCase {
     public static class Foo {
@@ -43,6 +43,8 @@ public class ServerTest extends TestCase {
         int m3(Foo foo);
 
         List<Integer> m4(List<Integer> list);
+        
+        void m5(int i, int j);
     }
 
     public static class TestHandler implements ITestHandler {
@@ -72,27 +74,30 @@ public class ServerTest extends TestCase {
             ret.add(i + j);
             return ret;
         }
+        
+        public void m5(int i, int j) {
+            int ret = i + j;
+        }
     }
 
     @Test
     public void testSyncLoad() throws Exception {
-        CustomMessage.registerPacker(Foo.class, DynamicCodeGenPacker
+        CustomMessage.registerPacker(Foo.class, DynamicPacker
                 .create(Foo.class));
-        CustomMessage.registerTemplate(Foo.class, DynamicCodeGenTemplate
+        CustomMessage.registerTemplate(Foo.class, DynamicTemplate
                 .create(Foo.class));
         
         EventLoop loop = new EventLoop();
         Server svr = new Server(loop);
         Client c = new Client("127.0.0.1", 19850);
-        ITestHandler2 cc = (ITestHandler2) DynamicCodeGenSyncClient.create(c,
+        ITestHandler2 cc = (ITestHandler2) DynamicSyncClient.create(c,
                 ITestHandler2.class);
-
         try {
             // svr.serve(new DynamicCodeGenDispatcher(new TestHandler()));
             try {
-                svr.serve(new DynamicCodeGenDispatcher(ITestHandler.class,
+                svr.serve(new DynamicDispatcher(ITestHandler.class,
                         new TestHandler()));
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 e.printStackTrace();
             }
             svr.listen(19850);
@@ -129,6 +134,7 @@ public class ServerTest extends TestCase {
                 assertEquals(2 * i + 1, ret6);
                 List<Integer> ret7 = cc.m4(list);
                 assertEquals(2 * i + 1, ret7.get(0).intValue());
+                cc.m5(i, i + 1);
             }
             long finish = System.currentTimeMillis();
 
@@ -149,11 +155,11 @@ public class ServerTest extends TestCase {
         Client c = new Client("127.0.0.1", 19850);
 
         try {
-            CustomMessage.registerPacker(Foo.class, DynamicCodeGenPacker
+            CustomMessage.registerPacker(Foo.class, DynamicPacker
                     .create(Foo.class));
-            CustomMessage.registerTemplate(Foo.class, DynamicCodeGenTemplate
+            CustomMessage.registerTemplate(Foo.class, DynamicTemplate
                     .create(Foo.class));
-            svr.serve(new DynamicCodeGenDispatcher(new TestHandler()));
+            svr.serve(new DynamicDispatcher(new TestHandler()));
             svr.listen(19850);
 
             int num = 100;
