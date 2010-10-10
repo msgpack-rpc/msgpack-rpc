@@ -43,7 +43,7 @@ public class DynamicDispatcher implements Dispatcher {
 
     public DynamicDispatcher(Class<?> handlerType, Object handler)
             throws DynamicCodeGenException {
-        this(handler.getClass(), handlerType.isInterface(), null, handler);
+        this(handlerType, handlerType.isInterface(), null, handler);
     }
 
     public DynamicDispatcher(Method[] handlerMethods, Object handler) {

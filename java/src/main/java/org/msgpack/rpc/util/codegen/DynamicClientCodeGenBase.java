@@ -7,10 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javassist.CannotCompileException;
 import javassist.CtClass;
 import javassist.CtConstructor;
-import javassist.CtField;
-import javassist.CtMethod;
 import javassist.CtNewConstructor;
-import javassist.CtNewMethod;
 import javassist.NotFoundException;
 
 import org.msgpack.Template;
@@ -27,7 +24,8 @@ class DynamicClientCodeGenBase extends DynamicRPCCodeGenBase {
         void setClient(Client _$$_c);
     }
 
-    public static class ClientAccessorImpl implements ClientAccessor {
+    public static class ClientTemplateTemplate extends TemplateTemplate
+            implements ClientAccessor {
         public Client _$$_client;
 
         public void setClient(Client _$$_c) {
@@ -69,14 +67,9 @@ class DynamicClientCodeGenBase extends DynamicRPCCodeGenBase {
             Template[] tmpls = createReturnTypeTemplates(methods);
             setTemplates(handlerName, tmpls);
             CtClass clientCtClass = makeClass(handlerName);
-            setInterface(clientCtClass, TemplateAccessor.class);
-            setInterface(clientCtClass, ClientAccessor.class);
+            setSuperclass(clientCtClass, ClientTemplateTemplate.class);
             setInterface(clientCtClass, handlerType);
             addDefaultConstructor(clientCtClass);
-            addTemplateArrayField(clientCtClass);
-            addSetTemplatesMethod(clientCtClass);
-            addClientField(clientCtClass);
-            addSetClientMethod(clientCtClass);
             addHandlerMethods(clientCtClass, methods);
             Class<?> clientClass = createClass(clientCtClass);
             LOG.debug("generated a client program: " + clientCtClass.getName());
@@ -114,29 +107,6 @@ class DynamicClientCodeGenBase extends DynamicRPCCodeGenBase {
             throws CannotCompileException {
         CtConstructor cons = CtNewConstructor.defaultConstructor(newCtClass);
         newCtClass.addConstructor(cons);
-    }
-
-    protected void addClientField(CtClass newCtClass) throws NotFoundException,
-            CannotCompileException {
-        CtClass acsCtClass = pool
-                .get(DynamicClientCodeGenBase.ClientAccessorImpl.class
-                        .getName());
-        CtField clientField = acsCtClass.getDeclaredField(VARIABLE_NAME_CLIENT);
-        CtField clientField2 = new CtField(clientField.getType(), clientField
-                .getName(), newCtClass);
-        newCtClass.addField(clientField2);
-    }
-
-    protected void addSetClientMethod(CtClass newCtClass)
-            throws NotFoundException, CannotCompileException {
-        CtClass acsCtClass = pool
-                .get(DynamicClientCodeGenBase.ClientAccessorImpl.class
-                        .getName());
-        CtMethod setclientMethod = acsCtClass
-                .getDeclaredMethod(METHOD_NAME_SETCLIENT);
-        CtMethod setclientMethod2 = CtNewMethod.copy(setclientMethod,
-                newCtClass, null);
-        newCtClass.addMethod(setclientMethod2);
     }
 
     protected void addHandlerMethods(CtClass newCtClass, Method[] methods) {
