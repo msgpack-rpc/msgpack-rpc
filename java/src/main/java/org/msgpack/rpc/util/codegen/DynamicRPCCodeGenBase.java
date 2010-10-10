@@ -24,12 +24,12 @@ class DynamicRPCCodeGenBase extends DynamicCodeGenBase implements Constants {
         super();
     }
 
-    protected Method[] getDeclaredMethods(Class<?> origClass,
+    protected Method[] getDeclaredMethods(Class<?> handlerType,
             boolean isInterface) {
         ArrayList<Method> allMethods = new ArrayList<Method>();
-        Class<?> nextClass = origClass;
-        while (nextClass != null && !nextClass.equals(Object.class)) {
-            Method[] methods = nextClass.getDeclaredMethods();
+        Class<?> nextType = handlerType;
+        while (nextType != null && !nextType.equals(Object.class)) {
+            Method[] methods = nextType.getDeclaredMethods();
             for (Method method : methods) {
                 try {
                     checkMethodValidation(method, allMethods, isInterface);
@@ -38,7 +38,7 @@ class DynamicRPCCodeGenBase extends DynamicCodeGenBase implements Constants {
                     LOG.trace(e.getMessage(), e);
                 }
             }
-            nextClass = nextClass.getSuperclass();
+            nextType = nextType.getSuperclass();
         }
         return allMethods.toArray(new Method[0]);
     }

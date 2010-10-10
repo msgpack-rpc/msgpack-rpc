@@ -107,11 +107,9 @@ class DynamicInvokersCodeGen extends DynamicRPCCodeGenBase {
         try {
             String origName = origClass.getName();
             CtClass invokerCtClass = makeClass(origName, method);
+            setSuperclass(invokerCtClass, TemplateTemplate.class);
             setInterface(invokerCtClass, Invoker.class);
-            setInterface(invokerCtClass, TemplateAccessor.class);
             addTargetField(invokerCtClass, origClass);
-            addTemplateArrayField(invokerCtClass);
-            addSetTemplatesMethod(invokerCtClass);
             addConstructor(invokerCtClass, origClass);
             addInvokeMethod(invokerCtClass, method);
             return createClass(invokerCtClass);
