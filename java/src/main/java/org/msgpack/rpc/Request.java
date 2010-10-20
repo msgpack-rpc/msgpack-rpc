@@ -63,6 +63,10 @@ public class Request {
 		sendResponse(null, error);
 	}
 
+	public void sendError(Object error, Object data) {
+		sendResponse(data, error);
+	}
+
 	public synchronized void sendResponse(Object result, Object error) {
 		if(ms == null) {
 			return;
