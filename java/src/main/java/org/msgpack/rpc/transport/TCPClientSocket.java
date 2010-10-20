@@ -31,7 +31,7 @@ class TCPClientSocket extends AbstractStreamChannel {
 	private Session session;
 
 	public TCPClientSocket(TcpChannel channel, TCPClientTransportPeer transport) {
-		super(channel);
+		super(channel, transport.getSession().getEventLoop());
 		this.transport = transport;
 		this.session = transport.getSession();
 	}

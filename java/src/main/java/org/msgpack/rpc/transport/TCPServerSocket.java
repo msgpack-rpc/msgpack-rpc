@@ -30,7 +30,7 @@ class TCPServerSocket extends AbstractStreamChannel {
 	private Server server;
 
 	public TCPServerSocket(TcpChannel channel, Server server) {
-		super(channel);
+		super(channel, server.getEventLoop());
 		this.server = server;
 	}
 

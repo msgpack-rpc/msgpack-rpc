@@ -29,9 +29,11 @@ import org.jboss.xnio.channels.*;
 abstract class AbstractStreamChannel implements MessageSendable {
 	protected Unpacker pac = new Unpacker();
 	protected ConnectedStreamChannel<InetSocketAddress> channel;
+	protected EventLoop loop;
 
-	public AbstractStreamChannel(ConnectedStreamChannel<InetSocketAddress> channel) {
+	public AbstractStreamChannel(ConnectedStreamChannel<InetSocketAddress> channel, EventLoop loop) {
 		this.channel = channel;
+		this.loop = loop;
 		channel.getReadSetter().set(new ChannelListener<ConnectedStreamChannel<InetSocketAddress>>() {
 				public void handleEvent(ConnectedStreamChannel<InetSocketAddress> channel) {
 					onRead();
@@ -101,6 +103,7 @@ abstract class AbstractStreamChannel implements MessageSendable {
 		}
 	}
 
+	/*
 	void onRead() {
 		try {
 			pac.reserveBuffer(32*1024);  // FIXME buffer size
@@ -128,6 +131,72 @@ abstract class AbstractStreamChannel implements MessageSendable {
 			channel.resumeReads();
 
 		} catch(IOException e) {
+			// FIXME exception
+			try {
+				channel.close();
+			} catch (IOException ex) {
+				// ignore
+			}
+			return;
+		}
+	}
+	*/
+
+	void onRead() {
+		try {
+			pac.reserveBuffer(32*1024);  // FIXME buffer size
+			ByteBuffer out = ByteBuffer.wrap(pac.getBuffer(), pac.getBufferOffset(), pac.getBufferCapacity());
+			int count = channel.read(out);
+
+			if(count <= 0) {
+				// FIXME log
+				try {
+					channel.close();
+				} catch (IOException e) {
+					// ignore
+				}
+				return;
+			}
+
+			pac.bufferConsumed(count);
+
+			onReadContinue();
+
+		} catch(IOException e) {
+			// FIXME exception
+			try {
+				channel.close();
+			} catch (IOException ex) {
+				// ignore
+			}
+			return;
+		}
+	}
+
+	private void onReadContinue() {
+		try {
+			if(pac.execute()) {
+				MessagePackObject msg = pac.getData();
+				pac.reset();
+
+				if(pac.getNonParsedSize() > 0) {
+					loop.getExecutor().submit(new Runnable() {
+						public void run() {
+							onReadContinue();
+						}
+					});
+					onMessage(msg);
+
+				} else {
+					channel.resumeReads();
+					onMessage(msg);
+				}
+
+			} else {
+				channel.resumeReads();
+			}
+
+		} catch (IOException e) {
 			// FIXME exception
 			try {
 				channel.close();
