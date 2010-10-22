@@ -128,13 +128,8 @@ class DynamicInvokersCodeGen extends DynamicRPCCodeGenBase {
 
     private CtClass makeClass(String origName, Method method)
             throws NotFoundException {
-        StringBuilder sb = new StringBuilder();
-        sb.append(origName);
-        sb.append(CHAR_NAME_UNDERSCORE);
-        sb.append(method.getName());
-        sb.append(POSTFIX_TYPE_NAME_INVOKER);
-        sb.append(inc());
-        String invokerName = sb.toString();
+        String invokerName = String.format("%s_%s%s%d", new Object[] {
+                origName, method.getName(), POSTFIX_TYPE_NAME_INVOKER, inc() });
         CtClass invokerCtClass = pool.makeClass(invokerName);
         invokerCtClass.setModifiers(Modifier.PUBLIC);
         return invokerCtClass;
@@ -271,12 +266,11 @@ class DynamicInvokersCodeGen extends DynamicRPCCodeGenBase {
             if (paramTypes[i].equals(Request.class)) {
                 ab.append("$1");
             } else {
-                ab.append(VARIABLE_NAME_ARGS + j);
+                ab.append(String.format("_$$_%d", new Object[] { j }));
                 ++j;
             }
             if (i + 1 != paramTypes.length) {
-                ab.append(CHAR_NAME_COMMA);
-                ab.append(CHAR_NAME_SPACE);
+                ab.append(STRING_NAME_COMMA_SPACE);
             }
         }
         Class<?> returnType = m.getReturnType();
