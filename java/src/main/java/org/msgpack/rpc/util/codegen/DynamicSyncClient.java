@@ -15,22 +15,23 @@ public class DynamicSyncClient {
 
     private static DynamicSyncClientCodeGen gen;
 
-    public static Object create(String host, int port, Class<?> handlerType)
+    public static <T> T create(String host, int port, Class<T> handlerType)
             throws UnknownHostException {
         return create(new Client(host, port), handlerType);
     }
 
-    public static Object create(ClientTransport transport,
-            InetSocketAddress address, Class<?> handlerType) {
+    public static <T> T create(ClientTransport transport,
+            InetSocketAddress address, Class<T> handlerType) {
         return create(new Client(transport, address), handlerType);
     }
 
-    public static Object create(ClientTransport transport,
-            InetSocketAddress address, EventLoop loop, Class<?> handlerType) {
+    public static <T> T create(ClientTransport transport,
+            InetSocketAddress address, EventLoop loop, Class<T> handlerType) {
         return create(new Client(transport, address, loop), handlerType);
     }
 
-    public static Object create(Client client, Class<?> handlerType) {
+    @SuppressWarnings("unchecked")
+    public static <T> T create(Client client, Class<T> handlerType) {
         LOG.info("create an instance of " + DynamicSyncClient.class.getName()
                 + ": handler type: " + handlerType.getName());
         if (gen == null) {
@@ -38,11 +39,12 @@ public class DynamicSyncClient {
         }
 
         String handlerName = handlerType.getName();
-        Class<?> clientClass = gen.getCache(handlerName);
+        Class<T> clientClass = (Class<T>) gen.getCache(handlerName);
         if (clientClass == null) {
-            clientClass = gen.generateClientClass(handlerName, handlerType);
+            clientClass = (Class<T>) gen.generateClientClass(handlerName,
+                    handlerType);
             gen.setCache(handlerName, clientClass);
         }
-        return gen.newClientInstance(clientClass, client, handlerName);
+        return (T) gen.newClientInstance(clientClass, client, handlerName);
     }
 }

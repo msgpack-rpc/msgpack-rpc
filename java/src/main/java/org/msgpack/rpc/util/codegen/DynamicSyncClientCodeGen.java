@@ -19,12 +19,9 @@ class DynamicSyncClientCodeGen extends DynamicClientCodeGenBase {
 
     @Override
     protected CtClass makeClass(String handlerName) throws NotFoundException {
-        StringBuilder sb = new StringBuilder();
-        sb.append(handlerName);
-        sb.append(POSTFIX_TYPE_NAME_SYNCCLIENT);
-        sb.append(inc());
-        String invokerName = sb.toString();
-        CtClass newCtClass = pool.makeClass(invokerName);
+        String clientName = String.format("%s%s%d", new Object[] { handlerName,
+                POSTFIX_TYPE_NAME_SYNCCLIENT, inc() });
+        CtClass newCtClass = pool.makeClass(clientName);
         newCtClass.setModifiers(Modifier.PUBLIC);
         return newCtClass;
     }
@@ -67,11 +64,10 @@ class DynamicSyncClientCodeGen extends DynamicClientCodeGenBase {
         if (!c.equals(void.class)) {
             // MessagePackObject _$$_mpo = _$$_client.callApply("m0", $args);
             Object[] args0 = new Object[] { MessagePackObject.class.getName(),
-                    VARIABLE_NAME_MPO, VARIABLE_NAME_CLIENT, method.getName() };
+                    VARIABLE_NAME_CLIENT, method.getName() };
             sb.append(String.format(STATEMENT_CLIENT_CALLAPPLY_01, args0));
             // return ($r)_$$_templates[i].convert(_$$_mpo);
-            Object[] args1 = new Object[] { VARIABLE_NAME_TEMPLATES, i,
-                    VARIABLE_NAME_MPO };
+            Object[] args1 = new Object[] { VARIABLE_NAME_TEMPLATES, i, };
             sb.append(String.format(STATEMENT_CLIENT_CONVERT_01, args1));
         } else {
             // _$$_client.callApply("m0", $args);

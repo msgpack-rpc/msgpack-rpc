@@ -5,10 +5,6 @@ public interface Constants extends org.msgpack.util.codegen.Constants {
 
     String POSTFIX_TYPE_NAME_SYNCCLIENT = "_$$_SyncClient";
 
-    String POSTFIX_TYPE_NAME_ASYNCCLIENT = "_$$_AsyncClient";
-
-    String VARIABLE_NAME_ARGS = "_$$_";
-
     String METHOD_NAME_INVOKE = "invoke";
 
     String STATEMENT_INVOKERS_TARGETFIELD_01 = "public %s _$$_target; ";
@@ -33,7 +29,7 @@ public interface Constants extends org.msgpack.util.codegen.Constants {
 
     String STATEMENT_INVOKERS_INVOKEMETHODBODY_09 = "$1.sendResponse(_$$_ret, _$$_err); ";
 
-    String STATEMENT_CLIENT_CALLAPPLY_01 = "%s %s = %s.callApply(\"%s\", $args); ";
+    String STATEMENT_CLIENT_CALLAPPLY_01 = "%s _$$_mpo = %s.callApply(\"%s\", $args); ";
 
     String STATEMENT_CLIENT_CALLAPPLY_02 = "%s.callApply(\"%s\", $args); ";
 
@@ -41,6 +37,6 @@ public interface Constants extends org.msgpack.util.codegen.Constants {
 
     String STATEMENT_CLIENT_CALLASYNCAPPLY_02 = "%s.callAsyncApply(\"%s\", $args); ";
 
-    String STATEMENT_CLIENT_CONVERT_01 = "return ($r)%s[%d].convert(%s); ";
+    String STATEMENT_CLIENT_CONVERT_01 = "return ($r)%s[%d].convert(_$$_mpo); ";
 
 }
