@@ -28,6 +28,8 @@ public class TestInvokers extends TestCase {
     private static final String HOST = "localhost";
 
     private static final int PORT = 11311;
+    
+    private static final int LOOP_COUNT = 10;
 
     public TestInvokers() {
         super();
@@ -42,15 +44,52 @@ public class TestInvokers extends TestCase {
 
     @After
     public void tearDown() throws Exception {
-        SERVER.close();
-        CLIENT.close();
-        LOOP.shutdown();
+        if (SERVER != null) {
+            SERVER.close();
+        }
+        if (CLIENT != null) {
+            CLIENT.close();
+        }
+        if (LOOP != null) {
+            LOOP.shutdown();
+        }
     }
 
     @Test
     public void testPrimitiveTypeHandler() throws Exception {
         SERVER.serve(new DynamicDispatcher(new PrimitiveTypeHandler()));
         SERVER.listen(PORT);
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            CLIENT.callApply("m0", new Object[0]);
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = CLIENT.callApply("m1", new Object[] { (byte) i, (byte) i + 1 });
+            assertEquals((byte) i, ret.asByte());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = CLIENT.callApply("m2", new Object[] { (short) i, (short) i + 1 });
+            assertEquals((short) i, ret.asShort());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = CLIENT.callApply("m3", new Object[] { i, i + 1 });
+            assertEquals(i, ret.asInt());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = CLIENT.callApply("m4", new Object[] { i, i + 1 });
+            assertEquals(i, ret.asLong());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = CLIENT.callApply("m5", new Object[] { (float) i, (float) i + 1 });
+            assertEquals((float) i, ret.asFloat());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = CLIENT.callApply("m6", new Object[] { (double) i, (double) i + 1 });
+            assertEquals((double) i, ret.asDouble());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = CLIENT.callApply("m7", new Object[] { i % 2 == 0, i % 2 != 0 });
+            assertEquals(i % 2 == 0, ret.asBoolean());
+        }
     }
 
     public static class PrimitiveTypeHandler {
@@ -88,73 +127,120 @@ public class TestInvokers extends TestCase {
 
     @Test
     public void testWrapperTypeHandler() throws Exception {
-        SERVER.serve(new DynamicDispatcher(new PrimitiveTypeHandler()));
+        SERVER.serve(new DynamicDispatcher(new WrapperTypeHandler()));
         SERVER.listen(PORT);
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = CLIENT.callApply("m0", new Object[] { (byte) i, (byte) i + 1 });
+            assertEquals((byte) i, ret.asByte());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = CLIENT.callApply("m1", new Object[] { (short) i, (short) i + 1 });
+            assertEquals((short) i, ret.asShort());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = CLIENT.callApply("m2", new Object[] { i, i + 1 });
+            assertEquals(i, ret.asInt());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = CLIENT.callApply("m3", new Object[] { i, i + 1 });
+            assertEquals(i, ret.asLong());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = CLIENT.callApply("m4", new Object[] { (float) i, (float) i + 1 });
+            assertEquals((float) i, ret.asFloat());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = CLIENT.callApply("m5", new Object[] { (double) i, (double) i + 1 });
+            assertEquals((double) i, ret.asDouble());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = CLIENT.callApply("m6", new Object[] { i % 2 == 0, i % 2 != 0 });
+            assertEquals(i % 2 == 0, ret.asBoolean());
+        }
     }
 
     public static class WrapperTypeHandler {
-        public void m0() {
-        }
-
-        public Byte m1(Byte p0, Byte p1) {
+        public Byte m0(Byte p0, Byte p1) {
             return p0;
         }
 
-        public Short m2(Short p0, Short p1) {
+        public Short m1(Short p0, Short p1) {
             return p0;
         }
 
-        public Integer m3(Integer p0, Integer p1) {
+        public Integer m2(Integer p0, Integer p1) {
             return p0;
         }
 
-        public Long m4(Long p0, Long p1) {
+        public Long m3(Long p0, Long p1) {
             return p0;
         }
 
-        public Float m5(Float p0, Float p1) {
+        public Float m4(Float p0, Float p1) {
             return p0;
         }
 
-        public Double m6(Double p0, Double p1) {
+        public Double m5(Double p0, Double p1) {
             return p0;
         }
 
-        public Boolean m7(Boolean p0, Boolean p1) {
+        public Boolean m6(Boolean p0, Boolean p1) {
             return p0;
         }
     }
 
     @Test
     public void testReferenceTypeHandler() throws Exception {
-        SERVER.serve(new DynamicDispatcher(new PrimitiveTypeHandler()));
+        SERVER.serve(new DynamicDispatcher(new ReferenceTypeHandler()));
         SERVER.listen(PORT);
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = CLIENT.callApply("m0", new Object[] { "muga" + i, "muga" + i + 1 });
+            assertEquals("muga" + i, ret.asString());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = CLIENT.callApply("m1", new Object[] { BigInteger.valueOf(i), BigInteger.valueOf(i + 1) });
+            assertEquals(BigInteger.valueOf(i), ret.asBigInteger());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            byte[] p0 = new byte[] { (byte) i };
+            byte[] p1 = new byte[] { (byte) (i + 1) };
+            MessagePackObject ret = CLIENT.callApply("m2", new Object[] { p0, p1 });
+            assertEquals(p0[0], ret.asByteArray()[0]);
+        }
     }
 
     public static class ReferenceTypeHandler {
-        public void m0() {
-        }
-
-        public String m1(String p0, String p1) {
+        public String m0(String p0, String p1) {
             return p0;
         }
 
-        public BigInteger m2(BigInteger p0, BigInteger p1) {
+        public BigInteger m1(BigInteger p0, BigInteger p1) {
+            return p0;
+        }
+
+        public byte[] m2(byte[] p0, byte[] p1) {
             return p0;
         }
     }
 
     @Test
     public void testMesagePackableConvertableTypeHandler() throws Exception {
-        SERVER.serve(new DynamicDispatcher(new PrimitiveTypeHandler()));
+        SERVER.serve(new DynamicDispatcher(new MessagePackableConvertableTypeHandler()));
         SERVER.listen(PORT);
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackableConvertable p0 = new MessagePackableConvertable();
+            p0.f0 = i;
+            MessagePackableConvertable p1 = new MessagePackableConvertable();
+            p1.f0 = i + 1;
+            MessagePackObject ret = CLIENT.callApply("m0", new Object[] { p0, p1 });
+            MessagePackableConvertable r = new MessagePackableConvertable();
+            r.messageConvert(ret);
+            assertEquals(p0.f0, r.f0);
+        }
     }
 
     public static class MessagePackableConvertableTypeHandler {
-        public void m0() {
-        }
-
-        public MessagePackableConvertable m1(MessagePackableConvertable p0,
+        public MessagePackableConvertable m0(MessagePackableConvertable p0,
                 MessagePackableConvertable p1) {
             return p0;
         }
@@ -163,16 +249,22 @@ public class TestInvokers extends TestCase {
     public static class MessagePackableConvertable implements MessagePackable,
             MessageConvertable {
 
+        public int f0;
+
+        public MessagePackableConvertable() {
+        }
+
         @Override
         public void messagePack(Packer packer) throws IOException {
+            packer.packArray(1);
+            packer.packInt(f0);
         }
 
         @Override
         public void messageConvert(MessagePackObject obj)
                 throws MessageTypeException {
+            MessagePackObject[] objs = obj.asArray();
+            f0 = objs[0].asInt();
         }
-
-
-
     }
 }
