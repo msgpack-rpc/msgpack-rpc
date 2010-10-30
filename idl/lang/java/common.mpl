@@ -16,17 +16,17 @@ end
 
 class AST::Type
 	@@typemap = {
-		'int8'   => 'byte',
-		'int16'  => 'short',
-		'int32'  => 'int',
-		'int64'  => 'long',
-		'uint8'  => 'byte',
-		'uint16' => 'short',
-		'uint32' => 'int',
-		'uint64' => 'long',
-		'bool'   => 'boolean',
-		'double' => 'double',
-		'bytes'  => 'byte[]',
+		'int8'   => 'Byte',
+		'int16'  => 'Short',
+		'int32'  => 'Integer',
+		'int64'  => 'Long',
+		'uint8'  => 'Byte',
+		'uint16' => 'Short',
+		'uint32' => 'Integer',
+		'uint64' => 'Long',
+		'bool'   => 'Boolean',
+		'double' => 'Double',
+		'bytes'  => 'Byte[]',
 		'string' => 'String',
 		'list'   => 'List',
 		'set'    => 'Set',
@@ -43,67 +43,73 @@ class AST::Type
 	end
 
 	@@schemamap = {
-		'int8'   => 'ByteSchema',
-		'int16'  => 'ShortSchema',
-		'int32'  => 'IntSchema',
-		'int64'  => 'LongSchema',
-		'uint8'  => 'ByteSchema',
-		'uint16' => 'ShortSchema',
-		'uint32' => 'IntSchema',
-		'uint64' => 'LongSchema',
-		'bool'   => 'BooleanSchema',
-		'double' => 'DoubleSchema',
-		'bytes'  => 'ByteArraySchema',
-		'string' => 'StringSchema',
-		'list'   => 'ArraySchema',
-		'set'    => 'ArraySchema',
-		'map'    => 'MapSchema',
+		'int8'   => 'ByteTemplate',
+		'int16'  => 'ShortTemplate',
+		'int32'  => 'IntegerTemplate',
+		'int64'  => 'LongTemplate',
+		'uint8'  => 'ByteTemplate',
+		'uint16' => 'ShortTemplate',
+		'uint32' => 'IntegerTemplate',
+		'uint64' => 'LongTemplate',
+		'bool'   => 'BooleanTemplate',
+		'double' => 'DoubleTemplate',
+		'bytes'  => 'ByteArrayTemplate',
+		'string' => 'StringTemplate',
+		'list'   => 'ArrayTemplate',
+		'set'    => 'ArrayTemplate',
+		'map'    => 'MapTemplate',
 	}
 
 	@@convertmap = {
-		'int8'   => 'ByteSchema.convertByte',
-		'int16'  => 'ShortSchema.convertShort',
-		'int32'  => 'IntSchema.convertInt',
-		'int64'  => 'LongSchema.convertLong',
-		'uint8'  => 'ByteSchema.convertByte',
-		'uint16' => 'ShortSchema.convertShort',
-		'uint32' => 'IntSchema.convertInt',
-		'uint64' => 'LongSchema.convertLong',
-		'bool'   => 'BooleanSchema.convertBoolean',
-		'double' => 'DoubleSchema.convertDouble',
-		'bytes'  => 'ByteArraySchema.convertByteArray',
-		'string' => 'StringSchema.convertString',
-		'list'   => 'ArraySchema.convertList',
-		'set'    => 'ArraySchema.convertSet',
-		'map'    => 'MapSchema.convertMap',
+		'int8'   => 'ByteTemplate.getInstance().convert',
+		'int16'  => 'ShortTemplate.getInstance().convert',
+		'int32'  => 'IntegerTemplate.getInstance().convert',
+		'int64'  => 'LongTemplate.getInstance().convert',
+		'uint8'  => 'ByteTemplate.getInstance().convert',
+		'uint16' => 'ShortTemplate.getInstance().convert',
+		'uint32' => 'v.getInstance().convert',
+		'uint64' => 'LongTemplate.getInstance().convert',
+		'bool'   => 'BooleanTemplate.getInstance().convert',
+		'double' => 'DoubleTemplate.getInstance().convert',
+		'bytes'  => 'ByteArrayTemplate.getInstance().convert',
+		'string' => 'StringTemplate.getInstance().convert',
+		'list'   => 'ArrayTemplate.getInstance().convert',
+		'set'    => 'ArrayTemplate.getInstance().convert',
+		'map'    => 'MapTemplate.getInstance().convert',
 	}
 
 	def new_schema
 		if list_type?
-			"new ListSchema(#{element_type.new_schema})"
+			"new ListTemplate(#{element_type.new_schema})"
 		elsif set_type?
-			"new SetSchema(#{element_type.new_schema})"
+			"new SetTemplate(#{element_type.new_schema})"
 		elsif map_type?
-			"new MapSchema(#{key_type.new_schema}, #{value_type.new_schema})"
+			"new MapTemplate(#{key_type.new_schema}, #{value_type.new_schema})"
 		elsif schema = @@schemamap[@name]
 			"new #{schema}()"
 		else
-			"new UserClassSchema(new #{@name}())"
+			"new ClassTemplate( #{@name}.class)"
 		end
+	end
+
+	def obtener_clase
+		
+		"#{@name}"
+		
 	end
 
 	def convert_schema(f, obj)
 		if list_type?
-			"this.#{f.name} = ListSchema.convertList(#{obj}, #{element_type.new_schema}, null);"
+			"this.#{f.name} = (List<#{element_type.obtener_clase}>)(new ListTemplate(#{element_type.new_schema}).convert((MessagePackObject)#{obj}));"
 		elsif set_type?
-			"this.#{f.name} = SetSchema.convertSet(#{obj}, #{element_type.new_schema}, null);"
+			"this.#{f.name} = (Set<#{element_type.obtener_clase}>)(new SetTemplate(#{element_type.new_schema}).convert((MessagePackObject)#{obj}));"
 		elsif map_type?
-			"this.#{f.name} = MapSchema.convertMap(#{obj}, #{key_type.new_schema}, #{value_type.new_schema}, null);"
+			"this.#{f.name} = (Map<#{key_type.obtener_clase},#{value_type.obtener_clase}>)(new MapTemplate(#{key_type.new_schema}, #{value_type.new_schema}).convert((MessagePackObject)#{obj}));"
 		elsif schema = @@schemamap[@name]
-			"this.#{f.name} = #{@@convertmap[@name]}(#{obj});"
+			"this.#{f.name} = (#{f.type})#{@@convertmap[@name]}((MessagePackObject)#{obj});"
 		else
 			"this.#{f.name} = new #{f.type}();\n"+
-			"this.#{f.name}.messageConvert(#{obj});"
+			"this.#{f.name}.messageConvert((MessagePackObject)#{obj});"
 		end
 	end
 
