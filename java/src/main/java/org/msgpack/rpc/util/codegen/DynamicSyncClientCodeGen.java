@@ -34,6 +34,15 @@ class DynamicSyncClientCodeGen extends DynamicClientCodeGenBase {
     private static Logger LOG = LoggerFactory
             .getLogger(DynamicSyncClientCodeGen.class);
 
+    private static DynamicSyncClientCodeGen INSTANCE;
+
+    public static DynamicSyncClientCodeGen getInstance() {
+        if (INSTANCE == null) {
+            INSTANCE = new DynamicSyncClientCodeGen();
+        }
+        return INSTANCE;
+    }
+
     @Override
     protected CtClass makeClass(String handlerName) throws NotFoundException {
         String clientName = String.format("%s%s%d", new Object[] { handlerName,

@@ -30,8 +30,6 @@ public class DynamicSyncClient {
     private static Logger LOG = LoggerFactory
             .getLogger(DynamicSyncClient.class);
 
-    private static DynamicSyncClientCodeGen gen;
-
     public static <T> T create(String host, int port, Class<T> handlerType)
             throws UnknownHostException {
         return create(new Client(host, port), handlerType);
@@ -51,10 +49,7 @@ public class DynamicSyncClient {
     public static <T> T create(Client client, Class<T> handlerType) {
         LOG.info("create an instance of " + DynamicSyncClient.class.getName()
                 + ": handler type: " + handlerType.getName());
-        if (gen == null) {
-            gen = new DynamicSyncClientCodeGen();
-        }
-
+        DynamicSyncClientCodeGen gen = DynamicSyncClientCodeGen.getInstance();
         String handlerName = handlerType.getName();
         Class<T> clientClass = (Class<T>) gen.getCache(handlerName);
         if (clientClass == null) {
