@@ -1,8 +1,7 @@
 package org.msgpack.rpc.util.codegen;
 
+import java.io.IOException;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
 
 import junit.framework.TestCase;
 
@@ -10,10 +9,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.msgpack.CustomMessage;
+import org.msgpack.MessageConvertable;
 import org.msgpack.MessagePackObject;
+import org.msgpack.MessagePackable;
+import org.msgpack.MessageTypeException;
+import org.msgpack.Packer;
+import org.msgpack.Template;
 import org.msgpack.rpc.Client;
 import org.msgpack.rpc.EventLoop;
-import org.msgpack.rpc.Request;
 import org.msgpack.rpc.Server;
 import org.msgpack.util.codegen.DynamicTemplate;
 
@@ -52,87 +55,6 @@ public class TestInvokersSyncClient extends TestCase {
         }
         if (LOOP != null) {
             LOOP.shutdown();
-        }
-    }
-
-    @Test
-    public void testFoo01() throws Exception {
-        CustomMessage.register(Foo.class, DynamicTemplate.create(Foo.class));
-        SERVER.serve(new DynamicDispatcher(ITestHandler.class,
-                new TestHandler()));
-        SERVER.listen(PORT);
-    }
-
-    @Test
-    public void testFoo02() throws Exception {
-        CustomMessage.register(Foo.class, DynamicTemplate.create(Foo.class));
-        SERVER.serve(new DynamicDispatcher(ITestHandler.class,
-                new TestHandler()));
-        SERVER.listen(PORT);
-    }
-
-    public static class Foo {
-        public int i;
-
-        public int j;
-
-        public Foo() {
-        }
-    }
-
-    public static interface ITestHandler {
-        int m0(int i, int j);
-
-        void m1(Request req);
-
-        void m2(Request req, int i, int j);
-
-        int m3(Foo foo);
-
-        List<Integer> m4(List<Integer> list);
-    }
-
-    public static interface ITestHandler2 {
-        int m0(int i, int j);
-
-        int m3(Foo foo);
-
-        List<Integer> m4(List<Integer> list);
-
-        void m5(int i, int j);
-    }
-
-    public static class TestHandler implements ITestHandler {
-        public int m0(int i, int j) {
-            return i + j;
-        }
-
-        public void m1(Request req) {
-            MessagePackObject packObj = req.getArguments();
-            MessagePackObject[] packObjs = packObj.asArray();
-            int ret = packObjs[0].intValue() + packObjs[1].intValue();
-            req.sendResponse(ret, null);
-        }
-
-        public void m2(Request req, int i, int j) {
-            req.sendResponse(i + j, null);
-        }
-
-        public int m3(Foo foo) {
-            return foo.i + foo.j;
-        }
-
-        public List<Integer> m4(List<Integer> list) {
-            List<Integer> ret = new ArrayList<Integer>();
-            int i = list.get(0);
-            int j = list.get(1);
-            ret.add(i + j);
-            return ret;
-        }
-
-        public void m5(int i, int j) {
-            @SuppressWarnings("unused")
-            int ret = i + j;
         }
     }
 
@@ -332,5 +254,129 @@ public class TestInvokersSyncClient extends TestCase {
         public byte[] m2(byte[] p0, byte[] p1) {
             return p0;
         }
+    }
+
+    @Test
+    public void testMesagePackableConvertableTypeHandler() throws Exception {
+        SERVER.serve(new DynamicDispatcher(new MessagePackableConvertableTypeHandler()));
+        SERVER.listen(PORT);
+        IMessagePackableConvertableTypeHandler cc =
+            DynamicSyncClient.create(CLIENT, IMessagePackableConvertableTypeHandler.class);
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackableConvertable p0 = new MessagePackableConvertable();
+            p0.f0 = i;
+            MessagePackableConvertable p1 = new MessagePackableConvertable();
+            p1.f0 = i + 1;
+            MessagePackableConvertable r = cc.m0(p0, p1);
+            assertEquals(p0.f0, r.f0);
+        }
+    }
+
+    public static interface IMessagePackableConvertableTypeHandler {
+        public MessagePackableConvertable m0(MessagePackableConvertable p0,
+                MessagePackableConvertable p1);
+    }
+
+    public static class MessagePackableConvertableTypeHandler
+        implements IMessagePackableConvertableTypeHandler {
+        public MessagePackableConvertable m0(MessagePackableConvertable p0,
+                MessagePackableConvertable p1) {
+            return p0;
+        }
+    }
+
+    public static class MessagePackableConvertable implements MessagePackable,
+            MessageConvertable {
+
+        public int f0;
+
+        public MessagePackableConvertable() {
+        }
+
+        @Override
+        public void messagePack(Packer packer) throws IOException {
+            packer.packArray(1);
+            packer.packInt(f0);
+        }
+
+        @Override
+        public void messageConvert(MessagePackObject obj)
+                throws MessageTypeException {
+            MessagePackObject[] objs = obj.asArray();
+            f0 = objs[0].asInt();
+        }
+    }
+
+    public void testUserDefinedTypeHandler() throws Exception {
+        Template tmpl = DynamicTemplate.create(UserDefinedType.class);
+        CustomMessage.register(UserDefinedType.class, tmpl);
+        SERVER.serve(new DynamicDispatcher(new UserDefinedTypeHandler()));
+        SERVER.listen(PORT);
+        IUserDefinedTypeHandler cc =
+            DynamicSyncClient.create(CLIENT, IUserDefinedTypeHandler.class);
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            UserDefinedType p0 = new UserDefinedType();
+            p0.f0 = i;
+            p0.f1 = i + 1;
+            UserDefinedType p1 = new UserDefinedType();
+            p1.f0 = i;
+            p1.f1 = i + 1;
+            UserDefinedType r = cc.m0(p0, p1);
+            assertEquals(p0.f0, r.f0);
+        }
+    }
+
+    public static interface IUserDefinedTypeHandler {
+        public UserDefinedType m0(UserDefinedType p0, UserDefinedType p1);
+    }
+
+    public static class UserDefinedTypeHandler implements IUserDefinedTypeHandler {
+        public UserDefinedType m0(UserDefinedType p0, UserDefinedType p1) {
+            return p0;
+        }
+    }
+
+    public static class UserDefinedType {
+        public int f0;
+
+        public int f1; 
+
+        public UserDefinedType() {
+        }
+    }
+
+    //@Test
+    public void XtestApplicationExceptionHandler() throws Exception {
+        Template tmpl = DynamicTemplate.create(ApplicationException.class);
+        CustomMessage.register(ApplicationException.class, tmpl);
+        SERVER.serve(new DynamicDispatcher(new ApplicationExceptionHandler()));  
+        SERVER.listen(PORT);
+        IApplicationExceptionHandler cc =
+            DynamicSyncClient.create(CLIENT, IApplicationExceptionHandler.class);
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            try {
+                int p0 = i;
+                int p1 = i + 1;
+                @SuppressWarnings("unused")
+                int r = cc.m0(p0, p1);
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
+        }
+    }
+
+    public static interface IApplicationExceptionHandler {
+        public int m0(int p0, int p1) throws ApplicationException;
+    }
+
+    public static class ApplicationExceptionHandler
+        implements IApplicationExceptionHandler {
+        public int m0(int p0, int p1) throws ApplicationException {
+            throw new ApplicationException();
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class ApplicationException extends Exception {
     }
 }
