@@ -14,15 +14,18 @@ import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.msgpack.CustomMessage;
 import org.msgpack.MessageConvertable;
 import org.msgpack.MessagePackObject;
 import org.msgpack.MessagePackable;
 import org.msgpack.MessageTypeException;
 import org.msgpack.Packer;
+import org.msgpack.Template;
 import org.msgpack.rpc.Client;
 import org.msgpack.rpc.EventLoop;
 import org.msgpack.rpc.Future;
 import org.msgpack.rpc.Server;
+import org.msgpack.util.codegen.DynamicTemplate;
 
 public class TestInvokers extends TestCase {
 
@@ -508,5 +511,108 @@ public class TestInvokers extends TestCase {
             MessagePackObject[] objs = obj.asArray();
             f0 = objs[0].asInt();
         }
+    }
+
+    public void testUserDefinedTypeHandler00() throws Exception {
+        Template tmpl = DynamicTemplate.create(UserDefinedType.class);
+        CustomMessage.register(UserDefinedType.class, tmpl);
+        SERVER.serve(new DynamicDispatcher(new UserDefinedTypeHandler()));
+        SERVER.listen(PORT);
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            UserDefinedType p0 = new UserDefinedType();
+            p0.f0 = i;
+            p0.f1 = i + 1;
+            UserDefinedType p1 = new UserDefinedType();
+            p1.f0 = i;
+            p1.f1 = i + 1;
+            MessagePackObject ret = CLIENT.callApply("m0", new Object[] { p0, p1 });
+            UserDefinedType r = (UserDefinedType) tmpl.convert(ret);
+            assertEquals(p0.f0, r.f0);
+        }
+    }
+
+    public void testUserDefinedTypeHandler01() throws Exception {
+        Template tmpl = DynamicTemplate.create(UserDefinedType.class);
+        CustomMessage.register(UserDefinedType.class, tmpl);
+        SERVER.serve(new DynamicDispatcher(new UserDefinedTypeHandler()));
+        SERVER.listen(PORT);
+        Future[] fs = new Future[LOOP_COUNT];
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            UserDefinedType p0 = new UserDefinedType();
+            p0.f0 = i;
+            p0.f1 = i + 1;
+            UserDefinedType p1 = new UserDefinedType();
+            p1.f0 = i;
+            p1.f1 = i + 1;
+            fs[i] = CLIENT.callAsyncApply("m0", new Object[] { p0, p1 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject mpo = fs[i].get();
+            UserDefinedType r = (UserDefinedType) tmpl.convert(mpo);
+            assertEquals(i, r.f0);
+        }
+    }
+
+    public static class UserDefinedTypeHandler {
+        public UserDefinedType m0(UserDefinedType p0, UserDefinedType p1) {
+            return p0;
+        }
+    }
+
+    public static class UserDefinedType {
+        public int f0;
+
+        public int f1; 
+
+        public UserDefinedType() {
+        }
+    }
+
+    //@Test
+    public void XtestApplicationExceptionHandler00() throws Exception {
+        Template tmpl = DynamicTemplate.create(ApplicationException.class);
+        CustomMessage.register(ApplicationException.class, tmpl);
+        SERVER.serve(new DynamicDispatcher(new ApplicationExceptionHandler()));  
+        SERVER.listen(PORT);
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            try {
+                int p0 = i;
+                int p1 = i + 1;
+                MessagePackObject ret = CLIENT.callApply("m0", new Object[] { p0, p1 });
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
+        }
+    }
+
+    //@Test
+    public void XtestApplicationExceptionHandler01() throws Exception {
+        Template tmpl = DynamicTemplate.create(ApplicationException.class);
+        CustomMessage.register(ApplicationException.class, tmpl);
+        SERVER.serve(new DynamicDispatcher(new ApplicationExceptionHandler()));  
+        SERVER.listen(PORT);
+        Future[] fs = new Future[LOOP_COUNT];
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            int p0 = i;
+            int p1 = i + 1;
+            fs[i] = CLIENT.callAsyncApply("m0", new Object[] { p0, p1 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            try {
+                MessagePackObject ret = fs[i].get();
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
+        }
+    }
+
+    public static class ApplicationExceptionHandler {
+        public int m0(int p0, int p1) throws ApplicationException {
+            throw new ApplicationException();
+        }
+    }
+
+    @SuppressWarnings("serial")
+    public static class ApplicationException extends Exception {
     }
 }
