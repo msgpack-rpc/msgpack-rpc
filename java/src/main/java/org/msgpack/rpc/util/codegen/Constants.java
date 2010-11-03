@@ -50,10 +50,6 @@ public interface Constants extends org.msgpack.util.codegen.Constants {
 
     String STATEMENT_CLIENT_CALLAPPLY_02 = "%s.callApply(\"%s\", $args); ";
 
-    String STATEMENT_CLIENT_CALLASYNCAPPLY_01 = "%s %s = %s.callAsyncApply(\"%s\", $args); ";
-
-    String STATEMENT_CLIENT_CALLASYNCAPPLY_02 = "%s.callAsyncApply(\"%s\", $args); ";
-
     String STATEMENT_CLIENT_CONVERT_01 = "return ($r)%s[%d].convert(_$$_mpo); ";
 
 }

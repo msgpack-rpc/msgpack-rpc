@@ -2,6 +2,12 @@ package org.msgpack.rpc.util.codegen;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import junit.framework.TestCase;
 
@@ -15,6 +21,7 @@ import org.msgpack.MessageTypeException;
 import org.msgpack.Packer;
 import org.msgpack.rpc.Client;
 import org.msgpack.rpc.EventLoop;
+import org.msgpack.rpc.Future;
 import org.msgpack.rpc.Server;
 
 public class TestInvokers extends TestCase {
@@ -56,7 +63,7 @@ public class TestInvokers extends TestCase {
     }
 
     @Test
-    public void testPrimitiveTypeHandler() throws Exception {
+    public void testPrimitiveTypeHandler00() throws Exception {
         SERVER.serve(new DynamicDispatcher(new PrimitiveTypeHandler()));
         SERVER.listen(PORT);
         for (int i = 0; i < LOOP_COUNT; ++i) {
@@ -88,6 +95,65 @@ public class TestInvokers extends TestCase {
         }
         for (int i = 0; i < LOOP_COUNT; ++i) {
             MessagePackObject ret = CLIENT.callApply("m7", new Object[] { i % 2 == 0, i % 2 != 0 });
+            assertEquals(i % 2 == 0, ret.asBoolean());
+        }
+    }
+
+    @Test
+    public void testPrimitiveTypeHandler01() throws Exception {
+        SERVER.serve(new DynamicDispatcher(new PrimitiveTypeHandler()));
+        SERVER.listen(PORT);
+        Future[] fs = new Future[LOOP_COUNT];
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            CLIENT.callAsyncApply("m0", new Object[0]);
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            fs[i] = CLIENT.callAsyncApply("m1", new Object[] { (byte) i, (byte) i + 1 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = fs[i].get();
+            assertEquals((byte) i, ret.asByte());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            fs[i] = CLIENT.callAsyncApply("m2", new Object[] { (short) i, (short) i + 1 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = fs[i].get();
+            assertEquals((short) i, ret.asShort());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            fs[i] = CLIENT.callAsyncApply("m3", new Object[] { i, i + 1 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = fs[i].get();
+            assertEquals(i, ret.asInt());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            fs[i] = CLIENT.callAsyncApply("m4", new Object[] { i, i + 1 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = fs[i].get();
+            assertEquals(i, ret.asLong());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            fs[i] = CLIENT.callAsyncApply("m5", new Object[] { (float) i, (float) i + 1 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = fs[i].get();
+            assertEquals((float) i, ret.asFloat());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            fs[i] = CLIENT.callAsyncApply("m6", new Object[] { (double) i, (double) i + 1 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = fs[i].get();
+            assertEquals((double) i, ret.asDouble());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            fs[i] = CLIENT.callAsyncApply("m7", new Object[] { i % 2 == 0, i % 2 != 0 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = fs[i].get();
             assertEquals(i % 2 == 0, ret.asBoolean());
         }
     }
@@ -126,7 +192,7 @@ public class TestInvokers extends TestCase {
     }
 
     @Test
-    public void testWrapperTypeHandler() throws Exception {
+    public void testWrapperTypeHandler00() throws Exception {
         SERVER.serve(new DynamicDispatcher(new WrapperTypeHandler()));
         SERVER.listen(PORT);
         for (int i = 0; i < LOOP_COUNT; ++i) {
@@ -155,6 +221,62 @@ public class TestInvokers extends TestCase {
         }
         for (int i = 0; i < LOOP_COUNT; ++i) {
             MessagePackObject ret = CLIENT.callApply("m6", new Object[] { i % 2 == 0, i % 2 != 0 });
+            assertEquals(i % 2 == 0, ret.asBoolean());
+        }
+    }
+
+    @Test
+    public void testWrapperTypeHandler01() throws Exception {
+        SERVER.serve(new DynamicDispatcher(new WrapperTypeHandler()));
+        SERVER.listen(PORT);
+        Future[] fs = new Future[LOOP_COUNT];
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            fs[i] = CLIENT.callAsyncApply("m0", new Object[] { (byte) i, (byte) i + 1 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = fs[i].get();
+            assertEquals((byte) i, ret.asByte());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            fs[i] = CLIENT.callAsyncApply("m1", new Object[] { (short) i, (short) i + 1 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = fs[i].get();
+            assertEquals((short) i, ret.asShort());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            fs[i] = CLIENT.callAsyncApply("m2", new Object[] { i, i + 1 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = fs[i].get();
+            assertEquals(i, ret.asInt());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            fs[i] = CLIENT.callAsyncApply("m3", new Object[] { i, i + 1 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = fs[i].get();
+            assertEquals(i, ret.asLong());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            fs[i] = CLIENT.callAsyncApply("m4", new Object[] { (float) i, (float) i + 1 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = fs[i].get();
+            assertEquals((float) i, ret.asFloat());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            fs[i] = CLIENT.callAsyncApply("m5", new Object[] { (double) i, (double) i + 1 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = fs[i].get();
+            assertEquals((double) i, ret.asDouble());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            fs[i] = CLIENT.callAsyncApply("m6", new Object[] { i % 2 == 0, i % 2 != 0 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = fs[i].get();
             assertEquals(i % 2 == 0, ret.asBoolean());
         }
     }
@@ -190,7 +312,7 @@ public class TestInvokers extends TestCase {
     }
 
     @Test
-    public void testReferenceTypeHandler() throws Exception {
+    public void testReferenceTypeHandler00() throws Exception {
         SERVER.serve(new DynamicDispatcher(new ReferenceTypeHandler()));
         SERVER.listen(PORT);
         for (int i = 0; i < LOOP_COUNT; ++i) {
@@ -207,6 +329,96 @@ public class TestInvokers extends TestCase {
             MessagePackObject ret = CLIENT.callApply("m2", new Object[] { p0, p1 });
             assertEquals(p0[0], ret.asByteArray()[0]);
         }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            List<String> p0 = new ArrayList<String>();
+            p0.add("muga" + i);
+            List<Integer> p1 = new ArrayList<Integer>();
+            p1.add(i);
+            MessagePackObject ret = CLIENT.callApply("m3", new Object[] { p0, p1 });
+            List<MessagePackObject> list = ret.asList();
+            assertEquals(p0.size(), list.size());
+            assertEquals(p0.get(0), list.get(0).asString());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            Map<String, Integer> p0 = new HashMap<String, Integer>();
+            p0.put("muga" + i, i);
+            Map<String, String> p1 = new HashMap<String, String>();
+            p1.put("muga" + i, "muga" + i);
+            MessagePackObject ret = CLIENT.callApply("m4", new Object[] { p0, p1 });
+            Map<MessagePackObject, MessagePackObject> map = ret.asMap();
+            assertEquals(p0.size(), map.size());
+            Iterator<Entry<MessagePackObject, MessagePackObject>> iter = map.entrySet().iterator();
+            assertTrue(iter.hasNext());
+            Entry<MessagePackObject, MessagePackObject> e = iter.next();
+            String k = e.getKey().asString();
+            int v = e.getValue().asInt();
+            assertEquals(p0.get(k).intValue(), v);
+            assertFalse(iter.hasNext());
+        }
+    }
+
+    @Test
+    public void testReferenceTypeHandler01() throws Exception {
+        SERVER.serve(new DynamicDispatcher(new ReferenceTypeHandler()));
+        SERVER.listen(PORT);
+        Future[] fs = new Future[LOOP_COUNT];
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            fs[i] = CLIENT.callAsyncApply("m0", new Object[] { "muga" + i, "muga" + i + 1 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = fs[i].get();
+            assertEquals("muga" + i, ret.asString());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            fs[i] = CLIENT.callAsyncApply("m1", new Object[] { BigInteger.valueOf(i), BigInteger.valueOf(i + 1) });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = fs[i].get();
+            assertEquals(BigInteger.valueOf(i), ret.asBigInteger());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            byte[] p0 = new byte[] { (byte) i };
+            byte[] p1 = new byte[] { (byte) (i + 1) };
+            fs[i] = CLIENT.callAsyncApply("m2", new Object[] { p0, p1 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            byte[] p0 = new byte[] { (byte) i };
+            MessagePackObject ret = fs[i].get();
+            assertEquals(p0[0], ret.asByteArray()[0]);
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            List<String> p0 = new ArrayList<String>();
+            p0.add("muga" + i);
+            List<Integer> p1 = new ArrayList<Integer>();
+            p1.add(i);
+            fs[i] = CLIENT.callAsyncApply("m3", new Object[] { p0, p1 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = fs[i].get();
+            List<MessagePackObject> list = ret.asList();
+            assertEquals(1, list.size());
+            assertEquals("muga" + i, list.get(0).asString());
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            Map<String, Integer> p0 = new HashMap<String, Integer>();
+            p0.put("muga" + i, i);
+            Map<String, String> p1 = new HashMap<String, String>();
+            p1.put("muga" + i, "muga" + i);
+            fs[i] = CLIENT.callAsyncApply("m4", new Object[] { p0, p1 });
+        }            
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackObject ret = fs[i].get();
+            Map<MessagePackObject, MessagePackObject> map = ret.asMap();
+            assertEquals(1, map.size());
+            Iterator<Entry<MessagePackObject, MessagePackObject>> iter = map.entrySet().iterator();
+            assertTrue(iter.hasNext());
+            Entry<MessagePackObject, MessagePackObject> e = iter.next();
+            @SuppressWarnings("unused")
+            String k = e.getKey().asString();
+            int v = e.getValue().asInt();
+            assertEquals(i, v);
+            assertFalse(iter.hasNext());
+        }
     }
 
     public static class ReferenceTypeHandler {
@@ -221,10 +433,18 @@ public class TestInvokers extends TestCase {
         public byte[] m2(byte[] p0, byte[] p1) {
             return p0;
         }
+
+        public List<String> m3(List<String> p0, List<Integer> p1) {
+            return p0;
+        }
+
+        public Map<String, Integer> m4(Map<String, Integer> p0, Map<String, String> p1) {
+            return p0;
+        }
     }
 
     @Test
-    public void testMesagePackableConvertableTypeHandler() throws Exception {
+    public void testMesagePackableConvertableTypeHandler00() throws Exception {
         SERVER.serve(new DynamicDispatcher(new MessagePackableConvertableTypeHandler()));
         SERVER.listen(PORT);
         for (int i = 0; i < LOOP_COUNT; ++i) {
@@ -233,6 +453,28 @@ public class TestInvokers extends TestCase {
             MessagePackableConvertable p1 = new MessagePackableConvertable();
             p1.f0 = i + 1;
             MessagePackObject ret = CLIENT.callApply("m0", new Object[] { p0, p1 });
+            MessagePackableConvertable r = new MessagePackableConvertable();
+            r.messageConvert(ret);
+            assertEquals(p0.f0, r.f0);
+        }
+    }
+
+    @Test
+    public void testMesagePackableConvertableTypeHandler01() throws Exception {
+        SERVER.serve(new DynamicDispatcher(new MessagePackableConvertableTypeHandler()));
+        SERVER.listen(PORT);
+        Future[] fs = new Future[LOOP_COUNT];
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackableConvertable p0 = new MessagePackableConvertable();
+            p0.f0 = i;
+            MessagePackableConvertable p1 = new MessagePackableConvertable();
+            p1.f0 = i + 1;
+            fs[i] = CLIENT.callAsyncApply("m0", new Object[] { p0, p1 });
+        }
+        for (int i = 0; i < LOOP_COUNT; ++i) {
+            MessagePackableConvertable p0 = new MessagePackableConvertable();
+            p0.f0 = i;
+            MessagePackObject ret = fs[i].get();
             MessagePackableConvertable r = new MessagePackableConvertable();
             r.messageConvert(ret);
             assertEquals(p0.f0, r.f0);
