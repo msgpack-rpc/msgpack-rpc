@@ -71,8 +71,11 @@ public class Server extends SessionPool {
 		Request request = new Request(ms, msgid, method, args);
 		try {
 			dp.dispatch(request);
-		} catch(Exception e) {
+		} catch(RPCError e) {
 			// FIXME
+			request.sendError(e.getCode(), e);
+		} catch(Exception e) {
+			// FIXME request.sendError("RemoteError", e.getMessage());
 			request.sendError(e.getMessage());
 		}
 	}
