@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -122,7 +123,9 @@ class DynamicRPCCodeGenBase extends DynamicCodeGenBase implements Constants {
         for (int i = 0; i < paramTypes.length; ++i) {
             Type t = paramTypes[i];
             Class<?> c = paramTypes2[i];
-            if (List.class.isAssignableFrom(c) || Map.class.isAssignableFrom(c)) {
+            if (List.class.isAssignableFrom(c)
+                    || Map.class.isAssignableFrom(c)
+                    || Collection.class.isAssignableFrom(c)) {
                 tmpls.add(createTemplate(t));
             } else if (c.equals(Request.class)) {
                 ; // ignore

@@ -20,7 +20,7 @@ import org.msgpack.rpc.EventLoop;
 import org.msgpack.rpc.Server;
 import org.msgpack.util.codegen.DynamicTemplate;
 
-public class TestInvokersSyncClient extends TestCase {
+public class TestDynamicDispatcherAndSyncClient extends TestCase {
 
     private static EventLoop LOOP;
 
@@ -34,7 +34,7 @@ public class TestInvokersSyncClient extends TestCase {
 
     private static final int LOOP_COUNT = 10;
 
-    public TestInvokersSyncClient() {
+    public TestDynamicDispatcherAndSyncClient() {
         super();
     }
 

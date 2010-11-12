@@ -32,7 +32,7 @@ public interface Constants extends org.msgpack.util.codegen.Constants {
 
     String STATEMENT_INVOKERS_INVOKEMETHODBODY_02 = "%s _$$_mpos = _$$_mpo.asArray(); ";
 
-    String STATEMENT_INVOKERS_INVOKEMETHODBODY_03 = "_$$_templates[%d].convert(_$$_mpos[%d])";
+    String STATEMENT_INVOKERS_INVOKEMETHODBODY_03 = "_$$_templates[%d].convert(_$$_mpos[%d], null)";
 
     String STATEMENT_INVOKERS_INVOKEMETHODBODY_04 = "%s _$$_%d = ((%s)%s).%s(); ";
 
@@ -50,6 +50,6 @@ public interface Constants extends org.msgpack.util.codegen.Constants {
 
     String STATEMENT_CLIENT_CALLAPPLY_02 = "%s.callApply(\"%s\", $args); ";
 
-    String STATEMENT_CLIENT_CONVERT_01 = "return ($r)%s[%d].convert(_$$_mpo); ";
+    String STATEMENT_CLIENT_CONVERT_01 = "return ($r)%s[%d].convert(_$$_mpo, null); ";
 
 }
