@@ -209,14 +209,12 @@ class DynamicInvokersCodeGen extends DynamicRPCCodeGenBase {
                     paramTypes, exceptTypes, sb.toString(), invokerCtClass);
             invokerCtClass.addMethod(newCtMethod);
         } catch (CannotCompileException e) {
-            DynamicCodeGenException ex = new DynamicCodeGenException(e
-                    .getMessage()
+            DynamicCodeGenException ex = new DynamicCodeGenException(e.getMessage()
                     + ": " + sb.toString(), e);
             LOG.error(ex.getMessage(), ex);
             throw ex;
         } catch (NotFoundException e) {
-            DynamicCodeGenException ex = new DynamicCodeGenException(e
-                    .getMessage()
+            DynamicCodeGenException ex = new DynamicCodeGenException(e.getMessage()
                     + ": " + sb.toString(), e);
             LOG.error(ex.getMessage(), ex);
         }
