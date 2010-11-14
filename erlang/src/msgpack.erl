@@ -334,10 +334,11 @@ port_test()->
     Tests = test_data(),
     ?assertEqual({[Tests],<<>>}, msgpack:unpack(msgpack:pack([Tests]))),
 
-    Port = open_port({spawn, "ruby ../test/crosslang.rb"}, [binary, eof]),
-    true = port_command(Port, msgpack:pack(Tests)),
-    ?assertEqual({Tests, <<>>}, msgpack:unpack(port_receive(Port))),
-    port_close(Port).
+%    Port = open_port({spawn, "ruby ../test/crosslang.rb"}, [binary, eof]),
+%    true = port_command(Port, msgpack:pack(Tests)),
+%    ?assertEqual({Tests, <<>>}, msgpack:unpack(port_receive(Port))),
+%    port_close(Port).
+    ok.
 
 test_p(Len,Term,OrigBin,Len) ->
     {Term, <<>>}=msgpack:unpack(OrigBin);
@@ -362,7 +363,7 @@ map_test()->
     ?assertEqual(Map, Map2),
     ok.
 
-unknown_test()->
+unknown_test_freezed()->
     Port = open_port({spawn, "ruby testcase_generator.rb"}, [binary, eof]),
     Tests = [0, 1, 2, 123, 512, 1230, 678908,
 	     -1, -23, -512, -1230, -567898,

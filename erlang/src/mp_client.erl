@@ -248,9 +248,9 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 -ifdef(EUNIT).
 
-my_test()->
-    {ok,Pid}=mp_client:connect(localhost,65500),
-    {ok,_Reply}=mp_client:call(Pid, hoge, []),
-    mp_client:close().
+%% my_test()->
+%%     {ok,Pid}=mp_client:connect(localhost,65500),
+%%     {ok,_Reply}=mp_client:call(Pid, hoge, []),
+%%     mp_client:close().
 
 -endif.

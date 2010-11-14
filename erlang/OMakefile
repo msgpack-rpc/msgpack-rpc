@@ -32,7 +32,7 @@ doc: $(erls) $(SRCDIR)/overview.edoc
 	eprintln(building edoc done. see edoc/index.html)
 
 .DEFAULT:  $(beams) $(apps)
-#        $(ERL) -pa $(EBIN) -noshell -eval 'eunit:test().' -s init stop
+	$(ERL) -pa $(EBIN) -noshell -eval 'eunit:test("ebin", []).' -s init stop
 
 clean:
     rm -rf $(beams)
