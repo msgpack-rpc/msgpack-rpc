@@ -1,4 +1,6 @@
 <?php
+include_once dirname(__FILE__) . '/Future.php';
+
 class MessagePackRPC_Back
 {
   public $errorMessage01 = 'Network error';
@@ -27,7 +29,7 @@ class MessagePackRPC_Back
     $send = $this->msgpackEncode($call);
     $sock = fsockopen($host, $port);
     if ($sock === FALSE) throw new Exception($this->errorMessage01);
-    $puts = fputs($sock, $call);
+    $puts = fputs($sock, $send);
     if ($puts === FALSE) throw new Exception($this->errorMessage01);
     $read = fread($sock, $size);
     if ($read === FALSE) throw new Exception($this->errorMessage01);
@@ -56,13 +58,13 @@ class MessagePackRPC_Back
     return $feature;
   }
 
-  public function serverSendObject($code, $errs, $sets)
+  public function serverSendObject($code, $sets, $errs)
   {
     $data    = array();
     $data[0] = 1;
     $data[1] = $code;
-    $data[2] = $errs;
-    $data[3] = $sets;
+    $data[2] = $sets;
+    $data[3] = $errs;
 
     $send = $this->msgpackEncode($data);
 

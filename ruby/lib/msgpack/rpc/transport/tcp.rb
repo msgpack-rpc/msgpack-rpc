@@ -115,7 +115,6 @@ class TCPClientTransport
 		else
 			@connecting = 0
 			@pending = ""
-			@deflate.reset if @deflate
 			@session.on_connect_failed
 		end
 	end
