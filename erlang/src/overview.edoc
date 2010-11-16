@@ -22,15 +22,40 @@ Just a simple API...
 <li>mp_client:call/4</li>
 <li>mp_client:close/1</li>
 </ol>
-<h3>Server</h3>
+Process tree
 <pre>
+msgpack_rpc_app (with application behaviour)
+  |
+  + msgpack_rpc_sup (with simple_one_for_one supervisor behaviour)
+      |
+      + msgpack_rpc_transport (with gen_server behaviour)
+          inheritance => tcp, udp (,ssl, sctp, etc...)
+
+(user tree)
+  |
+  + (user module) <= with mpr_client
+
+</pre>
+<h3>Server</h3>
 process tree here
+<pre>
+mp_server_app (with application behaviour)
+  |
+  + mp_server_sup (with supervisor)
+      |
+      + mp_server_session_sup (with simple_one_for_one server)
+      |   |
+      |   + (user_module) <= with mp_session behaviour
+      |
+      + mp_server_listener_sup (with simple_one_for_one server)
+          |
+          + mp_server_srv <= tcp_listener (TODO!)
+
 </pre>
 <h3>Message Protocol</h3>
 <h4>Request</h4>
 <h4>Response</h4>
 <h4>Notification</h4>
-<h2>See Also</h2>
 <ul>
   <li><a href="http://www.slideshare.net/frsyuki/architecture-of-messagepack">Architecture of MessagePack</a></li>
 </ul>

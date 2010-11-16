@@ -33,7 +33,7 @@
 %%   {ok, Pid}=mp_client:connect(Identifier, YourModule, [Address, Port], [tcp]),
 %%   mp_client:call(Identifier, somemethod, [1,2]), % returns {ok, 3}
 %%   mp_client:call_async(Identifier, somemethod, [1,2]),
-%%   receive
+%%   receive % message arrives
 %%       {ok, Answer} -> ok;% maybe 3
 %%       _ -> error
 %%   after 1024 -> timeout end
