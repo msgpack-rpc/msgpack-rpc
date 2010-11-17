@@ -34,9 +34,16 @@
 
 -define(SERVER, ?MODULE).
 
+-type option() :: tcp % uses mp_tcp_listener and mp_tcp_transport
+		| udp % uses mp_udp_listener and mp_udp_transport
+%		| sctp | ssl | etc.. .
+		| {debug, any()}.
+
 %%====================================================================
 %% API functions
 %%====================================================================
+% Mod is session handler
+-spec add_server(Mod::atom(), Options::[option()])-> ok | {error,any()}.
 add_server(Mod, Options)->
     supervisor:start_child(?SERVER, [Mod,Options]).
 

@@ -18,9 +18,12 @@ Now developing. First release (0.0.1) is coming soon.
 <h3>Client</h3>
 Just a simple API... 
 <ol>
-<li>mp_client:connect/3</li>
+<li>mp_client:start/0<p>Starts the whole client system.	</p></li>
+<li>mp_client:new/3</li>
 <li>mp_client:call/4</li>
+<li>mp_client:call_async/4</li>
 <li>mp_client:close/1</li>
+<li>mp_client:stop/0</li>
 </ol>
 Process tree
 <pre>
@@ -33,7 +36,7 @@ msgpack_rpc_app (with application behaviour)
 
 (user tree)
   |
-  + (user module) <= with mpr_client
+  + (user module) &lt;= with mpr_client
 
 </pre>
 <h3>Server</h3>
@@ -45,13 +48,20 @@ mp_server_app (with application behaviour)
       |
       + mp_server_session_sup (with simple_one_for_one server)
       |   |
-      |   + (user_module) <= with mp_session behaviour
+      |   + (user_module) &lt;= with mp_session behaviour - which connection oriented protocol uses
       |
       + mp_server_listener_sup (with simple_one_for_one server)
           |
-          + mp_server_srv <= tcp_listener (TODO!)
+          + mp_xxx_listener &lt;= mp_tcp_listener|mp_udp_recver (TODO!)
 
 </pre>
+<h4>TCP design</h4>
+mp_tcp_listener uses inet_async pattern to accept requests.
+after accepting new sockets, spawns user session handler under mp_server_session_sup,
+with mp_tcp_session behaviour.
+<h4>UDP design</h4>
+mp_udp_recver spawns a lonely process as it reads from its bound port.
+on the process user-defined callback shall be called (which is passed when mp_udp_recver starts).
 <h3>Message Protocol</h3>
 <h4>Request</h4>
 <h4>Response</h4>
