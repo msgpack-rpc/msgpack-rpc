@@ -27,7 +27,7 @@ import org.msgpack.rpc.Future;
 import org.msgpack.rpc.Server;
 import org.msgpack.util.codegen.DynamicTemplate;
 
-public class TestInvokers extends TestCase {
+public class TestDynamicDispatcher extends TestCase {
 
     private static EventLoop LOOP;
 
@@ -41,7 +41,7 @@ public class TestInvokers extends TestCase {
     
     private static final int LOOP_COUNT = 10;
 
-    public TestInvokers() {
+    public TestDynamicDispatcher() {
         super();
     }
 
@@ -526,7 +526,7 @@ public class TestInvokers extends TestCase {
             p1.f0 = i;
             p1.f1 = i + 1;
             MessagePackObject ret = CLIENT.callApply("m0", new Object[] { p0, p1 });
-            UserDefinedType r = (UserDefinedType) tmpl.convert(ret);
+            UserDefinedType r = (UserDefinedType) tmpl.convert(ret, null);
             assertEquals(p0.f0, r.f0);
         }
     }
@@ -548,7 +548,7 @@ public class TestInvokers extends TestCase {
         }
         for (int i = 0; i < LOOP_COUNT; ++i) {
             MessagePackObject mpo = fs[i].get();
-            UserDefinedType r = (UserDefinedType) tmpl.convert(mpo);
+            UserDefinedType r = (UserDefinedType) tmpl.convert(mpo, null);
             assertEquals(i, r.f0);
         }
     }
@@ -578,6 +578,7 @@ public class TestInvokers extends TestCase {
             try {
                 int p0 = i;
                 int p1 = i + 1;
+                @SuppressWarnings("unused")
                 MessagePackObject ret = CLIENT.callApply("m0", new Object[] { p0, p1 });
             } catch (Throwable t) {
                 t.printStackTrace();
@@ -599,6 +600,7 @@ public class TestInvokers extends TestCase {
         }
         for (int i = 0; i < LOOP_COUNT; ++i) {
             try {
+                @SuppressWarnings("unused")
                 MessagePackObject ret = fs[i].get();
             } catch (Throwable t) {
                 t.printStackTrace();
