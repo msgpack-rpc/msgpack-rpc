@@ -45,8 +45,7 @@ class UNIXTransport
 
 		# from Rev::UNIXSocket
 		def on_read(data)
-			@pac.feed(data)
-			@pac.each {|obj|
+			@pac.feed_each(data) {|obj|
 				on_message(obj)
 			}
 		end
