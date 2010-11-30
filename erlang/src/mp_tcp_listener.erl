@@ -22,7 +22,7 @@
 %%% @private
 %%% Created : 30 May 2010 by UENISHI Kota <kuenishi@gmail.com>
 %%%-------------------------------------------------------------------
--module(mp_server_srv).
+-module(mp_tcp_listener).
 
 -behaviour(gen_server).
 
@@ -64,6 +64,29 @@ init([Mod, Options]) ->
     Port = proplists:get_value(port, Options, 65500),
     init_(Mod,Addr,Port).
 
+
+init_(Mod, Host, Port) when is_atom(Host)->
+    {ok,Addr} = inet:getaddr(Host, inet),
+    init_(Mod, Addr, Port);
+init_(Mod, Host, Port) when is_list(Host)->
+    {ok,Addr} = inet:getaddr(Host, inet),
+    init_(Mod, Addr, Port);
+init_(Mod, Addr, Port) when is_atom(Mod), 0<Port, Port<65535, is_tuple(Addr)->
+    Opts = [binary, {packet, raw}, {reuseaddr, true},
+            {keepalive, true}, {backlog, 30}, {active, false}, {ip, Addr}
+	   ],
+    
+    process_flag(trap_exit, true),
+    case gen_tcp:listen(Port, Opts) of
+	{ok, ListenSocket} ->
+	    %%Create first accepting process
+	    {ok, Ref} = prim_inet:async_accept(ListenSocket, -1),
+	    {ok, #state{listener = ListenSocket,
+			acceptor = Ref,
+			module = Mod}};
+	{error, Reason} ->
+	    {stop, Reason}
+    end.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |

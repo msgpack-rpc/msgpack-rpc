@@ -40,19 +40,16 @@ msgpack_rpc_app (with application behaviour)
 
 </pre>
 <h3>Server</h3>
-process tree here
+process tree here: users put mp_server_sup process into their own application by using start_link.
+by passing user-defined name-prefix to mp_server_sup mp_server and other processes generate their own unique name so as to set multiple mp_server_sup's in single Erlang runtime.
 <pre>
-mp_server_app (with application behaviour)
+mp_server_sup (with supervisor)
   |
-  + mp_server_sup (with supervisor)
-      |
-      + mp_server_session_sup (with simple_one_for_one server)
-      |   |
-      |   + (user_module) &lt;= with mp_session behaviour - which connection oriented protocol uses
-      |
-      + mp_server_listener_sup (with simple_one_for_one server)
-          |
-          + mp_xxx_listener &lt;= mp_tcp_listener|mp_udp_recver (TODO!)
+  + mp_sessions (with simple_one_for_one server)
+  |   |
+  |   + (user_module) &lt;= with mp_session behaviour - which connection oriented protocol uses
+  |
+  + mp_xxx_listener &lt;= mp_tcp_listener|mp_udp_recver (TODO!)
 
 </pre>
 <h4>TCP design</h4>

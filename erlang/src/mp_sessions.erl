@@ -22,40 +22,32 @@
 %%% @private
 %%% Created : 30 May 2010 by UENISHI Kota <kuenishi@gmail.com>
 %%%-------------------------------------------------------------------
--module(mp_server_listener_sup).
+-module(mp_sessions).
 
 -behaviour(supervisor).
 
 %% API
--export([start_link/0, add_server/2, del_server/1]).
+-export([start_link/0, start_client/2]).
 
 %% Supervisor callbacks
 -export([init/1]).
 
 -define(SERVER, ?MODULE).
 
--type option() :: tcp % uses mp_tcp_listener and mp_tcp_transport
-		| udp % uses mp_udp_listener and mp_udp_transport
-%		| sctp | ssl | etc.. .
-		| {debug, any()}.
-
 %%====================================================================
 %% API functions
 %%====================================================================
-% Mod is session handler
--spec add_server(Mod::atom(), Options::[option()])-> ok | {error,any()}.
-add_server(Mod, Options)->
-    supervisor:start_child(?SERVER, [Mod,Options]).
-
-del_server(Name)->
-    supervisor:terminate_child(?SERVER, Name).
-
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the supervisor
 %%--------------------------------------------------------------------
 start_link() ->
     supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+
+%% A startup function for spawning new client connection handling FSM.
+%% To be called by the TCP listener process.
+start_client(Module, Socket) ->
+    supervisor:start_child(?SERVER, [Module, Socket]).
 
 %%====================================================================
 %% Supervisor callbacks
@@ -70,8 +62,8 @@ start_link() ->
 %% specifications.
 %%--------------------------------------------------------------------
 init([]) ->
-    AChild = {mp_server_srv,{mp_server_srv,start_link,[]},
-	      permanent,2000,worker,[mp_server_srv]},
+    AChild = {mp_session,{mp_session,start_link,[]},
+	      temporary,brutal_kill,worker,[mp_session]},
     ok=supervisor:check_childspecs([AChild]),
     {ok,{{simple_one_for_one,0,1}, [AChild]}}.
 
