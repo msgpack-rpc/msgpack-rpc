@@ -15,11 +15,22 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-package org.msgpack.rpc.transport;
+package org.msgpack.rpc.error;
 
-import java.io.Closeable;
+public class TransportError extends RPCError {
+	public TransportError(String message) {
+		super(message);
+	}
 
-public interface ServerTransport extends Closeable {
-	public void close();
+	public TransportError(String message, Throwable cause) {
+		super(message, cause);
+	}
+
+	public static final String CODE = "TransportError";
+
+	@Override
+	public String getCode() {
+		return CODE;
+	}
 }
 

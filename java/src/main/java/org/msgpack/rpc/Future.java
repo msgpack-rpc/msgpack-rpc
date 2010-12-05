@@ -18,6 +18,7 @@
 package org.msgpack.rpc;
 
 import org.msgpack.*;
+import org.msgpack.rpc.error.*;
 
 public class Future {
 	private Object lock = new Object();
@@ -31,12 +32,15 @@ public class Future {
 
 	public Future(Session session) {
 		this.session = session;
-		this.timeout = session.getTimeout();
+		this.timeout = session.getRequestTimeout();
 	}
 
 	public MessagePackObject get() {
 		join();
-		// FIXME throw error unless getError().isNull()
+		if(!getError().isNil()) {
+			// FIXME exception
+			throw new RemoteError(getError());
+		}
 		return getResult();
 	}
 
@@ -57,7 +61,7 @@ public class Future {
 			this.callback = callback;
 		}
 		if(set) {
-			session.getEventLoop().getExecutor().submit(callback);
+			session.getEventLoop().getWorkerExecutor().submit(callback);
 		}
 	}
 
@@ -78,7 +82,7 @@ public class Future {
 		}
 		if(callback != null) {
 			// FIXME submit?
-			//session.getEventLoop().getExecutor().submit(callback);
+			//session.getEventLoop().getWorkerExecutor().submit(callback);
 			callback.run();
 		}
 	}

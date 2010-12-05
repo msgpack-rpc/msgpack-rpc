@@ -15,11 +15,13 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-package org.msgpack.rpc.transport;
+package org.msgpack.rpc.config;
 
-import java.io.Closeable;
+import org.msgpack.rpc.address.Address;
 
-public interface ServerTransport extends Closeable {
-	public void close();
+public class TcpServerConfig extends ServerConfig {
+	public TcpServerConfig(Address listenAddress) {
+		super(listenAddress);
+	}
 }
 

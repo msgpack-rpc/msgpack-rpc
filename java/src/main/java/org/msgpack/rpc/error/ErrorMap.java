@@ -15,11 +15,32 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-package org.msgpack.rpc.transport;
+package org.msgpack.rpc.error;
 
-import java.io.Closeable;
+import org.msgpack.*;
 
-public interface ServerTransport extends Closeable {
-	public void close();
+public class ErrorMap {
+	// FIXME TreeMap<String, Class<RPCError>> map;
+	// "RemoteError" => RemoteError.class
+	// static private TreeMap<String, Class<RPCError>> systemMap;
+
+	public ErrorMap() {
+	}
+
+	public void register(String code, Class<RPCError> klass) {
+		// FIXME
+	}
+
+	public void raise(String code, MessagePackObject data) throws RPCError {
+		// FIXME
+	}
+
+	/*
+	static private ErrorMap defaultErrorMap;
+
+	static public ErrorMap defaultErrorMap() {
+		// FIXME
+	}
+	*/
 }
 

@@ -17,55 +17,61 @@
 //
 package org.msgpack.rpc;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import org.msgpack.rpc.transport.*;
-import org.msgpack.*;
+import java.io.Closeable;
+import java.util.Map;
+import java.util.HashMap;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import org.msgpack.rpc.loop.EventLoop;
+import org.msgpack.rpc.address.Address;
+import org.msgpack.rpc.address.IPAddress;
+import org.msgpack.rpc.config.ClientConfig;
+import org.msgpack.rpc.config.TcpClientConfig;
 
 public class SessionPool implements Closeable {
-	private ClientTransport transport;
+	private ClientConfig config;
 	private EventLoop loop;
 	private Map<Address, Session> pool = new HashMap<Address, Session>();
 	private ScheduledFuture<?> timer;
 
 	public SessionPool() {
-		this(new TCPClientTransport());
+		this(new TcpClientConfig());
 	}
 
-	public SessionPool(ClientTransport transport) {
-		this(transport, EventLoop.defaultEventLoop());
+	public SessionPool(ClientConfig config) {
+		this(config, EventLoop.defaultEventLoop());
 	}
 
 	public SessionPool(EventLoop loop) {
-		this(new TCPClientTransport(), loop);
+		this(new TcpClientConfig(), loop);
 	}
 
-	public SessionPool(ClientTransport transport, EventLoop loop) {
-		this.transport = transport;
+	public SessionPool(ClientConfig config, EventLoop loop) {
+		this.config = config;
 		this.loop = loop;
 		startTimer();
 	}
 
-	// FIXME EventLoopHolder interface
+	// FIXME EventLoopHolder interface?
 	public EventLoop getEventLoop() {
 		return loop;
 	}
 
-	private void startTimer() {
-		Runnable command = new Runnable() {
-			public void run() {
-				stepTimeout();
-			}
-		};
-		timer = loop.getExecutor().scheduleAtFixedRate(command, 1000, 1000, TimeUnit.MILLISECONDS);
+	public Session getSession(String host, int port) throws UnknownHostException {
+		return getSession(new IPAddress(host, port));
 	}
 
-	public Session getSession(Address address) {
+	public Session getSession(InetSocketAddress address) {
+		return getSession(new IPAddress(address));
+	}
+
+	Session getSession(Address address) {
 		synchronized(pool) {
 			Session s = pool.get(address);
 			if(s == null) {
-				s = new Session(transport, address, loop);
+				s = new Session(address, config, loop);
 				pool.put(address, s);
 			}
 			return s;
@@ -81,6 +87,15 @@ public class SessionPool implements Closeable {
 			}
 			pool.clear();
 		}
+	}
+
+	private void startTimer() {
+		Runnable command = new Runnable() {
+			public void run() {
+				stepTimeout();
+			}
+		};
+		timer = loop.getScheduledExecutor().scheduleAtFixedRate(command, 1000, 1000, TimeUnit.MILLISECONDS);
 	}
 
 	void stepTimeout() {

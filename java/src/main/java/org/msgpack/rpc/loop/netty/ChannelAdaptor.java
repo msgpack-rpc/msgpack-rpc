@@ -15,11 +15,27 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-package org.msgpack.rpc.transport;
+package org.msgpack.rpc.loop.netty;
 
-import java.io.Closeable;
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.Channels;
+import org.msgpack.rpc.transport.ClientTransport;
 
-public interface ServerTransport extends Closeable {
-	public void close();
+class ChannelAdaptor implements ClientTransport {
+	private Channel channel;
+
+	ChannelAdaptor(Channel channel) {
+		this.channel = channel;
+	}
+
+	@Override
+	public void sendMessage(Object msg) {
+		Channels.write(channel, msg);
+	}
+
+	@Override
+	public void close() {
+		channel.close();
+	}
 }
 

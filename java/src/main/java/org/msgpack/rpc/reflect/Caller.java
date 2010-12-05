@@ -15,11 +15,11 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-package org.msgpack.rpc.transport;
+package org.msgpack.rpc.reflect;
 
-import java.io.Closeable;
+import org.msgpack.rpc.Session;
 
-public interface ServerTransport extends Closeable {
-	public void close();
+public interface Caller<T> {
+	public T newProxyInstance(Session s);
 }
 

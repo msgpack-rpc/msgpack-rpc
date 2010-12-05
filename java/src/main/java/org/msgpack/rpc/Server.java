@@ -17,11 +17,20 @@
 //
 package org.msgpack.rpc;
 
-import java.io.*;
-import java.util.*;
-import java.net.*;
-import org.msgpack.rpc.transport.*;
-import org.msgpack.*;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import org.msgpack.MessagePackObject;
+import org.msgpack.rpc.address.Address;
+import org.msgpack.rpc.address.IPAddress;
+import org.msgpack.rpc.dispatcher.Dispatcher;
+import org.msgpack.rpc.config.ClientConfig;
+import org.msgpack.rpc.config.ServerConfig;
+import org.msgpack.rpc.config.TcpServerConfig;
+import org.msgpack.rpc.transport.ServerTransport;
+import org.msgpack.rpc.transport.MessageSendable;
+import org.msgpack.rpc.loop.EventLoop;
+import org.msgpack.rpc.error.RPCError;
 
 public class Server extends SessionPool {
 	private Dispatcher dp;
@@ -31,16 +40,16 @@ public class Server extends SessionPool {
 		super();
 	}
 
-	public Server(ClientTransport transport) {
-		super(transport);
+	public Server(ClientConfig config) {
+		super(config);
 	}
 
 	public Server(EventLoop loop) {
 		super(loop);
 	}
 
-	public Server(ClientTransport transport, EventLoop loop) {
-		super(transport, loop);
+	public Server(ClientConfig config, EventLoop loop) {
+		super(config, loop);
 	}
 
 	public void serve(Dispatcher dp) {
@@ -48,27 +57,31 @@ public class Server extends SessionPool {
 	}
 
 	public void listen(String host, int port) throws UnknownHostException, IOException {
-		listen(new TCPServerTransport(new IPAddress(host,port)));
+		listen(new TcpServerConfig(new IPAddress(host,port)));
+	}
+
+	public void listen(InetSocketAddress address) throws IOException {
+		listen(new TcpServerConfig(new IPAddress(address)));
 	}
 
 	public void listen(int port) throws IOException {
-		listen(new TCPServerTransport(new IPAddress(port)));
+		listen(new TcpServerConfig(new IPAddress(port)));
 	}
 
-	public void listen(ServerTransport stran) throws IOException {
-		stran.listen(this);
-		this.stran = stran;
+	public void listen(ServerConfig config) throws IOException {
+		stran = getEventLoop().listenTransport(config, this);
 	}
 
 	public void close() {
-		stran.close();
+		if(stran != null) {
+			stran.close();
+		}
 		super.close();
 	}
 
-	// FIXME package local scope
-	public void onRequest(MessageSendable ms, int msgid,
-			String method, MessagePackObject args) {
-		Request request = new Request(ms, msgid, method, args);
+	public void onRequest(MessageSendable channel,
+			int msgid, String method, MessagePackObject args) {
+		Request request = new Request(channel, msgid, method, args);
 		try {
 			dp.dispatch(request);
 		} catch(RPCError e) {
@@ -80,7 +93,6 @@ public class Server extends SessionPool {
 		}
 	}
 
-	// FIXME package local scope
 	public void onNotify(String method, MessagePackObject args) {
 		Request request = new Request(method, args);
 		try {
