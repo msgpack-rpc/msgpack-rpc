@@ -17,29 +17,42 @@
 //
 package org.msgpack.rpc;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.*;
-import org.msgpack.rpc.transport.*;
+import java.io.Closeable;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import org.msgpack.rpc.loop.EventLoop;
+import org.msgpack.rpc.address.Address;
+import org.msgpack.rpc.address.IPAddress;
+import org.msgpack.rpc.config.ClientConfig;
+import org.msgpack.rpc.config.TcpClientConfig;
 
 public class Client extends Session implements Closeable {
 	private ScheduledFuture<?> timer;
 
 	public Client(String host, int port) throws UnknownHostException {
-		this(new TCPClientTransport(), new IPAddress(host, port), EventLoop.defaultEventLoop());
+		this(new IPAddress(host, port), new TcpClientConfig(), EventLoop.defaultEventLoop());
 	}
 
-	public Client(ClientTransport transport, InetSocketAddress address) {
-		this(transport, address, EventLoop.defaultEventLoop());
+	public Client(String host, int port, ClientConfig config) throws UnknownHostException {
+		this(new IPAddress(host, port), config, EventLoop.defaultEventLoop());
 	}
 
-	public Client(ClientTransport transport, InetSocketAddress address, EventLoop loop) {
-		this(transport, new IPAddress(address), loop);
+	public Client(String host, int port, EventLoop loop) throws UnknownHostException {
+		this(new IPAddress(host, port), new TcpClientConfig(), loop);
 	}
 
-	private Client(ClientTransport transport, Address address, EventLoop loop) {
-		super(transport, address, loop);
+	public Client(String host, int port, ClientConfig config, EventLoop loop) throws UnknownHostException {
+		this(new IPAddress(host, port), config, loop);
+	}
+
+	public Client(InetSocketAddress address, ClientConfig config, EventLoop loop) {
+		this(new IPAddress(address), config, loop);
+	}
+
+	Client(Address address, ClientConfig config, EventLoop loop) {
+		super(address, config, loop);
 		startTimer();
 	}
 
@@ -49,17 +62,12 @@ public class Client extends Session implements Closeable {
 				stepTimeout();
 			}
 		};
-		timer = loop.getExecutor().scheduleAtFixedRate(command, 1000, 1000, TimeUnit.MILLISECONDS);
+		timer = loop.getScheduledExecutor().scheduleAtFixedRate(command, 1000, 1000, TimeUnit.MILLISECONDS);
 	}
 
 	public void close() {
 		timer.cancel(false);
 		closeSession();
-	}
-
-	// FIXME EventLoopHolder interface
-	public EventLoop getEventLoop() {
-		return loop;
 	}
 }
 

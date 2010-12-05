@@ -116,6 +116,11 @@
       <version>0.4.3-devel</version>
       <scope>compile</scope>
     </dependency>
+	<dependency>
+		<groupId>org.apache.mina</groupId>
+		<artifactId>mina-core</artifactId>
+		<version>2.0.1</version>
+	</dependency>
     <dependency>
       <groupId>org.jboss.xnio</groupId>
       <artifactId>xnio-api</artifactId>
@@ -128,7 +133,6 @@
       <version>2.0.2.GA</version>
       <scope>compile</scope>
     </dependency>
-    <!--
     <dependency>
       <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
@@ -145,7 +149,6 @@
       </exclusions>
       <scope>compile</scope>
     </dependency>
-    -->
     <dependency>
       <groupId>javassist</groupId>
       <artifactId>javassist</artifactId>

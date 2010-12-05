@@ -15,11 +15,26 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-package org.msgpack.rpc.transport;
+package org.msgpack.rpc.config;
 
-import java.io.Closeable;
+public abstract class StreamClientConfig extends ClientConfig {
+	protected double connectTimeout = 10;  // FIXME
+	protected int reconnectionLimit = 3;  // FIXME
 
-public interface ServerTransport extends Closeable {
-	public void close();
+	public double getConnectTimeout() {
+		return connectTimeout;
+	}
+
+	public void setConnectTimeout(double sec) {
+		connectTimeout = sec;
+	}
+
+	public int getReconnectionLimit() {
+		return reconnectionLimit;
+	}
+
+	public void setReconnectionLimit(int num) {
+		reconnectionLimit = num;
+	}
 }
 

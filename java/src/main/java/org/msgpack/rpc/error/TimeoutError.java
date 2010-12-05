@@ -15,11 +15,18 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-package org.msgpack.rpc.transport;
+package org.msgpack.rpc.error;
 
-import java.io.Closeable;
+public class TimeoutError extends RPCError {
+	public TimeoutError(String message) {
+		super(message);
+	}
 
-public interface ServerTransport extends Closeable {
-	public void close();
+	public static final String CODE = "TimeoutError";
+
+	@Override
+	public String getCode() {
+		return CODE;
+	}
 }
 

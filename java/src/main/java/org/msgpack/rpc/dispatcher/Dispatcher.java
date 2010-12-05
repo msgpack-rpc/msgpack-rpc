@@ -15,11 +15,11 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-package org.msgpack.rpc.transport;
+package org.msgpack.rpc.dispatcher;
 
-import java.io.Closeable;
+import org.msgpack.rpc.Request;
 
-public interface ServerTransport extends Closeable {
-	public void close();
+public interface Dispatcher {
+	void dispatch(Request request) throws Exception;
 }
 

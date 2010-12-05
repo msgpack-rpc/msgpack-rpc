@@ -15,11 +15,30 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-package org.msgpack.rpc.transport;
+package org.msgpack.rpc.error;
 
-import java.io.Closeable;
+import org.msgpack.*;
+import java.io.IOException;
 
-public interface ServerTransport extends Closeable {
-	public void close();
+public class NoMethodError extends RemoteError {
+	public NoMethodError() {
+		super();
+	}
+
+	public NoMethodError(String message) {
+		super(message);
+	}
+
+	public void messagePack(Packer pk) throws IOException {
+		pk.packArray(1);
+		pk.pack(getMessage());
+	}
+
+	public static final String CODE = "RemoteError.NoMethodError";
+
+	@Override
+	public String getCode() {
+		return CODE;
+	}
 }
 

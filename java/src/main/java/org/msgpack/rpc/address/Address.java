@@ -15,11 +15,11 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-package org.msgpack.rpc.transport;
+package org.msgpack.rpc.address;
 
-import java.io.Closeable;
+import java.net.SocketAddress;
 
-public interface ServerTransport extends Closeable {
-	public void close();
+public abstract class Address {
+	abstract public SocketAddress getSocketAddress();
 }
 

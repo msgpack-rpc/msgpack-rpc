@@ -15,11 +15,17 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-package org.msgpack.rpc.transport;
+package org.msgpack.rpc.config;
 
-import java.io.Closeable;
+public abstract class ClientConfig {
+	protected int requestTimeout = 30;  // FIXME default timeout time
 
-public interface ServerTransport extends Closeable {
-	public void close();
+	public void setRequestTimeout(int sec) {
+		this.requestTimeout = sec;
+	}
+
+	public int getRequestTimeout() {
+		return this.requestTimeout;
+	}
 }
 
