@@ -127,7 +127,7 @@ public abstract class ReflectTest extends TestCase {
 		}
 	}
 
-	int port = 19850;
+	int port = 19860;
 
 	public synchronized Context startServer(Object handler) throws Exception {
 		Server svr = new Server(EventLoop.defaultEventLoop());
