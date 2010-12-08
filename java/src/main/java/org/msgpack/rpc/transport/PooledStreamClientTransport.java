@@ -50,24 +50,25 @@ public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends
 
 	@Override
 	public void sendMessage(Object msg) {
-//System.out.println("sending message: "+msg);
 		synchronized(lock) {
 			if(connecting == -1) { return; }  // already closed
 			if(pool.isEmpty()) {
 				if(connecting == 0) {
-					tryConnect(lock);
 					connecting++;
+					startConnection();
 				}
-				try {
-					MessagePack.pack(getPendingBuffer(), msg);
-				} catch (IOException e) {
-					// FIXME
+				if(pool.isEmpty()) { // may be already connected
+					try {
+						MessagePack.pack(getPendingBuffer(), msg);
+					} catch (IOException e) {
+						// FIXME
+					}
+					return;
 				}
-			} else {
-				// FIXME pseudo connecting load balancing
-				Channel c = pool.get(0);
-				sendMessageChannel(c, msg);
 			}
+			// FIXME pseudo connection load balancing
+			Channel c = pool.get(0);
+			sendMessageChannel(c, msg);
 		}
 	}
 
@@ -75,7 +76,8 @@ public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends
 	public void close() {
 		synchronized(lock) {
 			if(pendingBuffer != null) {
-				resetPendingBuffer(pendingBuffer);
+				closePendingBuffer(pendingBuffer);
+				pendingBuffer = null;
 			}
 			connecting = -1;
 			for(Channel c : pool) {
@@ -86,24 +88,22 @@ public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends
 	}
 
 	public void onConnected(Channel c) {
-//System.out.println("connected: "+c);
 		synchronized(lock) {
 			if(connecting == -1) { closeChannel(c); return; }  // already closed
 			pool.add(c);
+			connecting = 0;
 			if(pendingBuffer != null) {
 				flushPendingBuffer(pendingBuffer, c);
 			}
-			connecting = 0;
 		}
 	}
 
 	public void onConnectFailed(Throwable cause) {
-//System.out.println("connect failed: "+cause);
 		synchronized(lock) {
 			if(connecting == -1) { return; }  // already closed
 			if(connecting < reconnectionLimit) {
-				tryConnect(lock);
 				connecting++;
+				startConnection();
 			} else {
 				connecting = 0;
 				if(pendingBuffer != null) {
@@ -115,15 +115,10 @@ public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends
 	}
 
 	public void onClosed(Channel c) {
-//System.out.println("closed: "+c);
 		synchronized(lock) {
 			if(connecting == -1) { return; }  // already closed
 			pool.remove(c);
 		}
-	}
-
-	private void tryConnect(Object locked) {
-		startConnection();
 	}
 
 	private PendingBuffer pendingBuffer = null;
@@ -138,6 +133,7 @@ public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends
 	protected abstract PendingBuffer newPendingBuffer();
 	protected abstract void resetPendingBuffer(PendingBuffer b);
 	protected abstract void flushPendingBuffer(PendingBuffer b, Channel c);
+	protected abstract void closePendingBuffer(PendingBuffer b);
 
 	protected abstract void startConnection();
 

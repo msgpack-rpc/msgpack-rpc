@@ -22,7 +22,7 @@ import org.msgpack.rpc.error.*;
 
 public class Future {
 	private Object lock = new Object();
-	private boolean set = false;
+	private volatile boolean set = false;
 
 	private Session session;
 	private MessagePackObject result;

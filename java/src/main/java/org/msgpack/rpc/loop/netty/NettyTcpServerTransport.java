@@ -40,6 +40,7 @@ class NettyTcpServerTransport implements ServerTransport {
 		ServerBootstrap bootstrap = new ServerBootstrap(loop.getServerFactory());
 		bootstrap.setPipelineFactory(new StreamPipelineFactory(handler));
 		bootstrap.setOption("child.tcpNoDelay", true);
+		bootstrap.setOption("reuseAddress", true);
 
 		this.listenChannel = bootstrap.bind(address.getSocketAddress());
 	}
@@ -47,25 +48,5 @@ class NettyTcpServerTransport implements ServerTransport {
 	public void close() {
 		listenChannel.close();
 	}
-
-	/*
-	private static class OptionSetHandler extends SimpleChannelUpstreamHandler {
-		@Override
-		public void childChannelOpen(
-				ChannelHandlerContext ctx,
-				ChildChannelStateEvent e) throws Exception {
-			Channel channel = e.getChildChannel();
-
-			ChannelConfig config = channel.getConfig();
-			config.setOption("tcpNoDelay", true);
-			config.setBufferFactory(
-					new StreamChannelBuffer(
-						HeapChannelBufferFactory.getInstance()));
-			// TODO: share DirectChannelBufferFactory between child channels
-
-			ctx.sendUpstream(e);
-		}
-	}
-	*/
 }
 
