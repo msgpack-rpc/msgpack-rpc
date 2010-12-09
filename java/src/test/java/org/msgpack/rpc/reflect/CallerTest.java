@@ -29,7 +29,6 @@ import junit.framework.*;
 import org.junit.Test;
 
 public class CallerTest extends ReflectTest {
-	/*
 	@Test
 	public void testSyncClient() throws Exception {
 		Caller<TestRpc> caller = ReflectionCallerBuilder.build(TestRpc.class);
@@ -73,6 +72,5 @@ public class CallerTest extends ReflectTest {
 			context.close();
 		}
 	}
-	*/
 }
 
