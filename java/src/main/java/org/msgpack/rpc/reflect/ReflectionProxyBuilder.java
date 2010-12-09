@@ -50,7 +50,7 @@ public class ReflectionProxyBuilder extends ProxyBuilder {
 			return rpcName;
 		}
 
-		public Template getreturnTypeTemplate() {
+		public Template getReturnTypeTemplate() {
 			return returnTypeTemplate;
 		}
 
@@ -95,11 +95,11 @@ public class ReflectionProxyBuilder extends ProxyBuilder {
 			}
 			Object[] params = e.sort(args);
 			if(e.isAsync()) {
-				// TODO async
-				throw new RuntimeException("async is not supported yet");
+				Future<MessagePackObject> f = s.callAsyncApply(e.getRpcName(), params);
+				return new Future<Object>(f, e.getReturnTypeTemplate());
 			} else {
 				MessagePackObject obj = s.callApply(e.getRpcName(), params);
-				Template tmpl = e.getreturnTypeTemplate();
+				Template tmpl = e.getReturnTypeTemplate();
 				if(tmpl == null) {
 					return null;
 				}

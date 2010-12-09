@@ -39,8 +39,6 @@ public class NettyEventLoop extends EventLoop {
 		super(workerExecutor, ioExecutor, scheduledExecutor);
 	}
 
-	// FIXME constructors
-
 	private ClientSocketChannelFactory clientFactory = null;
 	private ServerSocketChannelFactory serverFactory = null;
 

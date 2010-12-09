@@ -105,8 +105,8 @@ public abstract class ProxyBuilder {
 
 
 	static boolean isAsyncMethod(Method targetMethod) {
-		// FIXME return type instanceof Future
-		return false;
+		// return type is Future<T>
+		return targetMethod.getReturnType().equals(Future.class);
 	}
 
 
@@ -131,12 +131,16 @@ public abstract class ProxyBuilder {
 
 			String rpcName = method.getName();
 			if(async) {
-				// TODO: modify name? e.g. remove /Async$/
+				// removes /Async$/
+				if(rpcName.endsWith("Async")) {
+					rpcName = rpcName.substring(0, rpcName.length()-5);
+				}
 			}
 
-			Class<?> returnType = (Class<?>)method.getGenericReturnType();
+			Type returnType = method.getGenericReturnType();
 			if(async) {
-				// TODO: actual return type is Future<HERE>
+				// actual return type is Future<HERE>
+				returnType = ((ParameterizedType)returnType).getActualTypeArguments()[0];
 			}
 
 			result[i] = new MethodEntry(method, rpcName,
