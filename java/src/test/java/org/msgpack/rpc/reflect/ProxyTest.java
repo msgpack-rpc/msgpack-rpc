@@ -28,13 +28,11 @@ import java.util.*;
 import junit.framework.*;
 import org.junit.Test;
 
-public class CallerTest extends ReflectTest {
+public class ProxyTest extends ReflectTest {
 	@Test
 	public void testSyncClient() throws Exception {
-		Caller<TestRpc> caller = ReflectionCallerBuilder.build(TestRpc.class);
-
 		Context context = startServer(new SyncHandler());
-		TestRpc c = caller.newProxyInstance(context.getClient());
+		TestRpc c = context.getClient().proxy(TestRpc.class);
 		try {
 			String r01 = c.m01();
 			assertEquals("m01", r01);

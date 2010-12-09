@@ -15,11 +15,17 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 //
-package org.msgpack.rpc.reflect;
+package org.msgpack.rpc.loop;
 
-import org.msgpack.rpc.Session;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
-public interface Caller<T> {
-	public T newProxyInstance(Session s);
+public interface EventLoopFactory {
+	public EventLoop make(
+			ExecutorService workerExecutor,
+			ExecutorService ioExecutor,
+			ScheduledExecutorService scheduledExecutor);
+
+	// TODO Map<String, String> EventLoopConfig
 }
 

@@ -24,6 +24,7 @@ import org.msgpack.MessagePackObject;
 import org.msgpack.rpc.address.Address;
 import org.msgpack.rpc.address.IPAddress;
 import org.msgpack.rpc.dispatcher.Dispatcher;
+import org.msgpack.rpc.dispatcher.MethodDispatcher;
 import org.msgpack.rpc.config.ClientConfig;
 import org.msgpack.rpc.config.ServerConfig;
 import org.msgpack.rpc.config.TcpServerConfig;
@@ -54,6 +55,10 @@ public class Server extends SessionPool {
 
 	public void serve(Dispatcher dp) {
 		this.dp = dp;
+	}
+
+	public void serve(Object handler) {
+		this.dp = new MethodDispatcher(handler);
 	}
 
 	public void listen(String host, int port) throws UnknownHostException, IOException {

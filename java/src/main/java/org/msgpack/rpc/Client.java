@@ -47,6 +47,18 @@ public class Client extends Session implements Closeable {
 		this(new IPAddress(host, port), config, loop);
 	}
 
+	public Client(InetSocketAddress address) {
+		this(new IPAddress(address), new TcpClientConfig(), EventLoop.defaultEventLoop());
+	}
+
+	public Client(InetSocketAddress address, ClientConfig config) {
+		this(new IPAddress(address), config, EventLoop.defaultEventLoop());
+	}
+
+	public Client(InetSocketAddress address, EventLoop loop) {
+		this(new IPAddress(address), new TcpClientConfig(), loop);
+	}
+
 	public Client(InetSocketAddress address, ClientConfig config, EventLoop loop) {
 		this(new IPAddress(address), config, loop);
 	}

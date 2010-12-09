@@ -27,6 +27,7 @@ import org.msgpack.MessagePackObject;
 import org.msgpack.rpc.address.Address;
 import org.msgpack.rpc.message.RequestMessage;
 import org.msgpack.rpc.message.NotifyMessage;
+import org.msgpack.rpc.reflect.ProxyBuilder;
 import org.msgpack.rpc.transport.ClientTransport;
 import org.msgpack.rpc.config.ClientConfig;
 import org.msgpack.rpc.loop.EventLoop;
@@ -45,6 +46,10 @@ public class Session {
 		this.loop = loop;
 		this.requestTimeout = config.getRequestTimeout();
 		this.transport = loop.openTransport(config, this);
+	}
+
+	public <T> T proxy(Class<T> iface) {
+		return ProxyBuilder.build(iface).newProxyInstance(this);
 	}
 
 	public Address getAddress() {

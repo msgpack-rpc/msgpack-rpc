@@ -17,6 +17,8 @@
 //
 package org.msgpack.rpc.loop.netty;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.ServerSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
@@ -30,8 +32,11 @@ import org.msgpack.rpc.config.TcpServerConfig;
 import org.msgpack.rpc.config.TcpClientConfig;
 
 public class NettyEventLoop extends EventLoop {
-	public NettyEventLoop() {
-		super();
+	public NettyEventLoop(
+			ExecutorService workerExecutor,
+			ExecutorService ioExecutor,
+			ScheduledExecutorService scheduledExecutor) {
+		super(workerExecutor, ioExecutor, scheduledExecutor);
 	}
 
 	// FIXME constructors
@@ -42,7 +47,7 @@ public class NettyEventLoop extends EventLoop {
 	public synchronized ClientSocketChannelFactory getClientFactory() {
 		if(clientFactory == null) {
 			clientFactory = new NioClientSocketChannelFactory(
-						getBossExecutor(),
+						getIoExecutor(),
 						getWorkerExecutor()); // TODO: workerCount
 		}
 		return clientFactory;
@@ -51,8 +56,10 @@ public class NettyEventLoop extends EventLoop {
 	public synchronized ServerSocketChannelFactory getServerFactory() {
 		if(serverFactory == null) {
 			serverFactory = new NioServerSocketChannelFactory(
-						getBossExecutor(),
-						getWorkerExecutor()); // TODO: workerCount
+						getIoExecutor(),
+						getIoExecutor()); // TODO: workerCount
+			// messages will be dispatched to worker thread on server.
+			// see useThread(true) in NettyTcpClientTransport().
 		}
 		return serverFactory;
 	}

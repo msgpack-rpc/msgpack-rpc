@@ -44,7 +44,7 @@ public class MethodSelector {
 
 	public static boolean isRpcServerMethod(Method method) {
 		return isRpcMethod(method) &&
-			!CallerBuilder.isAsyncMethod(method);
+			!ProxyBuilder.isAsyncMethod(method);
 	}
 
 	public static boolean isRpcClientMethod(Method method) {

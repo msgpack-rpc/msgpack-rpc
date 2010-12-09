@@ -39,9 +39,9 @@ public class ServerTest extends TestCase {
 
 	@Test
 	public void testSyncLoad() throws Exception {
-		EventLoop loop = new NettyEventLoop();
+		EventLoop loop = EventLoop.start();
 		Server svr = new Server(loop);
-		Client c = new Client("127.0.0.1", 19850);
+		Client c = new Client("127.0.0.1", 19850, loop);
 		c.setRequestTimeout(10);
 
 		try {
@@ -69,9 +69,9 @@ public class ServerTest extends TestCase {
 
 	@Test
 	public void testAsyncLoad() throws Exception {
-		EventLoop loop = new NettyEventLoop();
+		EventLoop loop = EventLoop.start();
 		Server svr = new Server(loop);
-		Client c = new Client("127.0.0.1", 19850);
+		Client c = new Client("127.0.0.1", 19850, loop);
 		c.setRequestTimeout(10);
 
 		try {
