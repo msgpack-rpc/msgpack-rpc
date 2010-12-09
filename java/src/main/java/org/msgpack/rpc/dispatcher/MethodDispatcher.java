@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.lang.reflect.*;
 import org.msgpack.rpc.reflect.Invoker;
-import org.msgpack.rpc.reflect.InvokerBuilder;
+import org.msgpack.rpc.reflect.Reflect;
 import org.msgpack.rpc.reflect.MethodSelector;
 import org.msgpack.rpc.*;
 
@@ -48,7 +48,7 @@ public class MethodDispatcher implements Dispatcher {
 		this.methodMap = new HashMap<String, Invoker>();
 		for(Method method : methods) {
 			// FIXME check duplication of the names
-			methodMap.put(method.getName(), InvokerBuilder.build(method));
+			methodMap.put(method.getName(), Reflect.reflectInvoker(method));
 		}
 	}
 
