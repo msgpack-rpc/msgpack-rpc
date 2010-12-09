@@ -17,12 +17,14 @@
 //
 package org.msgpack.rpc;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.msgpack.MessagePackObject;
 import org.msgpack.Template;
 import org.msgpack.template.TemplateRegistry;
 import org.msgpack.rpc.error.*;
 
-public class Future<T> {
+public class Future<V> implements java.util.concurrent.Future<V> {
 	private FutureImpl impl;
 	private Template resultTemplate;
 
@@ -36,7 +38,7 @@ public class Future<T> {
 		this.resultTemplate = resultTemplate;
 	}
 
-	public Future(Future<MessagePackObject> future, Class<T> resultClass) {
+	public Future(Future<MessagePackObject> future, Class<V> resultClass) {
 		this.impl = future.impl;
 		if(resultClass != void.class) {
 			this.resultTemplate = TemplateRegistry.lookup(resultClass);
@@ -52,30 +54,58 @@ public class Future<T> {
 		impl.attachCallback(callback);
 	}
 
-	public T get() {
+	public V get() throws InterruptedException {
 		join();
-		if(!getError().isNil()) {
-			// FIXME exception
-			throw new RemoteError(getError());
-		}
+		checkThrowError();
 		return getResult();
 	}
 
-	public void join() {
+	public V get(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
+		join(timeout, unit);
+		checkThrowError();
+		return getResult();
+	}
+
+	public void join() throws InterruptedException {
 		impl.join();
 	}
 
-	public T getResult() {
+	public void join(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
+		impl.join(timeout, unit);
+	}
+
+	public boolean isDone() {
+		return impl.isDone();
+	}
+
+	public boolean cancel(boolean mayInterruptIfRunning) {
+		// FIXME
+		return false;
+	}
+
+	public boolean isCancelled() {
+		// FIXME
+		return false;
+	}
+
+	public V getResult() {
 		MessagePackObject result = impl.getResult();
 		if(resultTemplate == null) {
-			return (T)result;
+			return (V)result;
 		} else {
-			return (T)result.convert(resultTemplate);
+			return (V)result.convert(resultTemplate);
 		}
 	}
 
 	public MessagePackObject getError() {
 		return impl.getError();
+	}
+
+	private void checkThrowError() {
+		if(!getError().isNil()) {
+			// FIXME exception
+			throw new RemoteError(getError());
+		}
 	}
 }
 
