@@ -17,6 +17,8 @@
 //
 package org.msgpack.rpc;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.msgpack.MessagePackObject;
 
 class FutureImpl {
@@ -25,35 +27,43 @@ class FutureImpl {
 
 	private Object lock = new Object();
 	private int timeout;
-	private volatile boolean set = false;
+	private volatile boolean done = false;
 
 	private MessagePackObject result;
 	private MessagePackObject error;
 
-	public FutureImpl(Session session) {
+	FutureImpl(Session session) {
 		this.session = session;
 		this.timeout = session.getRequestTimeout();
 	}
 
-	public void attachCallback(Runnable callback) {
+	void attachCallback(Runnable callback) {
 		synchronized(lock) {
 			this.callback = callback;
 		}
-		if(set) {
+		if(done) {
 			session.getEventLoop().getWorkerExecutor().submit(callback);
 		}
 	}
 
-	public void join() {
+	void join() throws InterruptedException {
 		synchronized(lock) {
-			try {
-				while(set == false) {
-					lock.wait();
-				}
-			} catch(InterruptedException e) {
-				// FIXME exception
+			while(done == false) {
+				lock.wait();
 			}
 		}
+	}
+
+	void join(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
+		synchronized(lock) {
+			while(done == false) {
+				lock.wait(unit.toMillis(timeout));
+			}
+		}
+	}
+
+	public boolean isDone() {
+		return done;
 	}
 
 	public MessagePackObject getResult() {
@@ -68,7 +78,7 @@ class FutureImpl {
 		synchronized(lock) {
 			this.result = result;
 			this.error = error;
-			this.set = true;
+			this.done = true;
 			lock.notifyAll();
 		}
 		if(callback != null) {
