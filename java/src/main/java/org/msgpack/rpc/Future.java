@@ -17,25 +17,42 @@
 //
 package org.msgpack.rpc;
 
-import org.msgpack.*;
+import org.msgpack.MessagePackObject;
+import org.msgpack.Template;
+import org.msgpack.template.TemplateRegistry;
 import org.msgpack.rpc.error.*;
 
-public class Future {
-	private Object lock = new Object();
-	private volatile boolean set = false;
+public class Future<T> {
+	private FutureImpl impl;
+	private Template resultTemplate;
 
-	private Session session;
-	private MessagePackObject result;
-	private MessagePackObject error;
-	private int timeout;
-	private Runnable callback = null;
-
-	public Future(Session session) {
-		this.session = session;
-		this.timeout = session.getRequestTimeout();
+	Future(FutureImpl impl) {
+		this.impl = impl;
+		this.resultTemplate = null;
 	}
 
-	public MessagePackObject get() {
+	Future(FutureImpl impl, Template resultTemplate) {
+		this.impl = impl;
+		this.resultTemplate = resultTemplate;
+	}
+
+	public Future(Future<MessagePackObject> future, Class<T> resultClass) {
+		this.impl = future.impl;
+		if(resultClass != void.class) {
+			this.resultTemplate = TemplateRegistry.lookup(resultClass);
+		}
+	}
+
+	public Future(Future<MessagePackObject> future, Template resultTemplate) {
+		this.impl = future.impl;
+		this.resultTemplate = resultTemplate;
+	}
+
+	public void attachCallback(Runnable callback) {
+		impl.attachCallback(callback);
+	}
+
+	public T get() {
 		join();
 		if(!getError().isNil()) {
 			// FIXME exception
@@ -45,55 +62,20 @@ public class Future {
 	}
 
 	public void join() {
-		synchronized(lock) {
-			try {
-				while(set == false) {
-					lock.wait();
-				}
-			} catch(InterruptedException e) {
-				// FIXME exception
-			}
-		}
+		impl.join();
 	}
 
-	public void attachCallback(Runnable callback) {
-		synchronized(lock) {
-			this.callback = callback;
+	public T getResult() {
+		MessagePackObject result = impl.getResult();
+		if(resultTemplate == null) {
+			return (T)result;
+		} else {
+			return (T)result.convert(resultTemplate);
 		}
-		if(set) {
-			session.getEventLoop().getWorkerExecutor().submit(callback);
-		}
-	}
-
-	public MessagePackObject getResult() {
-		return result;
 	}
 
 	public MessagePackObject getError() {
-		return error;
-	}
-
-	public void setResult(MessagePackObject result, MessagePackObject error) {
-		synchronized(lock) {
-			this.result = result;
-			this.error = error;
-			this.set = true;
-			lock.notifyAll();
-		}
-		if(callback != null) {
-			// FIXME submit?
-			//session.getEventLoop().getWorkerExecutor().submit(callback);
-			callback.run();
-		}
-	}
-
-	boolean stepTimeout() {
-		if(timeout <= 0) {
-			return true;
-		} else {
-			timeout--;
-			return false;
-		}
+		return impl.getError();
 	}
 }
 
