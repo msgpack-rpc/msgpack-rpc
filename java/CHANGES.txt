@@ -1,3 +1,25 @@
+
+Release 0.6.0 - 2010/12/09
+  NEW FEATURES
+    I/O event loop uses Netty instead of XNIO.
+    I/O event loop becomes pluggable.
+
+    Added reflection feature.
+    Method dispatcher is automatically generated from class declaration.
+    Client proxy instance is automatically generated from interface declaration.
+
+    Reflection feature accepts @Optional, @Requred, @Nullabe, @Ignore and @Index
+    annotations on each arguments.
+
+Release 0.5.0 - 2010/11/05
+  NEW FEATURES
+    All codes are rewritten.
+
+    Added dynamic code generator that generates method dispatcher for servers and
+    proxy instance for clients.
+
+    I/O event loop uses XNIO instead of Netty.
+
 Release 0.4.1 - 2010/06/29
   IMPROVEMENTS
     Lookup method by Map at server-side, not by linear search.
