@@ -29,10 +29,22 @@ import org.msgpack.rpc.config.ClientConfig;
 import org.msgpack.rpc.config.ServerConfig;
 import org.msgpack.rpc.config.TcpClientConfig;
 import org.msgpack.rpc.config.TcpServerConfig;
-import org.msgpack.rpc.loop.netty.NettyEventLoop;
+import org.msgpack.rpc.loop.netty.NettyEventLoopFactory;
 
 public abstract class EventLoop {
+	static private EventLoopFactory loopFactory;
 	static private EventLoop defaultEventLoop;
+
+	static public synchronized void setFactory(EventLoopFactory factory) {
+		loopFactory = factory;
+	}
+
+	static private synchronized EventLoopFactory getFactory() {
+		if(loopFactory == null) {
+			loopFactory = new NettyEventLoopFactory();
+		}
+		return loopFactory;
+	}
 
 	static public synchronized void setDefaultEventLoop(EventLoop eventLoop) {
 		defaultEventLoop = eventLoop;
@@ -40,45 +52,63 @@ public abstract class EventLoop {
 
 	static public synchronized EventLoop defaultEventLoop() {
 		if(defaultEventLoop == null) {
-			defaultEventLoop = new NettyEventLoop();
+			defaultEventLoop = start();
 		}
 		return defaultEventLoop;
 	}
 
-	private ExecutorService bossExecutor;
+
+	static public EventLoop start() {
+		return start(
+				Executors.newCachedThreadPool());
+	}
+
+	static public EventLoop start(
+			ExecutorService workerExecutor) {
+		return start(
+				workerExecutor,
+				Executors.newCachedThreadPool());
+	}
+
+	static public EventLoop start(
+			ExecutorService workerExecutor,
+			ExecutorService ioExecutor) {
+		return start(
+				workerExecutor,
+				ioExecutor,
+				Executors.newScheduledThreadPool(2));
+	}
+
+	static public EventLoop start(
+			ExecutorService workerExecutor,
+			ExecutorService ioExecutor,
+			ScheduledExecutorService scheduledExecutor) {
+		return getFactory().make(
+				workerExecutor,
+				ioExecutor,
+				scheduledExecutor);
+	}
+
+
 	private ExecutorService workerExecutor;
+	private ExecutorService ioExecutor;
 	private ScheduledExecutorService scheduledExecutor;
 
-	public EventLoop() {
-		this(Executors.newCachedThreadPool());
-	}
-
-	public EventLoop(
-			ExecutorService workerExecutor) {
-		this(workerExecutor, Executors.newScheduledThreadPool(2));
-	}
-
 	public EventLoop(
 			ExecutorService workerExecutor,
+			ExecutorService ioExecutor,
 			ScheduledExecutorService scheduledExecutor) {
-		this(workerExecutor, scheduledExecutor, Executors.newCachedThreadPool());
-	}
-
-	public EventLoop(
-			ExecutorService workerExecutor,
-			ScheduledExecutorService scheduledExecutor,
-			ExecutorService bossExecutor) {
 		this.workerExecutor = workerExecutor;
 		this.scheduledExecutor = scheduledExecutor;
-		this.bossExecutor = bossExecutor;
+		this.ioExecutor = ioExecutor;
 	}
 
 	public ExecutorService getWorkerExecutor() {
 		return workerExecutor;
 	}
 
-	public ExecutorService getBossExecutor() {
-		return bossExecutor;
+	public ExecutorService getIoExecutor() {
+		return ioExecutor;
 	}
 
 	public ScheduledExecutorService getScheduledExecutor() {
@@ -87,7 +117,7 @@ public abstract class EventLoop {
 
 	public void shutdown() {
 		scheduledExecutor.shutdown();
-		bossExecutor.shutdown();
+		ioExecutor.shutdown();
 		workerExecutor.shutdown();
 	}
 

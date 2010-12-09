@@ -36,6 +36,7 @@ class NettyTcpServerTransport implements ServerTransport {
 
 		Address address = config.getListenAddress();
 		RpcMessageHandler handler = new RpcMessageHandler(server);
+		handler.useThread(true);
 
 		ServerBootstrap bootstrap = new ServerBootstrap(loop.getServerFactory());
 		bootstrap.setPipelineFactory(new StreamPipelineFactory(handler));

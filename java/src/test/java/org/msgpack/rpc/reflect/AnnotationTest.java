@@ -62,9 +62,8 @@ public class AnnotationTest extends ReflectTest {
 
 	@Test
 	public void testIgnoreClientOmitServer() throws Exception {
-		Caller<IgnoreTest> caller = CallerBuilder.build(IgnoreTest.class);
 		Context context = startServer(new OmitTestHandler());
-		IgnoreTest c = caller.newProxyInstance(context.getClient());
+		IgnoreTest c = context.getClient().proxy(IgnoreTest.class);
 		try {
 			String result;
 
@@ -81,9 +80,8 @@ public class AnnotationTest extends ReflectTest {
 
 	@Test
 	public void testOmitClientIgnoreServer() throws Exception {
-		Caller<OmitTest> caller = CallerBuilder.build(OmitTest.class);
 		Context context = startServer(new IgnoreTestHandler());
-		OmitTest c = caller.newProxyInstance(context.getClient());
+		OmitTest c = context.getClient().proxy(OmitTest.class);
 		try {
 			String result;
 			
@@ -116,9 +114,8 @@ public class AnnotationTest extends ReflectTest {
 
 	@Test
 	public void testOptionalV1() throws Exception {
-		Caller<OptionalTestV1> caller = CallerBuilder.build(OptionalTestV1.class);
 		Context context = startServer(new OptionalTestHandler());
-		OptionalTestV1 c = caller.newProxyInstance(context.getClient());
+		OptionalTestV1 c = context.getClient().proxy(OptionalTestV1.class);
 		try {
 			String result;
 
@@ -132,9 +129,8 @@ public class AnnotationTest extends ReflectTest {
 
 	@Test
 	public void testOptionalV2() throws Exception {
-		Caller<OptionalTestV2> caller = CallerBuilder.build(OptionalTestV2.class);
 		Context context = startServer(new OptionalTestHandler());
-		OptionalTestV2 c = caller.newProxyInstance(context.getClient());
+		OptionalTestV2 c = context.getClient().proxy(OptionalTestV2.class);
 		try {
 			String result;
 
@@ -193,9 +189,8 @@ public class AnnotationTest extends ReflectTest {
 
 	@Test
 	public void testIndexV1ClientV2Server() throws Exception {
-		Caller<IndexTestV1> caller = CallerBuilder.build(IndexTestV1.class);
 		Context context = startServer(new IndexTestHandlerV2());
-		IndexTestV1 c = caller.newProxyInstance(context.getClient());
+		IndexTestV1 c = context.getClient().proxy(IndexTestV1.class);
 		try {
 			String result;
 
@@ -215,9 +210,8 @@ public class AnnotationTest extends ReflectTest {
 
 	@Test
 	public void testIndexV2ClientV1Server() throws Exception {
-		Caller<IndexTestV2> caller = CallerBuilder.build(IndexTestV2.class);
 		Context context = startServer(new IndexTestHandlerV1());
-		IndexTestV2 c = caller.newProxyInstance(context.getClient());
+		IndexTestV2 c = context.getClient().proxy(IndexTestV2.class);
 		try {
 			String result;
 
@@ -237,9 +231,8 @@ public class AnnotationTest extends ReflectTest {
 
 	@Test
 	public void testIndexV2FullClientV2Server() throws Exception {
-		Caller<IndexTestV2Full> caller = CallerBuilder.build(IndexTestV2Full.class);
 		Context context = startServer(new IndexTestHandlerV2());
-		IndexTestV2Full c = caller.newProxyInstance(context.getClient());
+		IndexTestV2Full c = context.getClient().proxy(IndexTestV2Full.class);
 		try {
 			String result;
 

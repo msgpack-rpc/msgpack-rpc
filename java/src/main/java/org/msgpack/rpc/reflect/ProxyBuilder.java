@@ -20,7 +20,7 @@ package org.msgpack.rpc.reflect;
 import java.lang.reflect.*;
 import org.msgpack.rpc.Future;
 
-public abstract class CallerBuilder {
+public abstract class ProxyBuilder {
 	public static class MethodEntry {
 		private Method method;
 		private String rpcName;
@@ -64,43 +64,43 @@ public abstract class CallerBuilder {
 	}
 
 	// Override this method
-	public abstract <T> Caller<T> buildCaller(Class<T> iface, MethodEntry[] entries);
+	public abstract <T> Proxy<T> buildProxy(Class<T> iface, MethodEntry[] entries);
 
-	public <T> Caller<T> buildCaller(Class<T> iface) {
+	public <T> Proxy<T> buildProxy(Class<T> iface) {
 		checkValidation(iface);
 		MethodEntry[] entries = readMethodEntries(iface);
-		return buildCaller(iface, entries);
+		return buildProxy(iface, entries);
 	}
 
-	private static CallerBuilder instance;
+	private static ProxyBuilder instance;
 
-	synchronized private static CallerBuilder getInstance() {
+	synchronized private static ProxyBuilder getInstance() {
 		if(instance == null) {
-			instance = selectDefaultCallerBuilder();
+			instance = selectDefaultProxyBuilder();
 		}
 		return instance;
 	}
 
 
-	private static CallerBuilder selectDefaultCallerBuilder() {
+	private static ProxyBuilder selectDefaultProxyBuilder() {
 		// TODO
 		//try {
-		//	// FIXME JavassistCallerBuilder doesn't work on DalvikVM
+		//	// FIXME JavassistProxyBuilder doesn't work on DalvikVM
 		//	if(System.getProperty("java.vm.name").equals("Dalvik")) {
-		//		return ReflectionCallerBuilder.getInstance();
+		//		return ReflectionProxyBuilder.getInstance();
 		//	}
 		//} catch (Exception e) {
 		//}
-		//return JavassistCallerBuilder.getInstance();
-		return ReflectionCallerBuilder.getInstance();
+		//return JavassistProxyBuilder.getInstance();
+		return ReflectionProxyBuilder.getInstance();
 	}
 
-	synchronized static void setInstance(CallerBuilder builder) {
+	synchronized static void setInstance(ProxyBuilder builder) {
 		instance = builder;
 	}
 
-	public static <T> Caller<T> build(Class<T> iface) {
-		return getInstance().buildCaller(iface);
+	public static <T> Proxy<T> build(Class<T> iface) {
+		return getInstance().buildProxy(iface);
 	}
 
 

@@ -24,11 +24,11 @@ import org.msgpack.rpc.*;
 import org.msgpack.*;
 import org.msgpack.template.*;
 
-public class ReflectionCallerBuilder extends CallerBuilder {
-	private static ReflectionCallerBuilder instance;
-	public synchronized static ReflectionCallerBuilder getInstance() {
+public class ReflectionProxyBuilder extends ProxyBuilder {
+	private static ReflectionProxyBuilder instance;
+	public synchronized static ReflectionProxyBuilder getInstance() {
 		if(instance == null) {
-			instance = new ReflectionCallerBuilder();
+			instance = new ReflectionProxyBuilder();
 		}
 		return instance;
 	}
@@ -108,23 +108,23 @@ public class ReflectionCallerBuilder extends CallerBuilder {
 		}
 	}
 
-	public class ReflectionCaller<T> implements Caller<T> {
+	public class ReflectionProxy<T> implements Proxy<T> {
 		private Class<T> iface;
 		private Map<Method, ReflectionMethodEntry> entryMap;
 
-		public ReflectionCaller(Class<T> iface, Map<Method, ReflectionMethodEntry> entryMap) {
+		public ReflectionProxy(Class<T> iface, Map<Method, ReflectionMethodEntry> entryMap) {
 			this.iface = iface;
 			this.entryMap = entryMap;
 		}
 
 		public T newProxyInstance(Session s) {
 			ReflectionHandler handler = new ReflectionHandler(s, entryMap);
-			return (T)Proxy.newProxyInstance(
+			return (T)java.lang.reflect.Proxy.newProxyInstance(
 					iface.getClassLoader(), new Class[] { iface }, handler);
 		}
 	}
 
-	public <T> Caller<T> buildCaller(Class<T> iface, MethodEntry[] entries) {
+	public <T> Proxy<T> buildProxy(Class<T> iface, MethodEntry[] entries) {
 		for(MethodEntry e : entries) {
 			Method method = e.getMethod();
 			int mod = method.getModifiers();
@@ -145,7 +145,7 @@ public class ReflectionCallerBuilder extends CallerBuilder {
 			entryMap.put(e.getMethod(), new ReflectionMethodEntry(e, tmpl));
 		}
 
-		return new ReflectionCaller<T>(iface, entryMap);
+		return new ReflectionProxy<T>(iface, entryMap);
 	}
 }
 

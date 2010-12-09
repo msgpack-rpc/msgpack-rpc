@@ -21,10 +21,13 @@ import org.msgpack.MessagePackObject;
 import org.msgpack.rpc.message.Messages;
 import org.msgpack.rpc.Session;
 import org.msgpack.rpc.Server;
+import org.msgpack.rpc.loop.EventLoop;
 
 public class RpcMessageHandler {
 	protected final Session session;
 	protected final Server server;
+	protected final EventLoop loop;
+	protected boolean useThread = false;
 
 	public RpcMessageHandler(Session session) {
 		this(session, null);
@@ -37,9 +40,44 @@ public class RpcMessageHandler {
 	public RpcMessageHandler(Session session, Server server) {
 		this.session = session;
 		this.server = server;
+		if(session == null) {
+			this.loop = server.getEventLoop();
+		} else {
+			this.loop = session.getEventLoop();
+		}
+	}
+
+	public void useThread(boolean value) {
+		useThread = value;
+	}
+
+	static class HandleMessageTask implements Runnable {
+		private RpcMessageHandler handler;
+		private MessageSendable channel;
+		private MessagePackObject msg;
+
+		HandleMessageTask(RpcMessageHandler handler,
+				MessageSendable channel, MessagePackObject msg) {
+			this.handler = handler;
+			this.channel = channel;
+			this.msg = msg;
+		}
+
+		public void run() {
+			handler.handleMessageImpl(channel, msg);
+		}
 	}
 
 	public void handleMessage(MessageSendable channel, MessagePackObject msg) {
+		if(useThread) {
+			loop.getWorkerExecutor()
+				.submit(new HandleMessageTask(this, channel, msg));
+		} else {
+			handleMessageImpl(channel, msg);
+		}
+	}
+
+	private void handleMessageImpl(MessageSendable channel, MessagePackObject msg) {
 		MessagePackObject[] array = msg.asArray();
 
 		// TODO check array.length
@@ -70,7 +108,7 @@ public class RpcMessageHandler {
 		}
 	}
 
-	public void handleRequest(MessageSendable channel,
+	private void handleRequest(MessageSendable channel,
 			int msgid, String method, MessagePackObject args) {
 		if(server == null) {
 			return;  // FIXME error result
@@ -78,7 +116,7 @@ public class RpcMessageHandler {
 		server.onRequest(channel, msgid, method, args);
 	}
 
-	public void handleNotify(MessageSendable channel,
+	private void handleNotify(MessageSendable channel,
 			String method, MessagePackObject args) {
 		if(server == null) {
 			return;  // FIXME error result?
@@ -86,7 +124,7 @@ public class RpcMessageHandler {
 		server.onNotify(method, args);
 	}
 
-	public void handleResponse(MessageSendable channel,
+	private void handleResponse(MessageSendable channel,
 			int msgid, MessagePackObject result, MessagePackObject error) {
 		if(session == null) {
 			return;  // FIXME error?
