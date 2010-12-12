@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.msgpack.rpc.Session;
 import org.msgpack.rpc.Server;
 import org.msgpack.rpc.transport.ClientTransport;
@@ -119,6 +120,13 @@ public abstract class EventLoop {
 		scheduledExecutor.shutdown();
 		ioExecutor.shutdown();
 		workerExecutor.shutdown();
+	}
+
+	public void join() throws InterruptedException {
+		// FIXME?
+		scheduledExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
+		ioExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
+		workerExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
 	}
 
 	// FIXME join? close?

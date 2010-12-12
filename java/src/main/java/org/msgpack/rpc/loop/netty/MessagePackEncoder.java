@@ -37,8 +37,8 @@ public class MessagePackEncoder extends OneToOneEncoder {
 	}
 
 	@Override
-    protected Object encode(
-            ChannelHandlerContext ctx, Channel channel,
+	protected Object encode(
+			ChannelHandlerContext ctx, Channel channel,
 			Object msg) throws Exception {
 		if(msg instanceof ChannelBuffer) {
 			return msg;
