@@ -70,7 +70,14 @@ public class Session {
 	}
 
 	public MessagePackObject callApply(String method, Object[] args) {
-		return sendRequest(method, args).get();
+		Future<MessagePackObject> f = sendRequest(method, args);
+		while(true) {
+			try {
+				return f.get();
+			} catch (InterruptedException e) {
+				// FIXME
+			}
+		}
 	}
 
 	public Future<MessagePackObject> callAsyncApply(String method, Object[] args) {
