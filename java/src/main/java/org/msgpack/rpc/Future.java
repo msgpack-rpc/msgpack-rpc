@@ -92,6 +92,8 @@ public class Future<V> implements java.util.concurrent.Future<V> {
 		MessagePackObject result = impl.getResult();
 		if(resultTemplate == null) {
 			return (V)result;
+		} else if(result.isNil()) {
+			return null;
 		} else {
 			return (V)result.convert(resultTemplate);
 		}
