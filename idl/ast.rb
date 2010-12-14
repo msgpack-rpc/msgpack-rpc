@@ -399,7 +399,7 @@ class Field
 	end
 
 	def normalize!(conf)  #:nodoc:
-		if !@default.nil? || @qualifier == "required"
+		if @default.nil? || @qualifier == "required"
 			@required = true
 		else
 			@required = false
@@ -551,9 +551,16 @@ class Type
 		@type_name.to_s
 	end
 
-	def integer_type?
-		@name == 'int8' || @name == 'int16' || @name == 'int32' || @name == 'int64' ||
+	def signed_integer_type?
+		@name == 'int8' || @name == 'int16' || @name == 'int32' || @name == 'int64'
+	end
+
+	def unsigned_integer_type?
 		@name == 'uint8' || @name == 'uint16' || @name == 'uint32' || @name == 'uint64'
+	end
+
+	def integer_type?
+		signed_integer_type? || unsigned_integer_type?
 	end
 
 	def bool_type?
