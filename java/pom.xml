@@ -5,7 +5,7 @@
   <groupId>org.msgpack</groupId>
   <artifactId>msgpack-rpc</artifactId>
   <packaging>jar</packaging>
-  <version>0.6.0-devel</version>
+  <version>0.6.1-devel</version>
 
   <name>msgpack-rpc</name>
   <url>http://msgpack.org/</url>

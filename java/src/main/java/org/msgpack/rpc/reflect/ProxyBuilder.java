@@ -51,7 +51,7 @@ public abstract class ProxyBuilder {
 		}
 
 		public boolean isReturnTypeVoid() {
-			return genericReturnType == void.class;
+			return genericReturnType == void.class || genericReturnType == Void.class;
 		}
 
 		public boolean isAsync() {
@@ -106,7 +106,8 @@ public abstract class ProxyBuilder {
 
 	static boolean isAsyncMethod(Method targetMethod) {
 		// return type is Future<T>
-		return targetMethod.getReturnType().equals(Future.class);
+		return targetMethod.getReturnType().equals( org.msgpack.rpc.Future.class ) ||
+			   targetMethod.getReturnType().equals( java.util.concurrent.Future.class );
 	}
 
 

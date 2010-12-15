@@ -10,7 +10,7 @@ function r() {
 function preprocess() {
 	file="$1"
 	out="$(dirname "$file")/$(basename "$file" mpl)"
-	r "$RUBY" mplex -rmpl "$file" -o "$out"
+	r "$RUBY" -I. mplex -rmpl "$file" -o "$out"
 	if [ "$?" != 0 ]; then
 		echo ""
 		echo "** preprocess failed **"
