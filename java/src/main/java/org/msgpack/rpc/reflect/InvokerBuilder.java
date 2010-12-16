@@ -112,21 +112,19 @@ public abstract class InvokerBuilder {
 	}
 
 	// Override this method
-	public abstract Invoker buildInvoker(Method targetMethod, ArgumentEntry[] entries,
-			boolean async);
+	public abstract Invoker buildInvoker(Object target, Method targetMethod, ArgumentEntry[] entries, boolean async);
 
-
-	public Invoker buildInvoker(Method targetMethod, FieldOption implicitOption) {
+	public Invoker buildInvoker(Object target, Method targetMethod, FieldOption implicitOption) {
 		checkValidation(targetMethod);
 		boolean async = isAsyncMethod(targetMethod);
-		return buildInvoker(targetMethod, readArgumentEntries(targetMethod, implicitOption, async), async);
+		return buildInvoker(target, targetMethod, readArgumentEntries(targetMethod, implicitOption, async), async);
 	}
 
-	public Invoker buildInvoker(Method targetMethod) {
+	public Invoker buildInvoker(Object target, Method targetMethod) {
 		checkValidation(targetMethod);
 		FieldOption implicitOption = readImplicitFieldOption(targetMethod);
 		boolean async = isAsyncMethod(targetMethod);
-		return buildInvoker(targetMethod, readArgumentEntries(targetMethod, implicitOption, async), async);
+		return buildInvoker(target, targetMethod, readArgumentEntries(targetMethod, implicitOption, async), async);
 	}
 
 // TODO ArgumentList を作る ArgumentOptionSet が必要
@@ -142,34 +140,31 @@ public abstract class InvokerBuilder {
 	}
 
 	private static InvokerBuilder selectDefaultInvokerBuilder() {
-		// TODO
-		//try {
-		//	// FIXME JavassistInvokerBuilder doesn't work on DalvikVM
-		//	if(System.getProperty("java.vm.name").equals("Dalvik")) {
-		//		return ReflectionInvokerBuilder.getInstance();
-		//	}
-		//} catch (Exception e) {
-		//}
-		//return JavassistInvokerBuilder.getInstance();
-		return ReflectionInvokerBuilder.getInstance();
+	    try {
+	        // FIXME JavassistInvokerBuilder doesn't work on DalvikVM
+	        if(System.getProperty("java.vm.name").equals("Dalvik")) {
+	            return ReflectionInvokerBuilder.getInstance();
+	        }
+	    } catch (Exception e) {
+	    }
+		return JavassistInvokerBuilder.getInstance();
 	}
 
 	synchronized static void setInstance(InvokerBuilder builder) {
 		instance = builder;
 	}
 
-	public static Invoker build(Method targetMethod) {
-		return getInstance().buildInvoker(targetMethod);
+	public static Invoker build(Object target, Method targetMethod) {
+		return getInstance().buildInvoker(target, targetMethod);
 	}
 
-	public static Invoker build(Method targetMethod, FieldOption implicitOption) {
-		return getInstance().buildInvoker(targetMethod, implicitOption);
+	public static Invoker build(Object target, Method targetMethod, FieldOption implicitOption) {
+		return getInstance().buildInvoker(target, targetMethod, implicitOption);
 	}
 
 	//public static Invoker build(Method targetMethod, ArgumentList alist) throws NoSuchFieldException {
 	//	return getInstance().buildInvoker(targetMethod, alist);
 	//}
-
 
 	static boolean isAsyncMethod(Method targetMethod) {
 		Type[] types = targetMethod.getParameterTypes();

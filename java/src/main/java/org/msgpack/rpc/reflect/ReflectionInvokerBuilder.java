@@ -218,8 +218,7 @@ public class ReflectionInvokerBuilder extends InvokerBuilder {
 		}
 	}
 
-	public Invoker buildInvoker(Method targetMethod, ArgumentEntry[] entries,
-			boolean async) {
+	public Invoker buildInvoker(Object target, Method targetMethod, ArgumentEntry[] entries, boolean async) {
 		int mod = targetMethod.getModifiers();
 		if(!Modifier.isPublic(mod)) {
 			targetMethod.setAccessible(true);
