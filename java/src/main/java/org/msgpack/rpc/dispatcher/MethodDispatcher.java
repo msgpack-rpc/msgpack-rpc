@@ -48,7 +48,7 @@ public class MethodDispatcher implements Dispatcher {
 		this.methodMap = new HashMap<String, Invoker>();
 		for(Method method : methods) {
 			// FIXME check duplication of the names
-		    methodMap.put(method.getName(), Reflect.reflectInvoker(target, method));
+		    methodMap.put(method.getName(), Reflect.reflectInvoker(method));
 		}
 	}
 

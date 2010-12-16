@@ -112,19 +112,19 @@ public abstract class InvokerBuilder {
 	}
 
 	// Override this method
-	public abstract Invoker buildInvoker(Object target, Method targetMethod, ArgumentEntry[] entries, boolean async);
+	public abstract Invoker buildInvoker(Method targetMethod, ArgumentEntry[] entries, boolean async);
 
-	public Invoker buildInvoker(Object target, Method targetMethod, FieldOption implicitOption) {
+	public Invoker buildInvoker(Method targetMethod, FieldOption implicitOption) {
 		checkValidation(targetMethod);
 		boolean async = isAsyncMethod(targetMethod);
-		return buildInvoker(target, targetMethod, readArgumentEntries(targetMethod, implicitOption, async), async);
+		return buildInvoker(targetMethod, readArgumentEntries(targetMethod, implicitOption, async), async);
 	}
 
-	public Invoker buildInvoker(Object target, Method targetMethod) {
+	public Invoker buildInvoker(Method targetMethod) {
 		checkValidation(targetMethod);
 		FieldOption implicitOption = readImplicitFieldOption(targetMethod);
 		boolean async = isAsyncMethod(targetMethod);
-		return buildInvoker(target, targetMethod, readArgumentEntries(targetMethod, implicitOption, async), async);
+		return buildInvoker(targetMethod, readArgumentEntries(targetMethod, implicitOption, async), async);
 	}
 
 // TODO ArgumentList を作る ArgumentOptionSet が必要
@@ -155,12 +155,12 @@ public abstract class InvokerBuilder {
 		instance = builder;
 	}
 
-	public static Invoker build(Object target, Method targetMethod) {
-		return getInstance().buildInvoker(target, targetMethod);
+	public static Invoker build(Method targetMethod) {
+		return getInstance().buildInvoker(targetMethod);
 	}
 
-	public static Invoker build(Object target, Method targetMethod, FieldOption implicitOption) {
-		return getInstance().buildInvoker(target, targetMethod, implicitOption);
+	public static Invoker build(Method targetMethod, FieldOption implicitOption) {
+		return getInstance().buildInvoker(targetMethod, implicitOption);
 	}
 
 	//public static Invoker build(Method targetMethod, ArgumentList alist) throws NoSuchFieldException {
