@@ -28,8 +28,8 @@ public class Reflect {
 		return instance.getProxy(iface);
 	}
 
-	public static Invoker reflectInvoker(Object target, Method method) {
-	    return instance.getInvoker(target, method);
+	public static Invoker reflectInvoker(Method method) {
+	    return instance.getInvoker(method);
 	}
 
 	private Map<Class<?>, Proxy<?>> proxyCache = new HashMap<Class<?>, Proxy<?>>();
@@ -48,10 +48,10 @@ public class Reflect {
 		return (Proxy<T>)proxy;
 	}
 
-	private synchronized Invoker getInvoker(Object target, Method method) {
+	private synchronized Invoker getInvoker(Method method) {
 		Invoker invoker = invokerCache.get(method);
 		if(invoker == null) {
-			invoker = InvokerBuilder.build(target, method);
+			invoker = InvokerBuilder.build(method);
 			invokerCache.put(method, invoker);
 		}
 		return invoker;
