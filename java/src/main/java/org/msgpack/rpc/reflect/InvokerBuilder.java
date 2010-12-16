@@ -140,14 +140,15 @@ public abstract class InvokerBuilder {
 	}
 
 	private static InvokerBuilder selectDefaultInvokerBuilder() {
-	    try {
-	        // FIXME JavassistInvokerBuilder doesn't work on DalvikVM
-	        if(System.getProperty("java.vm.name").equals("Dalvik")) {
-	            return ReflectionInvokerBuilder.getInstance();
-	        }
-	    } catch (Exception e) {
-	    }
-		return JavassistInvokerBuilder.getInstance();
+//	    try {
+//	        // FIXME JavassistInvokerBuilder doesn't work on DalvikVM
+//	        if(System.getProperty("java.vm.name").equals("Dalvik")) {
+//	            return ReflectionInvokerBuilder.getInstance();
+//	        }
+//	    } catch (Exception e) {
+//	    }
+//		return JavassistInvokerBuilder.getInstance();
+		return ReflectionInvokerBuilder.getInstance();
 	}
 
 	synchronized static void setInstance(InvokerBuilder builder) {
