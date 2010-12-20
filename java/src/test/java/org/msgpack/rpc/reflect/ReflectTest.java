@@ -17,16 +17,14 @@
 //
 package org.msgpack.rpc.reflect;
 
-import org.msgpack.*;
-import org.msgpack.object.*;
 import org.msgpack.rpc.*;
 import org.msgpack.rpc.dispatcher.*;
-import org.msgpack.rpc.config.*;
 import org.msgpack.rpc.loop.*;
-import org.msgpack.rpc.loop.netty.*;
+
+import java.lang.reflect.Method;
 import java.util.*;
+
 import junit.framework.*;
-import org.junit.Test;
 
 public abstract class ReflectTest extends TestCase {
 	static String stringify1(Iterable<String> a) {
@@ -134,7 +132,8 @@ public abstract class ReflectTest extends TestCase {
 		Client c = new Client("127.0.0.1", port);
 		c.setRequestTimeout(10);
 		try {
-			svr.serve(new MethodDispatcher(handler));
+		    svr.serve(new ReflectionMethodDispatcher(handler,
+		            MethodSelector.selectRpcServerMethod(handler.getClass())));
 			svr.listen(port);
 		} catch (Exception e) {
 			svr.close();
@@ -142,6 +141,42 @@ public abstract class ReflectTest extends TestCase {
 			throw e;
 		}
 		return new Context(svr, c, port++);
+	}
+
+	public synchronized Context startServer2(Object handler) throws Exception {
+	    Server svr = new Server(EventLoop.defaultEventLoop());
+	    Client c = new Client("127.0.0.1", port);
+	    c.setRequestTimeout(10);
+	    try {
+	        svr.serve(new JavassistMethodDispatcher(handler,
+	                MethodSelector.selectRpcServerMethod(handler.getClass())));
+	        svr.listen(port);
+	    } catch (Exception e) {
+	        svr.close();
+	        c.close();
+	        throw e;
+	    }
+	    return new Context(svr, c, port++);
+	}
+
+	static class ReflectionMethodDispatcher extends MethodDispatcher {
+	    public ReflectionMethodDispatcher(Object target, Method[] methods) {
+	        super(target, methods);
+	        InvokerBuilder builder = ReflectionInvokerBuilder.getInstance();
+            for(Method method : methods) {
+                methodMap.put(method.getName(), builder.buildInvoker(method));
+            }
+	    }
+	}
+
+	static class JavassistMethodDispatcher extends MethodDispatcher {
+        public JavassistMethodDispatcher(Object target, Method[] methods) {
+            super(target, methods);
+            InvokerBuilder builder = JavassistInvokerBuilder.getInstance();
+            for(Method method : methods) {
+                methodMap.put(method.getName(), builder.buildInvoker(method));
+            }
+        }
 	}
 }
 
