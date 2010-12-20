@@ -29,46 +29,87 @@ import junit.framework.*;
 import org.junit.Test;
 
 public class ProxyTest extends ReflectTest {
-	@Test
-	public void testSyncClient() throws Exception {
-		Context context = startServer(new SyncHandler());
-		TestRpc c = context.getClient().proxy(TestRpc.class);
-		try {
-			String r01 = c.m01();
-			assertEquals("m01", r01);
+    @Test
+    public void testSyncClient() throws Exception {
+        Context context = startServer(new SyncHandler());
+        TestRpc c = context.getClient().proxy(TestRpc.class);
+        try {
+            String r01 = c.m01();
+            assertEquals("m01", r01);
 
-			String r02 = c.m02("furuhashi");
-			assertEquals("m02"+"furuhashi", r02);
+            String r02 = c.m02("furuhashi");
+            assertEquals("m02" + "furuhashi", r02);
 
-			String r03 = c.m03(1978);
-			assertEquals("m03"+1978, r03);
+            String r03 = c.m03(1978);
+            assertEquals("m03" + 1978, r03);
 
-			List<String> list = new ArrayList<String>();
-			list.add("sadayuki");
-			list.add("kumofs");
-			String r04 = c.m04(list);
-			assertEquals("m04"+stringify1(list), r04);
+            List<String> list = new ArrayList<String>();
+            list.add("sadayuki");
+            list.add("kumofs");
+            String r04 = c.m04(list);
+            assertEquals("m04" + stringify1(list), r04);
 
-			List<List<String>> alist = new ArrayList<List<String>>();
-			List<String> alist_n1 = new ArrayList<String>();
-			alist_n1.add("1");
-			alist_n1.add("2");
-			alist_n1.add("3");
-			alist.add(alist_n1);
-			List<String> alist_n2 = new ArrayList<String>();
-			alist_n2.add("a");
-			alist_n2.add("b");
-			alist_n2.add("c");
-			alist.add(alist_n2);
-			String r05 = c.m05(alist);
-			assertEquals("m05"+stringify2(alist), r05);
+            List<List<String>> alist = new ArrayList<List<String>>();
+            List<String> alist_n1 = new ArrayList<String>();
+            alist_n1.add("1");
+            alist_n1.add("2");
+            alist_n1.add("3");
+            alist.add(alist_n1);
+            List<String> alist_n2 = new ArrayList<String>();
+            alist_n2.add("a");
+            alist_n2.add("b");
+            alist_n2.add("c");
+            alist.add(alist_n2);
+            String r05 = c.m05(alist);
+            assertEquals("m05" + stringify2(alist), r05);
 
-			String r06 = c.m06("viver", 2006);
-			assertEquals("m06"+"viver"+2006, r06);
+            String r06 = c.m06("viver", 2006);
+            assertEquals("m06" + "viver" + 2006, r06);
 
-		} finally {
-			context.close();
-		}
-	}
+        } finally {
+            context.close();
+        }
+    }
+
+    @Test
+    public void testSyncClient2() throws Exception {
+        Context context = startServer2(new SyncHandler());
+        TestRpc c = context.getClient().proxy(TestRpc.class);
+        try {
+            String r01 = c.m01();
+            assertEquals("m01", r01);
+
+            String r02 = c.m02("furuhashi");
+            assertEquals("m02" + "furuhashi", r02);
+
+            String r03 = c.m03(1978);
+            assertEquals("m03" + 1978, r03);
+
+            List<String> list = new ArrayList<String>();
+            list.add("sadayuki");
+            list.add("kumofs");
+            String r04 = c.m04(list);
+            assertEquals("m04" + stringify1(list), r04);
+
+            List<List<String>> alist = new ArrayList<List<String>>();
+            List<String> alist_n1 = new ArrayList<String>();
+            alist_n1.add("1");
+            alist_n1.add("2");
+            alist_n1.add("3");
+            alist.add(alist_n1);
+            List<String> alist_n2 = new ArrayList<String>();
+            alist_n2.add("a");
+            alist_n2.add("b");
+            alist_n2.add("c");
+            alist.add(alist_n2);
+            String r05 = c.m05(alist);
+            assertEquals("m05" + stringify2(alist), r05);
+
+            String r06 = c.m06("viver", 2006);
+            assertEquals("m06" + "viver" + 2006, r06);
+
+        } finally {
+            context.close();
+        }
+    }
 }
-
