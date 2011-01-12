@@ -52,7 +52,8 @@ public class {{type_name}} implements MessagePackable, MessageUnpackable, Messag
 
 	public static {{type_name}} convert(Object deserialized) {
 		{{type_name}} obj = new {{type_name}}();
-		obj.messageConvert(deserialized);
+		if (!(deserialized instanceof MessagePackObject)) throw new MessageTypeException();
+		obj.messageConvert((MessagePackObject) deserialized);
 		return obj;
 	}
 
@@ -98,11 +99,9 @@ public class {{type_name}} implements MessagePackable, MessageUnpackable, Messag
 		}
 	}
 
-	public void messageConvert(Object _Obj) throws MessageTypeException {
-		if(!(_Obj instanceof List)) {
-			throw new MessageTypeException();
-		}
-		List _Array = (List)_Obj;
+	public void messageConvert(MessagePackObject obj)
+	throws MessageTypeException {
+		List<MessagePackObject> _Array = obj.asList();
 		int _Length = _Array.size();
 
 		if(_Length < {{fields.max_required_id}}) {
@@ -117,7 +116,7 @@ public class {{type_name}} implements MessagePackable, MessageUnpackable, Messag
 		%else
 			if(_Length <= {{i-1}}) { return; }  %>if i > fields.max_required_id
 			%anon = next_anon
-			Object {{anon}} = _Array.get({{i}});
+			MessagePackObject {{anon}} = _Array.get({{i}});
 			if({{anon}} != null) {
 				{{f.type.convert_schema(f, anon)}}
 			}

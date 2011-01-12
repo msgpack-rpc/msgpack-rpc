@@ -9,7 +9,7 @@ import org.msgpack.MessageUnpackable;
 import org.msgpack.MessageConvertable;
 import org.msgpack.MessageTypeException;
 
-public enum {{type_name}} implements MessagePackable, MessageUnpackable, MessageConvertable {
+public enum {{type_name}} implements MessagePackable {
 	%enum.each do |e|
 	{{e.field_name}}({{e.num}}),
 	%end
@@ -33,26 +33,20 @@ public enum {{type_name}} implements MessagePackable, MessageUnpackable, Message
 		pk.packInt(this.value);
 	}
 
-	public void messageUnpack(Unpacker pac) throws IOException, MessageTypeException {
+	public static Axis messageUnpack(Unpacker pac) throws IOException, MessageTypeException {
 		int val = pac.unpackInt();
 		switch(val) {
-		case {{e.num}}:  %|e| enum.each
-			this.value = val;
-			break;
+		case {{e.num}}:  return {{e.field_name}}; %|e| enum.each
 		default:
 			throw new MessageTypeException();
 		}
 	}
 
-	public void messageConvert(Object obj) throws MessageTypeException {
-		if(!(obj instanceof Number)) {
-			throw new MessageTypeException();
-		}
-		int val = ((Number)obj).intValue();
+	public static Axis messageConvert(MessagePackObject obj)
+			throws MessageTypeException {
+		int val = obj.asInt();
 		switch(val) {
-		case {{e.num}}:  %|e| enum.each
-			this.value = val;
-			break;
+		case {{e.num}}: return {{e.field_name}}; %|e| enum.each
 		default:
 			throw new MessageTypeException();
 		}
