@@ -228,7 +228,11 @@ def gen_unpack(type, name = nil)
 		end
 
 	elsif type.external_type?
-		mputs %[#{decl} = #{type}.messageUnpack(_Pac);]
+		mputs %[#{decl};]
+		mputs %[if ( #{type}.class.isEnum() ) { #{name} = #{type}.messageUnpack(_Pac); }]
+		mputs %[else { #{name} = #{type}.class.newInstance();#{name}.messageUnpack(_Pac); }]
+		mputs %[#{decl} = new #{type}();]
+		mputs %[#{name}.messageUnpack(_Pac);]
 
 	elsif type.list_type? || type.set_type?
 		length = next_anon
