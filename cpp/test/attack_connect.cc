@@ -23,6 +23,7 @@ void attack_connect()
 int main(void)
 {
 	cclog::reset(new cclog_tty(cclog::WARN, std::cout));
+	signal(SIGPIPE, SIG_IGN);
 
 	ATTACK_THREAD = attacker::option("THREAD", 25, 100);
 	ATTACK_LOOP   = attacker::option("LOOP", 5, 50);
