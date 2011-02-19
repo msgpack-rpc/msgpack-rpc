@@ -37,17 +37,31 @@ public:
 	session get_session(const std::string& host, uint16_t port)
 		{ return get_session(ip_address(host, port)); }
 
+	loop get_loop()
+		{ return m_loop; }
+
 	const loop& get_loop() const
 		{ return m_loop; }
 
-	loop get_loop()
+	loop& get_loop_ref()
+		{ return m_loop; }
+
+	const loop& get_loop_ref() const
 		{ return m_loop; }
 
 public:
 	void step_timeout();
 
 private:
-	typedef mp::unordered_map<address, weak_session, address::hash> table_t;
+	struct value_t {
+		shared_session session;
+		unsigned int step_count;
+		value_t(const shared_session &s, unsigned int c)
+			: session(s), step_count(c)
+		{ }
+	};
+
+	typedef mp::unordered_map<address, value_t, address::hash> table_t;
 	typedef mp::sync<table_t>::ref table_ref;
 	mp::sync<table_t> m_table;
 

@@ -12,7 +12,11 @@
 %doc.each do |d|
 %case d
 %when AST::Constant
-static const {{d.type}} {{d.const_name}} = {{d.value}};
+%if d.type.signed_integer_type?
+static const {{d.type}} {{d.const_name}} = {{d.value}}LL;
+%else
+static const {{d.type}} {{d.const_name}} = {{d.value}}ULL;
+%end
 %# FIXME MapLiteral, ListLiteral
 
 %when AST::Enum

@@ -1,10 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
   <groupId>org.msgpack</groupId>
   <artifactId>msgpack-rpc</artifactId>
   <packaging>jar</packaging>
-  <version>0.4.1</version>
+  <version>0.6.1-devel</version>
 
   <name>msgpack-rpc</name>
   <url>http://msgpack.org/</url>
@@ -21,37 +22,6 @@
     <connection>scm:git:git://github.com/msgpack/msgpack-rpc.git</connection>
     <url>scm:git:git://github.com/msgpack/msgpack-rpc.git</url>
   </scm>
-
-  <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.8.1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.netty</groupId>
-      <artifactId>netty</artifactId>
-      <version>3.2.1.Final</version>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.servlet</groupId>
-          <artifactId>servlet-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>commons-logging</groupId>
-          <artifactId>commons-logging</artifactId>
-        </exclusion>
-      </exclusions>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.msgpack</groupId>
-      <artifactId>msgpack</artifactId>
-      <version>0.3</version>
-      <scope>compile</scope>
-    </dependency>
-  </dependencies>
 
   <build>
     <resources>
@@ -75,10 +45,10 @@
       </plugin>
 
       <plugin>
-      	<artifactId>maven-eclipse-plugin</artifactId>
-      	<version>2.5.1</version>
+        <artifactId>maven-eclipse-plugin</artifactId>
+        <version>2.5.1</version>
       </plugin>
-      
+
       <plugin>
         <artifactId>maven-release-plugin</artifactId>
         <configuration>
@@ -100,53 +70,82 @@
           <doctitle>${project.name} ${project.version} API</doctitle>
           <aggregate>true</aggregate>
           <locale>en_US</locale>
-	  <encoding>UTF-8</encoding>
+          <encoding>UTF-8</encoding>
         </configuration>
       </plugin>
-      
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jxr-plugin</artifactId>
       </plugin>
-      
+
       <plugin>
-	<groupId>org.apache.maven.plugins</groupId>
-	<artifactId>maven-surefire-report-plugin</artifactId>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-report-plugin</artifactId>
       </plugin>
     </plugins>
   </reporting>
 
   <repositories>
-     <repository>
-       <id>repository.jboss.org</id>
-       <url>https://repository.jboss.org/nexus/content/groups/public/</url>
-       <snapshots>
-         <enabled>false</enabled>
-       </snapshots>
-     </repository>
-     <repository>
-       <id>msgpack.org</id>
-       <url>http://msgpack.org/maven2/</url>
-       <snapshots>
-         <enabled>false</enabled>
-       </snapshots>
-     </repository>
+    <repository>
+      <id>repository.jboss.org</id>
+      <url>https://repository.jboss.org/nexus/content/groups/public/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>msgpack.org</id>
+      <url>http://msgpack.org/maven2/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
   </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.8.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.msgpack</groupId>
+      <artifactId>msgpack</artifactId>
+      <version>0.5.1-devel</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.netty</groupId>
+      <artifactId>netty</artifactId>
+      <version>3.2.1.Final</version>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>servlet-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
 
   <distributionManagement>
     <repository>
       <uniqueVersion>false</uniqueVersion>
       <id>msgpack.org</id>
       <name>Repository at msgpack.org</name>
-       <!-- Please Change Here for "mvn deploy", because cannot specify relative path -->
-      <url>file:///Users/otakazuki/soft/website/maven2/</url>
+      <url>file://${project.build.directory}/website/maven2/</url>
     </repository>
     <snapshotRepository>
-       <uniqueVersion>true</uniqueVersion>
-       <id>msgpack.org</id>
-       <name>Repository at msgpack.org</name>
-       <!-- Please Change Here for "mvn deploy", because cannot specify relative path -->
-       <url>file:///Users/otakazuki/soft/website/maven2/</url>
+      <uniqueVersion>true</uniqueVersion>
+      <id>msgpack.org</id>
+      <name>Repository at msgpack.org</name>
+      <url>file://${project.build.directory}/website/maven2/</url>
     </snapshotRepository>
   </distributionManagement>
 

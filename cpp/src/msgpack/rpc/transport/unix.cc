@@ -81,7 +81,7 @@ private:
 
 
 client_socket::client_socket(int fd, session_impl* s) :
-	stream_handler<client_socket>(fd, s->get_loop()),
+	stream_handler<client_socket>(fd, s->get_loop_ref()),
 	m_session(s->shared_from_this()) { }
 
 client_socket::~client_socket() { }
@@ -113,7 +113,7 @@ client_transport::client_transport(session_impl* s, const address& addr, const u
 			throw mp::system_error(errno, "failed to connect UNIX socket");
 		}
 
-		m_sock = m_session->get_loop()->add_handler<client_socket>(fd, m_session);
+		m_sock = m_session->get_loop_ref()->add_handler<client_socket>(fd, m_session);
 
 	} catch(...) {
 		::close(fd);
@@ -178,7 +178,7 @@ private:
 
 
 server_socket::server_socket(int fd, shared_server svr) :
-	stream_handler<server_socket>(fd, svr->get_loop()),
+	stream_handler<server_socket>(fd, svr->get_loop_ref()),
 	m_svr(svr) { }
 
 server_socket::~server_socket() { }
@@ -206,7 +206,7 @@ void server_socket::on_notify(
 
 
 server_transport::server_transport(server_impl* svr, const address& addr) :
-	m_lsock(-1), m_loop(svr->get_loop())
+	m_lsock(-1), m_loop(svr->get_loop_ref())
 {
 	char addrbuf[addr.get_addrlen()];
 	addr.get_addr((sockaddr*)addrbuf);
@@ -251,7 +251,7 @@ void server_transport::on_accept(int fd, int err, weak_server wsvr)
 	LOG_TRACE("accepted fd=",fd);
 
 	try {
-		svr->get_loop()->add_handler<server_socket>(fd, svr);
+		svr->get_loop_ref()->add_handler<server_socket>(fd, svr);
 	} catch (...) {
 		::close(fd);
 		throw;

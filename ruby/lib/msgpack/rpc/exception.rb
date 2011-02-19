@@ -70,10 +70,12 @@ class RPCError < Error
 
 	def is?(code)
 		if code.is_a?(Class) && code < RPCError
+			if code == RemoteError
+				return @code[0] != ?.
+			end
 			code = code::CODE
 		end
-		@code == code || @code[0,code.length+1] == "#{code}." ||
-			(code == ".RemoteError" && @code[0] != ?.)
+		@code == code || @code[0,code.length+1] == "#{code}."
 	end
 end
 
@@ -110,7 +112,6 @@ class ServerError < RPCError
 end
 
 class RemoteError < RPCError
-	CODE = ".RemoteError"
 	def initialize(code, *data)
 		super(code, *data)
 	end
@@ -129,7 +130,7 @@ class ConnectionRefusedError < TransportError
 end
 
 class ConnectionTimeoutError < TransportError
-	CODE = ".TransportError.ConnectionRefusedError"
+	CODE = ".TransportError.ConnectionTimeoutError"
 end
 
 class MalformedMessageError < TransportError
@@ -195,7 +196,6 @@ class RPCError
 		TransportError::CODE          => TransportError,
 		CallError::CODE               => CallError,
 		ServerError::CODE             => ServerError,
-		RemoteError::CODE             => RemoteError,
 		NetworkUnreachableError::CODE => NetworkUnreachableError,
 		ConnectionRefusedError::CODE  => ConnectionRefusedError,
 		ConnectionTimeoutError::CODE  => ConnectionTimeoutError,
