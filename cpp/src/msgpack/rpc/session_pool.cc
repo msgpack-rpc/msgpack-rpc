@@ -17,6 +17,8 @@
 //
 #include "session_pool_impl.h"
 #include "session_impl.h"
+#include "future_impl.h"
+#include "exception_impl.h"
 #include "transport/tcp.h"
 #include "cclog/cclog.h"
 
@@ -74,6 +76,8 @@ session session_pool_impl::get_session(const address& addr)
 
 void session_pool_impl::step_timeout()
 {
+	std::vector<shared_future> timedout;
+
 	table_ref ref(m_table);
 	for(table_t::iterator it(ref->begin()); it != ref->end(); ) {
 		entry_t& e = it->second;
@@ -87,8 +91,17 @@ void session_pool_impl::step_timeout()
 			}
 			--e.ttl;
 		}
-		e.session->step_timeout();
+		e.session->step_timeout(&timedout);
 		++it;
+	}
+	ref.reset();
+
+	if(!timedout.empty()) {
+		for(std::vector<shared_future>::iterator it(timedout.begin()),
+				it_end(timedout.end()); it != it_end; ++it) {
+			shared_future& f = *it;
+			f->set_result(object(), TIMEOUT_ERROR, auto_zone());
+		}
 	}
 }
 

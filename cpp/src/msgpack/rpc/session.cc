@@ -91,13 +91,19 @@ void session_impl::step_timeout()
 	LOG_TRACE("step_timeout");
 	std::vector<shared_future> timedout;
 	m_reqtable.step_timeout(&timedout);
-	if(timedout.empty()) { return ;}
-
-	for(std::vector<shared_future>::iterator it(timedout.begin()),
-			it_end(timedout.end()); it != it_end; ++it) {
-		shared_future& f = *it;
-		f->set_result(object(), TIMEOUT_ERROR, auto_zone());
+	if(!timedout.empty()) {
+		for(std::vector<shared_future>::iterator it(timedout.begin()),
+				it_end(timedout.end()); it != it_end; ++it) {
+			shared_future& f = *it;
+			f->set_result(object(), TIMEOUT_ERROR, auto_zone());
+		}
 	}
+}
+
+void session_impl::step_timeout(std::vector<shared_future>* timedout)
+{
+	LOG_TRACE("step_timeout");
+	m_reqtable.step_timeout(timedout);
 }
 
 void session_impl::on_connect_failed()
