@@ -32,6 +32,7 @@ class client_transport;
 
 class builder {
 public:
+	builder() : m_timeout(30) { }
 	virtual ~builder() { }
 
 	virtual std::auto_ptr<client_transport> build(
@@ -41,6 +42,16 @@ public:
 	class base;
 
 	virtual std::auto_ptr<builder> copy() const = 0;
+
+public:
+	void set_timeout(unsigned int sec)
+		{ m_timeout = sec; }
+
+	unsigned int get_timeout() const
+		{ return m_timeout; }
+
+private:
+	unsigned int m_timeout;
 };
 
 class listener {
