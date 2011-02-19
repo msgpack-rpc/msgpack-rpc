@@ -59,15 +59,11 @@ session session_pool_impl::get_session(const address& addr)
 
 	table_t::iterator found = ref->find(addr);
 	if(found != ref->end()) {
-		shared_session s = found->second.lock();
-		if(s) {
-			return session(s);
-		}
-		ref->erase(found);
+		return session(found->second.session);
 	}
 
 	shared_session s(session_impl::create(*m_builder, addr, m_loop));
-	ref->insert( table_t::value_type(addr, weak_session(s)) );
+	ref->insert( table_t::value_type(addr, value_t(s, 60U)) );
 
 	return session(s);
 }
@@ -77,9 +73,9 @@ void session_pool_impl::step_timeout()
 	table_ref ref(m_table);
 	for(table_t::iterator it(ref->begin());
 			it != ref->end(); ) {
-		shared_session s(it->second.lock());
-		if(s) {
-			s->step_timeout();
+		--(it->second.step_count);
+		if(it->second.step_count > 0) {
+			it->second.session->step_timeout();
 			++it;
 		} else {
 			ref->erase(it++);
