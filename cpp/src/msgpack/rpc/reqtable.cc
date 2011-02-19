@@ -44,8 +44,7 @@ shared_future reqtable::take(msgid_t msgid)
 void reqtable::take_all(std::vector<shared_future>* all)
 {
 	mp::pthread_scoped_lock lk(m_mutex);
-	for(map_t::iterator it(m_map.begin());
-			it != m_map.end(); ) {
+	for(map_t::iterator it(m_map.begin()); it != m_map.end(); ) {
 		shared_future& f = it->second;
 		all->push_back(f);
 		m_map.erase(it++);
@@ -55,8 +54,7 @@ void reqtable::take_all(std::vector<shared_future>* all)
 void reqtable::step_timeout(std::vector<shared_future>* timedout)
 {
 	mp::pthread_scoped_lock lk(m_mutex);
-	for(map_t::iterator it(m_map.begin());
-			it != m_map.end(); ) {
+	for(map_t::iterator it(m_map.begin()); it != m_map.end(); ) {
 		shared_future& f = it->second;
 		if(f->step_timeout()) {
 			timedout->push_back(f);

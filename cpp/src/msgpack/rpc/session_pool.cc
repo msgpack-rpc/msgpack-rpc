@@ -24,6 +24,9 @@ namespace msgpack {
 namespace rpc {
 
 
+static const unsigned int SESSION_POOL_TIME_LIMIT = 60;  // TODO
+
+
 MP_UTIL_DEF(session_pool) {
 	void start_timeout();
 	static bool step_timeout(weak_session_pool wsp);
@@ -59,11 +62,12 @@ session session_pool_impl::get_session(const address& addr)
 
 	table_t::iterator found = ref->find(addr);
 	if(found != ref->end()) {
+		found->second.ttl = SESSION_POOL_TIME_LIMIT;
 		return session(found->second.session);
 	}
 
 	shared_session s(session_impl::create(*m_builder, addr, m_loop));
-	ref->insert( table_t::value_type(addr, value_t(s, 60U)) );
+	ref->insert( table_t::value_type(addr, entry_t(s, SESSION_POOL_TIME_LIMIT)) );
 
 	return session(s);
 }
@@ -71,15 +75,20 @@ session session_pool_impl::get_session(const address& addr)
 void session_pool_impl::step_timeout()
 {
 	table_ref ref(m_table);
-	for(table_t::iterator it(ref->begin());
-			it != ref->end(); ) {
-		--(it->second.step_count);
-		if(it->second.step_count > 0) {
-			it->second.session->step_timeout();
-			++it;
-		} else {
-			ref->erase(it++);
+	for(table_t::iterator it(ref->begin()); it != ref->end(); ) {
+		entry_t& e = it->second;
+		if(e.session.unique()) {
+			// There are no contexts that references the session.
+			if(e.ttl <= 0) {
+				// If e.session.unique() is true, m_pimpl->m_reqtable is empty
+				// because it contains futures that references a session.
+				ref->erase(it++);
+				continue;
+			}
+			--e.ttl;
 		}
+		e.session->step_timeout();
+		++it;
 	}
 }
 

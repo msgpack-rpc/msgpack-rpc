@@ -53,15 +53,15 @@ public:
 	void step_timeout();
 
 private:
-	struct value_t {
+	struct entry_t {
 		shared_session session;
-		unsigned int step_count;
-		value_t(const shared_session &s, unsigned int c)
-			: session(s), step_count(c)
+		unsigned int ttl;
+		entry_t(const shared_session &s, unsigned int c) :
+			session(s), ttl(c)
 		{ }
 	};
 
-	typedef mp::unordered_map<address, value_t, address::hash> table_t;
+	typedef mp::unordered_map<address, entry_t, address::hash> table_t;
 	typedef mp::sync<table_t>::ref table_ref;
 	mp::sync<table_t> m_table;
 

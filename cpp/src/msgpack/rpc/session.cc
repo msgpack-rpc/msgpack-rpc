@@ -92,6 +92,7 @@ void session_impl::step_timeout()
 	std::vector<shared_future> timedout;
 	m_reqtable.step_timeout(&timedout);
 	if(timedout.empty()) { return ;}
+
 	for(std::vector<shared_future>::iterator it(timedout.begin()),
 			it_end(timedout.end()); it != it_end; ++it) {
 		shared_future& f = *it;
