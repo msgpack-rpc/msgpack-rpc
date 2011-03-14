@@ -106,8 +106,11 @@ class Server < SessionPool
 		#FIXME on ArgumentError
 		# res.error(ArgumentError); return
 
-		rescue
-			responder.error($!.to_s)
+ 		rescue => e
+			btrace = e.backtrace
+			btrace[0] = "#{btrace[0]}: #{e.message} (#{e.class})"
+			$stderr.puts btrace.join("\n\tfrom: ")
+			responder.error(e.message)
 			return
 		end
 
