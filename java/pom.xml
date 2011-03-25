@@ -5,7 +5,7 @@
   <groupId>org.msgpack</groupId>
   <artifactId>msgpack-rpc</artifactId>
   <packaging>jar</packaging>
-  <version>0.6.1-devel</version>
+  <version>0.6.2-SNAPSHOT</version>
 
   <name>msgpack-rpc</name>
   <url>http://msgpack.org/</url>
@@ -56,6 +56,18 @@
           <goals>deploy</goals>
           <connectionUrl>scm:git:git://github.com/msgpack/msgpack-rpc.git</connectionUrl>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
@@ -113,7 +125,7 @@
     <dependency>
       <groupId>org.msgpack</groupId>
       <artifactId>msgpack</artifactId>
-      <version>0.5.1-devel</version>
+      <version>0.5.2-SNAPSHOT</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
