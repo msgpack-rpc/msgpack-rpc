@@ -33,15 +33,16 @@ func TestRun(t *testing.T) {
         return
     }
     client := NewSession(conn, true)
-    retval, xerr := client.Send("echo", "test")
-    if xerr != nil {
-        t.Error(xerr.String())
-        return
+    for _, v := range []string { "world", "test", "hey" } {
+        retval, xerr := client.Send("echo", v)
+        if xerr != nil {
+            t.Error(xerr.String())
+            return
+        }
+        _retval, ok := retval.(*reflect.StringValue)
+        if !ok {
+            return
+        }
+        if _retval.Get() != "Hello, " + v { t.Error("retval != \"Hello, " + v + "\"") }
     }
-    _retval, ok := retval.(*reflect.StringValue)
-    if !ok {
-        return
-    }
-    if _retval.Get() != "Hello, test" { t.Error("retval != \"Hello, test\"") }
-
 }
