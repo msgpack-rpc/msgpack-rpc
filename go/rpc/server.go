@@ -31,7 +31,7 @@ func (self *Server) Run() *Server {
             for {
                 conn, err := _listener.Accept()
                 if err != nil {
-                    self.log.Log(err.String())
+                    self.log.Println(err.String())
                     continue
                 }
                 if self.lchan == nil {
@@ -44,29 +44,29 @@ func (self *Server) Run() *Server {
                         if err == os.EOF {
                             break;
                         } else if err != nil {
-                            self.log.Log(err.String())
+                            self.log.Println(err.String())
                             break
                         }
                         msgId, funcName, _arguments, xerr := HandleRPCRequest(data)
                         if xerr != nil {
-                            self.log.Log(xerr.String())
+                            self.log.Println(xerr.String())
                             break
                         }
                         f, xerr := self.resolver.Resolve(funcName, _arguments)
                         if xerr != nil {
                             msg := xerr.String()
-                            self.log.Log(msg)
+                            self.log.Println(msg)
                             SendErrorResponseMessage(conn, msgId, msg)
                         }
                         funcType := f.Type().(*reflect.FuncType)
                         if funcType.NumIn() != len(_arguments) {
                             msg := fmt.Sprintf("The number of the given arguments (%d) doesn't match the arity (%d)", len(_arguments), funcType.NumIn())
-                            self.log.Log(msg)
+                            self.log.Println(msg)
                             SendErrorResponseMessage(conn, msgId, msg)
                             goto next
                         }
                         if funcType.NumOut() != 1 && funcType.NumOut() != 2 {
-                            self.log.Log("The number of return values must be 1 or 2")
+                            self.log.Println("The number of return values must be 1 or 2")
                             SendErrorResponseMessage(conn, msgId, "Internal server error")
                             goto next
                         }
@@ -90,7 +90,7 @@ func (self *Server) Run() *Server {
                                         }
                                     }
                                     msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", ft.String(), vt.String())
-                                    self.log.Log(msg)
+                                    self.log.Println(msg)
                                     SendErrorResponseMessage(conn, msgId, msg)
                                     goto next
                                 }
@@ -101,7 +101,7 @@ func (self *Server) Run() *Server {
                                 vt := v.Type()
                                 if ft != vt {
                                     msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", ft.String(), vt.String())
-                                    self.log.Log(msg)
+                                    self.log.Println(msg)
                                     SendErrorResponseMessage(conn, msgId, msg)
                                     goto next
                                 }
@@ -116,7 +116,7 @@ func (self *Server) Run() *Server {
                             if _errMsg != nil {
                                 errMsg, ok = _errMsg.(stringizable)
                                 if !ok {
-                                    self.log.Log("The second argument must have an interface { String() string }")
+                                    self.log.Println("The second argument must have an interface { String() string }")
                                     SendErrorResponseMessage(conn, msgId, "Internal server error")
                                     goto next
                                 }
@@ -166,7 +166,7 @@ func (self *Server) Listen(listener net.Listener) *Server{
 
 func NewServer(resolver FunctionResolver, autoCoercing bool, _log *log.Logger) *Server {
     if _log == nil {
-        _log = log.New(os.Stderr, nil, "msgpack", log.Lok | log.Ldate | log.Ltime)
+        _log = log.New(os.Stderr, "msgpack", log.Ldate | log.Ltime)
     }
     return &Server { resolver, _log, vector.Vector {}, autoCoercing, nil }
 }
@@ -192,10 +192,10 @@ func HandleRPCRequest(req reflect.Value) (int, string, []reflect.Value, *Error) 
         if !ok || _elemType.Kind() != reflect.Uint8 {
             arguments, ok = _arguments.Interface().([]reflect.Value)
         } else {
-            arguments = &[1]reflect.Value { reflect.NewValue(string(_req[3].Interface().([]byte))) }
+            arguments = []reflect.Value { reflect.NewValue(string(_req[3].Interface().([]byte))) }
         }
     } else {
-        arguments = &[1]reflect.Value { _req[3] }
+        arguments = []reflect.Value { _req[3] }
     }
     return int(msgId.Get()), string(funcName), arguments, nil
 err:
