@@ -2,7 +2,7 @@
  [{description, "MessagePack RPC test server"},
   {vsn, "0.0.1"},
   {modules, 
-   [sample_app, sample_srv]
+   [sample_app, sample_srv, sample_client]
   },
   {registered, []},
   {mod, {sample_app, []}},
