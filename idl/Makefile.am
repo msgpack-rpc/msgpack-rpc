@@ -35,24 +35,6 @@ LANG_DIST = \
 		$(RUBY_DIST) \
 		$(JAVA_DIST)
 
-RUBYLIB = \
-		rubylib/treetop.rb \
-		rubylib/treetop/README.md \
-		rubylib/treetop/LICENSE \
-		rubylib/treetop/runtime.rb \
-		rubylib/treetop/ruby_extensions.rb \
-		rubylib/treetop/ruby_extensions/string.rb \
-		rubylib/treetop/runtime/compiled_parser.rb \
-		rubylib/treetop/runtime/interval_skip_list.rb \
-		rubylib/treetop/runtime/syntax_node.rb \
-		rubylib/treetop/runtime/terminal_parse_failure.rb \
-		rubylib/treetop/runtime/terminal_parse_failure_debug.rb \
-		rubylib/treetop/runtime/terminal_syntax_node.rb \
-		rubylib/treetop/runtime/interval_skip_list/head_node.rb \
-		rubylib/treetop/runtime/interval_skip_list/interval_skip_list.rb \
-		rubylib/treetop/runtime/interval_skip_list/node.rb \
-		rubylib/rubygems
-
 msgpack-idl:
 	echo '#!$(RUBY_PATH)' > $@
 	echo '$$LOAD_PATH.unshift("$(pkgdatadir)/rubylib")' >> $@
@@ -67,7 +49,6 @@ msgpack_idldir = $(pkgdatadir)
 
 nobase_msgpack_idl_DATA = \
 		$(LANG_DIST) \
-		$(RUBYLIB) \
 		command.rb
 
 corelibdir = $(pkgdatadir)/rubylib
@@ -79,7 +60,6 @@ corelib_DATA = \
 
 EXTRA_DIST = \
 		$(LANG_DIST) \
-		$(RUBYLIB) \
 		$(DOC_FILES) \
 		$(corelib_DATA) \
 		command.rb
