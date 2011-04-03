@@ -279,7 +279,7 @@ my_second_case(_)->
     {ok, 7}=mp_client:call(hoge,43, add, [3,4]),
     ok=mp_client:close(hoge).
 
-case_add(Config)->
+case_add(_Config)->
     Pairs=[{5,5}, {0,0}, {234, 2}, {213456789, -3}, {234, -23}, {-1,1}, {1,-1}, {-1,-1},
 	  {-2000, 2000}, {2000, -2000}, {234, -234}],
     {ok, _Pid}=mp_client:connect({local,add}, localhost,65500),

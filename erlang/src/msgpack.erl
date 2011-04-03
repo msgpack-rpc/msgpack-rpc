@@ -287,8 +287,9 @@ unpack_(Bin) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % unit tests
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-ifdef(TEST).
+
 -include_lib("eunit/include/eunit.hrl").
--ifdef(EUNIT).
 
 compare_all([], [])-> ok;
 compare_all([],  R)-> {toomuchrhs, R};
@@ -363,7 +364,7 @@ map_test()->
     ?assertEqual(Map, Map2),
     ok.
 
-unknown_test_freezed()->
+unknown_test_freezed_test()->
     Port = open_port({spawn, "ruby testcase_generator.rb"}, [binary, eof]),
     Tests = [0, 1, 2, 123, 512, 1230, 678908,
 	     -1, -23, -512, -1230, -567898,

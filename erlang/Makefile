@@ -1,10 +1,13 @@
-all:
+all: compile xref eunit
+
+compile:
 	@./rebar compile
 
-test: force
+xref:
+	@./rebar xref
+
+eunit:
 	@./rebar eunit
 
 clean:
 	@./rebar clean
-
-force: ;

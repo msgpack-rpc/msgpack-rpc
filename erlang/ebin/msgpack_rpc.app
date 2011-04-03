@@ -1,0 +1,11 @@
+{application,msgpack_rpc,
+             [{description,"MessagePack RPC server application"},
+              {vsn,"0.0.1"},
+              {modules,[mp_client,mp_server_app,mp_server_listener_sup,
+                        mp_server_session_sup,mp_server_srv,mp_server_sup,
+                        mp_session,msgpack,msgpack_rpc,sample_app,
+                        sample_client,sample_srv]},
+              {registered,[]},
+              {mod,{mp_server_app,[]}},
+              {env,[]},
+              {applications,[kernel,stdlib]}]}.

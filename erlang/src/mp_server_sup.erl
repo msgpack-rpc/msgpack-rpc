@@ -59,7 +59,7 @@ start_link()->
 %% to find out about restart strategy, maximum restart frequency and child 
 %% specifications.
 %%--------------------------------------------------------------------
-init(StartProps) ->
+init(_StartProps) ->
     Children = [{mp_server_session_sup,
 		 { mp_server_session_sup,start_link,[]},
 		 permanent,2000,supervisor,[]},
