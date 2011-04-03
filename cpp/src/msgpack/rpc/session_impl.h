@@ -76,6 +76,7 @@ public:
 	void on_connect_failed();
 
 	void step_timeout();
+	void step_timeout(std::vector<shared_future>* timedout);
 
 private:
 	address m_addr;

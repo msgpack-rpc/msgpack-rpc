@@ -34,6 +34,7 @@ void attack_pipeline()
 int main(void)
 {
 	cclog::reset(new cclog_tty(cclog::WARN, std::cout));
+	signal(SIGPIPE, SIG_IGN);
 
 	ATTACK_DEPTH  = attacker::option("DEPTH",  25, 100);
 	ATTACK_THREAD = attacker::option("THREAD", 25, 100);

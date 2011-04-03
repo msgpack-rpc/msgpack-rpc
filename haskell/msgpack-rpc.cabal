@@ -1,5 +1,5 @@
 Name:                msgpack-rpc
-Version:             0.4.0
+Version:             0.6.0.1
 Synopsis:            A MessagePack-RPC Implementation
 Description:
   A MessagePack-RPC Implementation <http://msgpack.org/>
@@ -20,12 +20,14 @@ Extra-source-files:
   test/Cli.hs
 
 Library
-  Build-depends:     base >= 4 && <5,
-                     msgpack >= 0.4.0 && < 0.5,
-                     network >= 2.2.1.7 && < 2.2.2,
-                     random >= 1.0.0.2 && < 1.1,
-                     transformers >= 0.2.1 && < 0.2.2,
-                     iteratee >= 0.4.0.2 && < 0.4.1,
+  Build-depends:     base >= 4 && < 5,
+                     bytestring >= 0.9 && < 0.10,
+                     network >= 2.2 && < 2.4,
+                     random >= 1.0 && < 1.1,
+                     enumerator >= 0.4 && < 0.5,
+                     attoparsec-enumerator >= 0.2 && < 0.3,
+                     msgpack >= 0.6 && < 0.7,
+                     transformers >= 0.2 && < 0.3,
                      deepseq >= 1.1 && < 1.2
 
   Ghc-options:       -Wall

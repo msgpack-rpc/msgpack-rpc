@@ -106,7 +106,6 @@ client_transport::client_transport(session_impl* s, const address& addr, const u
 	}
 
 	try {
-		// FIXME UNIX addr
 		char addrbuf[addr.get_addrlen()];
 		addr.get_addr((sockaddr*)addrbuf);
 
@@ -233,17 +232,18 @@ void server_transport::close()
 		m_loop->remove_handler(m_lsock);
 		m_lsock = -1;
 	}
-	// FIXME m_sock->remove_handler();
 }
 
 void server_transport::on_accept(int fd, int err, weak_server wsvr)
 {
 	shared_server svr = wsvr.lock();
 	if(!svr) {
+		if(fd >= 0) {
+			::close(fd);
+		}
 		return;
 	}
 
-	// FIXME
 	if(fd < 0) {
 		LOG_ERROR("accept failed");
 		return;

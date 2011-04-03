@@ -19,6 +19,11 @@ package org.msgpack.rpc;
 
 import org.msgpack.*;
 import org.msgpack.object.*;
+import org.msgpack.rpc.*;
+import org.msgpack.rpc.dispatcher.*;
+import org.msgpack.rpc.config.*;
+import org.msgpack.rpc.loop.*;
+import org.msgpack.rpc.loop.netty.*;
 import java.util.*;
 import junit.framework.*;
 import org.junit.Test;
@@ -26,20 +31,21 @@ import org.junit.Test;
 public class ServerTest extends TestCase {
 	private static MessagePackObject MESSAGE = RawType.create("ok");
 
-	private static class TestHandler {
-		public void test(Request request) {
+	public static class TestDispatcher implements Dispatcher {
+		public void dispatch(Request request) {
 			request.sendResult(MESSAGE);
 		}
 	}
 
 	@Test
 	public void testSyncLoad() throws Exception {
-		EventLoop loop = new EventLoop();
+		EventLoop loop = EventLoop.start();
 		Server svr = new Server(loop);
-		Client c = new Client("127.0.0.1", 19850);
+		Client c = new Client("127.0.0.1", 19850, loop);
+		c.setRequestTimeout(10);
 
 		try {
-			svr.serve(new ReflectionDispatcher(new TestHandler()));
+			svr.serve(new TestDispatcher());
 			svr.listen(19850);
 
 			int num = 1000;
@@ -63,15 +69,16 @@ public class ServerTest extends TestCase {
 
 	@Test
 	public void testAsyncLoad() throws Exception {
-		EventLoop loop = new EventLoop();
+		EventLoop loop = EventLoop.start();
 		Server svr = new Server(loop);
-		Client c = new Client("127.0.0.1", 19850);
+		Client c = new Client("127.0.0.1", 19850, loop);
+		c.setRequestTimeout(10);
 
 		try {
-			svr.serve(new ReflectionDispatcher(new TestHandler()));
+			svr.serve(new TestDispatcher());
 			svr.listen(19850);
 
-			int num = 100000;
+			int num = 1000;
 
 			long start = System.currentTimeMillis();
 			for(int i=0; i < num-1; i++) {

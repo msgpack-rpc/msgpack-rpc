@@ -17,11 +17,9 @@
 //
 package org.msgpack.rpc.transport;
 
-import java.io.*;
-import org.msgpack.rpc.*;
+import java.io.Closeable;
 
-public interface ServerTransport {
-	public void listen(Server server) throws IOException;
+public interface ServerTransport extends Closeable {
 	public void close();
 }
 

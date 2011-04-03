@@ -17,78 +17,96 @@
 //
 package org.msgpack.rpc;
 
-import org.msgpack.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import org.msgpack.MessagePackObject;
+import org.msgpack.Template;
+import org.msgpack.template.TemplateRegistry;
+import org.msgpack.rpc.error.*;
 
-public class Future {
-	private Object lock = new Object();
-	private boolean set = false;
+public class Future<V> implements java.util.concurrent.Future<V> {
+	private FutureImpl impl;
+	private Template resultTemplate;
 
-	private Session session;
-	private MessagePackObject result;
-	private MessagePackObject error;
-	private int timeout;
-	private Runnable callback = null;
-
-	public Future(Session session) {
-		this.session = session;
-		this.timeout = session.getTimeout();
+	Future(FutureImpl impl) {
+		this.impl = impl;
+		this.resultTemplate = null;
 	}
 
-	public MessagePackObject get() {
-		join();
-		// FIXME throw error unless getError().isNull()
-		return getResult();
+	Future(FutureImpl impl, Template resultTemplate) {
+		this.impl = impl;
+		this.resultTemplate = resultTemplate;
 	}
 
-	public void join() {
-		synchronized(lock) {
-			try {
-				while(set == false) {
-					lock.wait();
-				}
-			} catch(InterruptedException e) {
-				// FIXME exception
-			}
+	public Future(Future<MessagePackObject> future, Class<V> resultClass) {
+		this.impl = future.impl;
+		if(resultClass != void.class) {
+			this.resultTemplate = TemplateRegistry.lookup(resultClass);
 		}
+	}
+
+	public Future(Future<MessagePackObject> future, Template resultTemplate) {
+		this.impl = future.impl;
+		this.resultTemplate = resultTemplate;
 	}
 
 	public void attachCallback(Runnable callback) {
-		synchronized(lock) {
-			this.callback = callback;
-		}
-		if(set) {
-			session.getEventLoop().getExecutor().submit(callback);
-		}
+		impl.attachCallback(callback);
 	}
 
-	public MessagePackObject getResult() {
-		return result;
+	public V get() throws InterruptedException {
+		join();
+		checkThrowError();
+		return getResult();
+	}
+
+	public V get(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
+		join(timeout, unit);
+		checkThrowError();
+		return getResult();
+	}
+
+	public void join() throws InterruptedException {
+		impl.join();
+	}
+
+	public void join(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
+		impl.join(timeout, unit);
+	}
+
+	public boolean isDone() {
+		return impl.isDone();
+	}
+
+	public boolean cancel(boolean mayInterruptIfRunning) {
+		// FIXME
+		return false;
+	}
+
+	public boolean isCancelled() {
+		// FIXME
+		return false;
+	}
+
+	public V getResult() {
+		MessagePackObject result = impl.getResult();
+		if(resultTemplate == null) {
+			return (V)result;
+		} else if(result.isNil()) {
+			return null;
+		} else {
+			return (V)result.convert(resultTemplate);
+		}
 	}
 
 	public MessagePackObject getError() {
-		return error;
+		return impl.getError();
 	}
 
-	public void setResult(MessagePackObject result, MessagePackObject error) {
-		synchronized(lock) {
-			this.result = result;
-			this.error = error;
-			this.set = true;
-			lock.notifyAll();
-		}
-		if(callback != null) {
-			// FIXME submit?
-			//session.getEventLoop().getExecutor().submit(callback);
-			callback.run();
-		}
-	}
-
-	boolean stepTimeout() {
-		if(timeout <= 0) {
-			return true;
-		} else {
-			timeout--;
-			return false;
+	private void checkThrowError() {
+		if(!getError().isNil()) {
+			// FIXME exception
+			throw new RemoteError(getError());
 		}
 	}
 }

@@ -17,55 +17,101 @@
 //
 package org.msgpack.rpc;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.msgpack.rpc.transport.*;
-import org.msgpack.*;
+import org.msgpack.MessagePackObject;
+import org.msgpack.rpc.address.Address;
+import org.msgpack.rpc.message.RequestMessage;
+import org.msgpack.rpc.message.NotifyMessage;
+import org.msgpack.rpc.reflect.Reflect;
+import org.msgpack.rpc.transport.ClientTransport;
+import org.msgpack.rpc.config.ClientConfig;
+import org.msgpack.rpc.loop.EventLoop;
 
 public class Session {
 	protected Address address;
 	protected EventLoop loop;
-	private int timeout = 3;  // FIXME default timeout time
-	private AtomicInteger seqid = new AtomicInteger(0);  // FIXME rand()?
-	private MessageSendable transport;
-	private Map<Integer, Future> reqtable = new HashMap<Integer, Future>();
+	private ClientTransport transport;
 
-	protected Session(ClientTransport transport, Address address, EventLoop loop) {
+	private int requestTimeout;
+	private AtomicInteger seqid = new AtomicInteger(0);  // FIXME rand()?
+	private Map<Integer, FutureImpl> reqtable = new HashMap<Integer, FutureImpl>();
+
+	Session(Address address, ClientConfig config, EventLoop loop) {
 		this.address = address;
 		this.loop = loop;
-		this.transport = transport.createPeer(this);
+		this.requestTimeout = config.getRequestTimeout();
+		this.transport = loop.openTransport(config, this);
 	}
 
-	public SocketAddress getSocketAddress() {
-		return address.getSocketAddress();
+	public <T> T proxy(Class<T> iface) {
+		return Reflect.reflectProxy(iface).newProxyInstance(this);
 	}
 
-	Address getAddress() {
+	public Address getAddress() {
 		return address;
 	}
 
-	// FIXME package local scope
+	// FIXME EventLoopHolder interface?
 	public EventLoop getEventLoop() {
 		return loop;
 	}
 
-	public int getTimeout() {
-		return timeout;
+	public int getRequestTimeout() {
+		return requestTimeout;
 	}
 
-	public void setTimeout(int timeout) {
-		this.timeout = timeout;
+	public void setRequestTimeout(int requestTimeout) {
+		this.requestTimeout = requestTimeout;
+	}
+
+	public MessagePackObject callApply(String method, Object[] args) {
+		Future<MessagePackObject> f = sendRequest(method, args);
+		while(true) {
+			try {
+				return f.get();
+			} catch (InterruptedException e) {
+				// FIXME
+			}
+		}
+	}
+
+	public Future<MessagePackObject> callAsyncApply(String method, Object[] args) {
+		return sendRequest(method, args);
+	}
+
+	public void notifyApply(String method, Object[] args) {
+		sendNotify(method, args);
+	}
+
+	public Future<MessagePackObject> sendRequest(String method, Object[] args) {
+		int msgid = seqid.getAndAdd(1);
+		RequestMessage msg = new RequestMessage(msgid, method, args);
+		FutureImpl f = new FutureImpl(this);
+
+		synchronized(reqtable) {
+			reqtable.put(msgid, f);
+		}
+		transport.sendMessage(msg);
+
+		return new Future<MessagePackObject>(f);
+	}
+
+	public void sendNotify(String method, Object[] args) {
+		NotifyMessage msg = new NotifyMessage(method, args);
+		transport.sendMessage(msg);
 	}
 
 	void closeSession() {
 		transport.close();
 		synchronized(reqtable) {
-			for(Map.Entry<Integer,Future> pair : reqtable.entrySet()) {
+			for(Map.Entry<Integer,FutureImpl> pair : reqtable.entrySet()) {
 				// FIXME error result
-				Future f = pair.getValue();
+				FutureImpl f = pair.getValue();
 				f.setResult(null,org.msgpack.object.RawType.create("session closed"));
 			}
 			reqtable.clear();
@@ -74,18 +120,17 @@ public class Session {
 
 	public void transportConnectFailed() {  // FIXME error rseult
 	//	synchronized(reqtable) {
-	//		for(Map.Entry<Integer,Future> pair : reqtable.entrySet()) {
+	//		for(Map.Entry<Integer,FutureImpl> pair : reqtable.entrySet()) {
 	//			// FIXME
-	//			Future f = pair.getValue();
+	//			FutureImpl f = pair.getValue();
 	//			f.setResult(null,null);
 	//		}
 	//		reqtable.clear();
 	//	}
 	}
 
-	// FIXME package local scope
 	public void onResponse(int msgid, MessagePackObject result, MessagePackObject error) {
-		Future f;
+		FutureImpl f;
 		synchronized(reqtable) {
 			f = reqtable.remove(msgid);
 		}
@@ -96,49 +141,19 @@ public class Session {
 		f.setResult(result, error);
 	}
 
-	public MessagePackObject callApply(String method, Object[] args) {
-		return sendRequest(method, args).get();
-	}
-
-	public Future callAsyncApply(String method, Object[] args) {
-		return sendRequest(method, args);
-	}
-
-	public void notifyApply(String method, Object[] args) {
-		sendNotify(method, args);
-	}
-
-	public Future sendRequest(String method, Object[] args) {
-		int msgid = seqid.getAndAdd(1);
-		RequestMessage msg = new RequestMessage(msgid, method, args);
-		Future f = new Future(this);
-
-		synchronized(reqtable) {
-			reqtable.put(msgid, f);
-		}
-		transport.sendMessage(msg);
-
-		return f;
-	}
-
-	public void sendNotify(String method, Object[] args) {
-		NotificationMessage msg = new NotificationMessage(method, args);
-		transport.sendMessage(msg);
-	}
-
 	void stepTimeout() {
-		List<Future> timedout = new ArrayList<Future>();
+		List<FutureImpl> timedout = new ArrayList<FutureImpl>();
 		synchronized(reqtable) {
-			for(Iterator<Map.Entry<Integer,Future>> it = reqtable.entrySet().iterator(); it.hasNext(); ) {
-				Map.Entry<Integer,Future> pair = it.next();
-				Future f = pair.getValue();
+			for(Iterator<Map.Entry<Integer,FutureImpl>> it = reqtable.entrySet().iterator(); it.hasNext(); ) {
+				Map.Entry<Integer,FutureImpl> pair = it.next();
+				FutureImpl f = pair.getValue();
 				if(f.stepTimeout()) {
 					it.remove();
 					timedout.add(f);
 				}
 			}
 		}
-		for(Future f : timedout) {
+		for(FutureImpl f : timedout) {
 			// FIXME error result
 			f.setResult(null,org.msgpack.object.RawType.create("timedout"));
 		}
