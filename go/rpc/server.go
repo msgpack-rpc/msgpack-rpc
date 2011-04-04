@@ -89,7 +89,7 @@ func (self *Server) Run() *Server {
                                             }
                                         }
                                     }
-                                    msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", ft.String(), vt.String())
+                                    msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", i, ft.String(), vt.String())
                                     self.log.Println(msg)
                                     SendErrorResponseMessage(conn, msgId, msg)
                                     goto next
@@ -100,7 +100,7 @@ func (self *Server) Run() *Server {
                                 ft := funcType.In(i)
                                 vt := v.Type()
                                 if ft != vt {
-                                    msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", ft.String(), vt.String())
+                                    msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", i, ft.String(), vt.String())
                                     self.log.Println(msg)
                                     SendErrorResponseMessage(conn, msgId, msg)
                                     goto next
