@@ -1,7 +1,7 @@
 #
 # MessagePack-RPC for Ruby
 #
-# Copyright (C) 2010 FURUHASHI Sadayuki
+# Copyright (C) 2010-2011 FURUHASHI Sadayuki
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -48,7 +48,9 @@ class Client < Session
 	# call-seq:
 	#   Client.open(arg1, arg2, arg3=nil) {|client|  }
 	#
-	# Creates a client, call the block and close the client.
+	# 1. open(builder, address, loop = Loop.new) {|client }
+	# 2. open(host, port, loop = Loop.new) {|client }
+	# Creates a client, calls the block and closes the client.
 	def self.open(*args, &block)
 		c = new(*args)
 		begin
