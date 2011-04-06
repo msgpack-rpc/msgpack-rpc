@@ -23,6 +23,7 @@ type Server struct {
     lchan chan int
 }
 
+// Goes into the event loop to get ready to serve.
 func (self *Server) Run() *Server {
     lchan := make(chan int)
     self.listeners.Do(func(listener interface {}) {
@@ -89,7 +90,7 @@ func (self *Server) Run() *Server {
                                             }
                                         }
                                     }
-                                    msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", ft.String(), vt.String())
+                                    msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", i, ft.String(), vt.String())
                                     self.log.Println(msg)
                                     SendErrorResponseMessage(conn, msgId, msg)
                                     goto next
@@ -100,7 +101,7 @@ func (self *Server) Run() *Server {
                                 ft := funcType.In(i)
                                 vt := v.Type()
                                 if ft != vt {
-                                    msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", ft.String(), vt.String())
+                                    msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", i, ft.String(), vt.String())
                                     self.log.Println(msg)
                                     SendErrorResponseMessage(conn, msgId, msg)
                                     goto next
@@ -150,6 +151,7 @@ func (self *Server) Run() *Server {
     return self
 }
 
+// Lets the server quit the event loop
 func (self *Server) Stop() *Server {
     if self.lchan != nil {
         lchan := self.lchan
@@ -159,11 +161,15 @@ func (self *Server) Stop() *Server {
     return self
 }
 
+// Listenes on the specified transport.  A single server can listen on the
+// multiple ports.
 func (self *Server) Listen(listener net.Listener) *Server{
     self.listeners.Push(listener)
     return self
 }
 
+// Creates a new Server instance. raw bytesc are automatically converted into
+// strings if autoCoercing is enabled.
 func NewServer(resolver FunctionResolver, autoCoercing bool, _log *log.Logger) *Server {
     if _log == nil {
         _log = log.New(os.Stderr, "msgpack", log.Ldate | log.Ltime)
@@ -171,6 +177,8 @@ func NewServer(resolver FunctionResolver, autoCoercing bool, _log *log.Logger) *
     return &Server { resolver, _log, vector.Vector {}, autoCoercing, nil }
 }
 
+// This is a low-level function that is not supposed to be called directly
+// by the user.  Change this if the MessagePack protocol is updated.
 func HandleRPCRequest(req reflect.Value) (int, string, []reflect.Value, *Error) {
     _req, ok := req.Interface().([]reflect.Value)
     if !ok { goto err }
@@ -202,6 +210,8 @@ err:
     return 0, "", nil, &Error{ nil, "Invalid message format" }
 }
 
+// This is a low-level function that is not supposed to be called directly
+// by the user.  Change this if the MessagePack protocol is updated.
 func SendResponseMessage(writer io.Writer, msgId int, value reflect.Value) os.Error {
     _, err := writer.Write([]byte{ 0x94 })
     if err != nil { return err }
@@ -215,6 +225,8 @@ func SendResponseMessage(writer io.Writer, msgId int, value reflect.Value) os.Er
     return err
 }
 
+// This is a low-level function that is not supposed to be called directly
+// by the user.  Change this if the MessagePack protocol is updated.
 func SendErrorResponseMessage(writer io.Writer, msgId int, errMsg string) os.Error {
     _, err := writer.Write([]byte{ 0x94 })
     if err != nil { return err }

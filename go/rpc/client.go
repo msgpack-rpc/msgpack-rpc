@@ -28,6 +28,7 @@ func coerce(arguments []interface{}) []interface{} {
     return _arguments
 }
 
+// Sends a RPC request to the server.
 func (self *Session) SendV(funcName string, arguments []interface{}) (reflect.Value, *Error) {
     var msgId = self.nextId
     self.nextId += 1
@@ -55,14 +56,20 @@ func (self *Session) SendV(funcName string, arguments []interface{}) (reflect.Va
     return result, nil
 }
 
+// Sends a RPC request to the server.
 func (self *Session) Send(funcName string, arguments ...interface{}) (reflect.Value, *Error) {
     return self.SendV(funcName, arguments)
 }
 
+// Creates a new session with the specified connection.  Strings are
+// automatically converted into raw bytes if autoCoercing is
+// enabled.
 func NewSession(conn net.Conn, autoCoercing bool) *Session {
     return &Session { conn, autoCoercing, 1 };
 }
 
+// This is a low-level function that is not supposed to be called directly
+// by the user.  Change this if the MessagePack protocol is updated.
 func SendRequestMessage(writer io.Writer, msgId int, funcName string, arguments []interface{}) os.Error {
     _, err := writer.Write([]byte{ 0x94 })
     if err != nil { return err }
@@ -76,6 +83,8 @@ func SendRequestMessage(writer io.Writer, msgId int, funcName string, arguments 
     return err
 }
 
+// This is a low-level function that is not supposed to be called directly
+// by the user.  Change this if the MessagePack protocol is updated.
 func ReceiveResponse(reader io.Reader) (int, reflect.Value, *Error) {
     data, _, err := msgpack.UnpackReflected(reader)
     if err != nil {
@@ -89,6 +98,8 @@ func ReceiveResponse(reader io.Reader) (int, reflect.Value, *Error) {
     return msgId, result, nil
 }
 
+// This is a low-level function that is not supposed to be called directly
+// by the user.  Change this if the MessagePack protocol is updated.
 func HandleRPCResponse(req reflect.Value) (int, reflect.Value, *Error) {
     _req, ok := req.Interface().([]reflect.Value)
     if !ok { goto err }
