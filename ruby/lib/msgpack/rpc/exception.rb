@@ -112,6 +112,7 @@ class ServerError < RPCError
 end
 
 class RemoteError < RPCError
+	CODE = ""
 	def initialize(code, *data)
 		super(code, *data)
 	end
@@ -163,6 +164,7 @@ end
 # RuntimeError
 #
 class RuntimeError < RemoteError
+	CODE = ".RuntimeError"
 	def initialize(msg, *data)
 		super("RuntimeError", msg, *data)
 	end
