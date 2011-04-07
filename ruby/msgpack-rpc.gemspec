@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{msgpack-rpc}
-  s.version = "0.4.3"
+  s.version = "0.4.4"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["FURUHASHI Sadayuki"]
-  s.date = %q{2010-11-28}
+  s.date = %q{2011-04-06}
   s.email = %q{frsyuki@users.sourceforge.jp}
   s.files = [
     "AUTHORS",

@@ -1,7 +1,7 @@
 #
 # MessagePack-RPC for Ruby
 #
-# Copyright (C) 2010 FURUHASHI Sadayuki
+# Copyright (C) 2010-2011 FURUHASHI Sadayuki
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -112,6 +112,7 @@ class ServerError < RPCError
 end
 
 class RemoteError < RPCError
+	CODE = ""
 	def initialize(code, *data)
 		super(code, *data)
 	end
@@ -163,6 +164,7 @@ end
 # RuntimeError
 #
 class RuntimeError < RemoteError
+	CODE = ".RuntimeError"
 	def initialize(msg, *data)
 		super("RuntimeError", msg, *data)
 	end

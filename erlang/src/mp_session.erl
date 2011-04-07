@@ -27,7 +27,6 @@
 -behaviour(gen_server).
 -include("mp_rpc.hrl").
 
-
 %% API
 -export([start_link/2, behaviour_info/1]).
 
@@ -55,8 +54,9 @@ start_link(Module,Socket) when is_atom(Module), is_port(Socket)->
 %    gen_server:start_link(?MODULE, [Module,Socket], [{debug,[trace,log,statistics]}]).
     gen_server:start_link(?MODULE, [Module,Socket], []).
 
-% TBF:
-% notify(Node, Type, Method, Parms)->
+% TODO/TBF
+% notify(Node, Type, Method, Argv)->
+%   
 
 %%====================================================================
 %% gen_server callbacks
@@ -200,14 +200,13 @@ handle_request(?MP_TYPE_REQUEST, CallID, Module, M, Argv,Socket, Context) when i
     catch
 	_:undef ->
 	    error_logger:error_msg("no such method: ~p:~s/~p~n", [Module,binary_to_list(M),length(Argv)]),
-	    ok=gen_tcp:send(Socket, msgpack:pack([?MP_TYPE_RESPONSE, CallID, false, nil])),
+	    ok=gen_tcp:send(Socket, msgpack:pack([?MP_TYPE_RESPONSE, CallID, <<"no such func">>, nil])),
 	    ok=inet:setopts(Socket, [{active,once}, {packet,raw}]),
 	    {ok, Context};
 
 	  _:What ->
 	    error_logger:error_msg("unknown error: ~p (~p:~s/~p)~n", [What, Module,binary_to_list(M),length(Argv)]),
-	    ok=gen_tcp:send(Socket, msgpack:pack([?MP_TYPE_RESPONSE, CallID, false, nil])),
+	    ok=gen_tcp:send(Socket, msgpack:pack([?MP_TYPE_RESPONSE, CallID, <<"unexpected error">>, nil])),
 	    ok=inet:setopts(Socket, [{active,once}, {packet,raw}]),
 	    {ok, Context}
-
     end.

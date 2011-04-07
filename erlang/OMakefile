@@ -1,0 +1,40 @@
+########################################################################
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this file, to deal in the File without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the File, and to permit persons to whom the
+# File is furnished to do so, subject to the following condition:
+#
+# THE FILE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+# OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE FILE OR
+# THE USE OR OTHER DEALINGS IN THE FILE.
+
+########################################################################
+# Phony targets are scoped, so you probably want to declare them first.
+#
+.PHONY: ct all clean doc
+
+ct: $(beams) $(apps)
+	mkdir -p test/log
+	erl -sname ct -s ct_run script_start -s erlang halt \
+	  -dir $(ROOT)/test -logdir $(ROOT)/test/log \
+	  -I $(ROOT)/include -I $(ROOT)/src -cover $(ROOT)/test/my.coverspec  -pa $(ROOT)/ebin
+
+doc: $(erls) $(SRCDIR)/overview.edoc
+	erl -noshell -pa ebin -eval \
+	  'ok=edoc:application(msgpack_rpc, filename:absname("src"), [{dir,"edoc"}]).' \
+	  -s init stop
+	eprintln(building edoc done. see edoc/index.html)
+
+.DEFAULT:  $(beams) $(apps)
+	$(ERL) -pa $(EBIN) -noshell -eval 'eunit:test("ebin", []).' -s init stop
+
+clean:
+    rm -rf $(beams)
+
+.SUBDIRS: src test

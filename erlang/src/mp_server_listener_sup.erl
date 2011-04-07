@@ -16,18 +16,18 @@
 %%    limitations under the License.
 
 %%%-------------------------------------------------------------------
-%%% File    : mp_server_sup.erl
+%%% File    : mp_server_sup2.erl
 %%% Author  : UENISHI Kota <kuenishi@gmail.com>
 %%% Description : 
 %%% @private
 %%% Created : 30 May 2010 by UENISHI Kota <kuenishi@gmail.com>
 %%%-------------------------------------------------------------------
--module(mp_server_sup).
+-module(mp_server_listener_sup).
 
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([start_link/0, add_server/2, del_server/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -37,14 +37,17 @@
 %%====================================================================
 %% API functions
 %%====================================================================
+add_server(Mod, Options)->
+    supervisor:start_child(?SERVER, [Mod,Options]).
+
+del_server(Name)->
+    supervisor:terminate_child(?SERVER, Name).
+
 %%--------------------------------------------------------------------
 %% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: Starts the supervisor
 %%--------------------------------------------------------------------
-%% start_link(Module,Addr,Port)->
-%%     supervisor:start_link({local, ?SERVER}, ?MODULE, 
-%% 			 [{module,Module},{addr,Addr},{port,Port}]).
-start_link()->
+start_link() ->
     supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
 %%====================================================================
@@ -59,18 +62,12 @@ start_link()->
 %% to find out about restart strategy, maximum restart frequency and child 
 %% specifications.
 %%--------------------------------------------------------------------
-init(StartProps) ->
-    Children = [{mp_server_session_sup,
-		 { mp_server_session_sup,start_link,[]},
-		 permanent,2000,supervisor,[]},
-                {mp_server_listener_sup,
-		 {mp_server_listener_sup,start_link,[]},
-		 permanent,2000,supervisor,[]}],
-    ok=supervisor:check_childspecs(Children),
-%    io:format("~p~p: ~p~n", [?FILE, ?LINE, Children]),
-    {ok,{{one_for_all,0,1}, Children}}.
+init([]) ->
+    AChild = {mp_server_srv,{mp_server_srv,start_link,[]},
+	      permanent,2000,worker,[mp_server_srv]},
+    ok=supervisor:check_childspecs([AChild]),
+    {ok,{{simple_one_for_one,0,1}, [AChild]}}.
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
-

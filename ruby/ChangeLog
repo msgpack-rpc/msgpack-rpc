@@ -1,4 +1,8 @@
 
+2011-04-06 version 0.4.4
+
+  * Fixes missing RuntimeError::CODE
+
 2010-11-28 version 0.4.3
 
   * Uses MessagePack::Unpacker#feed_each implemented on msgpack-0.4.4
