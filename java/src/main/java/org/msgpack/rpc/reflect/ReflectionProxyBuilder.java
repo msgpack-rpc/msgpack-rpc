@@ -99,11 +99,15 @@ public class ReflectionProxyBuilder extends ProxyBuilder {
 				return new Future<Object>(f, e.getReturnTypeTemplate());
 			} else {
 				MessagePackObject obj = s.callApply(e.getRpcName(), params);
-				Template tmpl = e.getReturnTypeTemplate();
-				if(tmpl == null) {
+				if(obj.isNil()){
 					return null;
+				}else{
+					Template tmpl = e.getReturnTypeTemplate();
+					if(tmpl == null) {
+						return null;
+					}
+					return obj.convert(tmpl);
 				}
-				return obj.convert(tmpl);
 			}
 		}
 	}

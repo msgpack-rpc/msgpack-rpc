@@ -25,10 +25,15 @@ import org.msgpack.rpc.config.*;
 import org.msgpack.rpc.loop.*;
 import org.msgpack.rpc.loop.netty.*;
 import java.util.*;
+
 import junit.framework.*;
+import org.apache.log4j.BasicConfigurator;
+
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ProxyTest extends ReflectTest {
+	
     @Test
     public void testSyncClient() throws Exception {
         Context context = startServer(new SyncHandler());
@@ -112,4 +117,34 @@ public class ProxyTest extends ReflectTest {
             context.close();
         }
     }
+    
+    public interface NullOrException{
+    	
+    	public String returnNullValue();
+    	
+    	public String throwsException() throws Exception;
+    	
+    }
+    
+    public class NullOrExceptionSyncHandler implements NullOrException{
+
+    	public String returnNullValue(){
+    		return null;
+    	}
+    	
+    	public String throwsException() throws Exception{
+    		throw new Exception("Error");
+    	}
+    	
+    	
+    }
+    
+    /*public void testNullReturnValue() throws Exception {
+        Context context = startServer2(new NullOrExceptionSyncHandler());
+        NullOrException c = context.getClient().proxy(NullOrException.class);
+        
+        String result = c.returnNullValue();
+        Assert.assertNull(result);
+    }*/
+    
 }

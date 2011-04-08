@@ -32,8 +32,13 @@ import org.msgpack.rpc.transport.ServerTransport;
 import org.msgpack.rpc.transport.MessageSendable;
 import org.msgpack.rpc.loop.EventLoop;
 import org.msgpack.rpc.error.RPCError;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Server extends SessionPool {
+	
+	private final static Logger logger = LoggerFactory.getLogger(Server.class);
+	
 	private Dispatcher dp;
 	private ServerTransport stran;
 
@@ -93,6 +98,7 @@ public class Server extends SessionPool {
 			// FIXME
 			request.sendError(e.getCode(), e);
 		} catch(Exception e) {
+			logger.error("Unexpected error occured while calling " + method,e);
 			// FIXME request.sendError("RemoteError", e.getMessage());
 			request.sendError(e.getMessage());
 		}
