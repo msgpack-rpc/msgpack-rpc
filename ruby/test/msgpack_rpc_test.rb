@@ -5,7 +5,15 @@ require File.expand_path(File.dirname(__FILE__)) + '/test_helper.rb'
 
 $port = 65500
 
-class MessagePackRPCTest < Test::Unit::TestCase
+module MessagePackRPCTestBase
+
+  class MarshalDemo
+    # A custom class to demonstrate marshalling.
+    attr_accessor :value
+    def initialize(value)
+      @value = value
+    end
+  end
 
 	class MyServer
 		def initialize(svr)
@@ -40,6 +48,24 @@ class MessagePackRPCTest < Test::Unit::TestCase
 			as
 		end
 
+    # Handlers for Marshal-Tests
+    def hello_marshal
+      "ok"
+    end
+
+    def echo_marshal(o)
+      o
+    end
+
+    def modify_marshal(o)
+      o.value = "ok"
+      o
+    end
+
+    def remote_marshal
+      MarshalDemo.new("ok")
+    end
+
 		private
 		def hidden
 		
@@ -55,7 +81,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 	def test_listen
 		port = next_port
 
-		svr = MessagePack::RPC::Server.new
+		svr = @server_cls.new
 		svr.listen("0.0.0.0", port, MyServer.new(svr))
 		svr.close
 	end
@@ -64,14 +90,14 @@ class MessagePackRPCTest < Test::Unit::TestCase
 	def start_server
 		port = next_port
 
-		svr = MessagePack::RPC::Server.new
+		svr = @server_cls.new
 		svr.listen("0.0.0.0", port, MyServer.new(svr))
 		Thread.start do
 			svr.run
 			svr.close
 		end
 
-		cli = MessagePack::RPC::Client.new("127.0.0.1", port)
+		cli = @client_cls.new("127.0.0.1", port)
 		cli.timeout = 10
 
 		return svr, cli
@@ -236,10 +262,10 @@ class MessagePackRPCTest < Test::Unit::TestCase
 
 		loop = MessagePack::RPC::Loop.new
 
-		svr = MessagePack::RPC::Server.new(loop)
+		svr = @server_cls.new(loop)
 		svr.listen("0.0.0.0", port, MyServer.new(svr))
 
-		cli = MessagePack::RPC::Client.new("127.0.0.1", port, loop)
+		cli = @client_cls.new("127.0.0.1", port, loop)
 		cli.timeout = 10
 
 		count = 0
@@ -270,7 +296,7 @@ class MessagePackRPCTest < Test::Unit::TestCase
 
 		lsock = TCPServer.new("0.0.0.0", port)
 
-		cli = MessagePack::RPC::Client.new("127.0.0.1", port)
+		cli = @client_cls.new("127.0.0.1", port)
 		cli.timeout = 1
 
 		timeout = false
@@ -295,3 +321,10 @@ class MessagePackRPCTest < Test::Unit::TestCase
 	end
 end
 
+class MessagePackRPCTest < Test::Unit::TestCase
+  include MessagePackRPCTestBase
+  def setup
+    @server_cls = MessagePack::RPC::Server
+    @client_cls = MessagePack::RPC::Client
+  end
+end

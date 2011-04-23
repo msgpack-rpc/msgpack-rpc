@@ -167,10 +167,6 @@ module MessagePack  #:nodoc:
 #   end
 #
 #
-# You can receive and send any objects that can be serialized by MessagePack.
-# This means that the objects required to implement *to_msgpack(out = '')* method.
-#
-#
 # == Transports
 #
 # You can use UDP and UNIX domain sockets instead of TCP.
@@ -225,6 +221,25 @@ module MessagePack  #:nodoc:
 #   server.run
 #
 #
+# == Serialization
+# 
+# By default you can receive and send any objects that can be serialized by MessagePack.
+# This means that the objects required to implement *to_msgpack(out = '')* method.
+#
+#
+# === Marshal Mode
+#
+# Alternatively you may use MessagePack::RPC::Marshal::Client,
+# MessagePack::RPC::Marshal::SessionPool and MessagePack::RPC::Marshal::Server
+# instead of the regular Client/Server/SessionPool.
+#
+# These classes will transparently marshall all method parameters and
+# return values on the sender side and unmarshall on the receiver side
+#
+# This means you can pass instances of custom classes back and forth
+# without implementing *to_msgpack(out = '')* or doing manual serialization.
+# All classes that you want to exchange must exist on both sides.
+#
 module RPC
 end
 
@@ -248,4 +263,5 @@ require 'msgpack/rpc/client'
 require 'msgpack/rpc/server'
 require 'msgpack/rpc/transport/base'
 require 'msgpack/rpc/transport/tcp'
+require 'msgpack/rpc/marshal'
 
