@@ -41,6 +41,7 @@ module Network.MessagePackRpc.Client (
   method,
   ) where
 
+import Control.Concurrent.MVar
 import Control.Exception
 import Control.Monad
 import Data.Attoparsec.Enumerator
@@ -60,7 +61,7 @@ bufferSize = 4096
 -- | RPC connection type
 data Connection
   = Connection
-    { connHandle :: Handle }
+    { connHandle :: MVar Handle }
 
 -- | Connect to RPC server
 connect :: String -- ^ Host name
@@ -68,14 +69,15 @@ connect :: String -- ^ Host name
            -> IO Connection -- ^ Connection
 connect addr port = withSocketsDo $ do
   h <- connectTo addr (PortNumber $ fromIntegral port)
+  mh <- newMVar h
   return $ Connection
-    { connHandle = h
+    { connHandle = mh
     }
 
 -- | Disconnect a connection
 disconnect :: Connection -> IO ()
-disconnect Connection { connHandle = h } =
-  hClose h
+disconnect Connection { connHandle = mh } =
+  hClose =<< takeMVar mh
 
 -- | RPC error type
 data RpcError
@@ -110,7 +112,7 @@ instance (OBJECT o, RpcType r) => RpcType (o -> r) where
   rpcc c m args arg = rpcc c m (toObject arg:args)
 
 rpcCall :: Connection -> String -> [Object] -> IO Object
-rpcCall Connection{ connHandle = h } m args = do
+rpcCall Connection{ connHandle = mh } m args = withMVar mh $ \h -> do
   msgid <- (`mod`2^(30::Int)) <$> randomIO :: IO Int
   BL.hPutStr h $ pack (0 ::Int, msgid, m, args)
   hFlush h

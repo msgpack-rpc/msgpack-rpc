@@ -285,5 +285,13 @@ class MessagePackRPCTest < Test::Unit::TestCase
 		cli.close
 		lsock.close
 	end
+
+	def test_address
+		addr = MessagePack::RPC::Address.new('172.16.0.11', 18900)
+		raw = addr.to_msgpack
+		msg = MessagePack.unpack(raw)
+		addr2 = MessagePack::RPC::Address.load(msg)
+		assert_equal(addr, addr2)
+	end
 end
 
