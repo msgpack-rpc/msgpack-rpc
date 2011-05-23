@@ -5,7 +5,7 @@
   <groupId>org.msgpack</groupId>
   <artifactId>msgpack-rpc</artifactId>
   <packaging>jar</packaging>
-  <version>0.5.0-devel</version>
+  <version>0.6.1-devel</version>
 
   <name>msgpack-rpc</name>
   <url>http://msgpack.org/</url>
@@ -113,22 +113,9 @@
     <dependency>
       <groupId>org.msgpack</groupId>
       <artifactId>msgpack</artifactId>
-      <version>0.4.3-devel</version>
+      <version>0.5.1-devel</version>
       <scope>compile</scope>
     </dependency>
-    <dependency>
-      <groupId>org.jboss.xnio</groupId>
-      <artifactId>xnio-api</artifactId>
-      <version>2.0.2.GA</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.xnio</groupId>
-      <artifactId>xnio-nio</artifactId>
-      <version>2.0.2.GA</version>
-      <scope>compile</scope>
-    </dependency>
-    <!--
     <dependency>
       <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
@@ -143,13 +130,6 @@
           <artifactId>commons-logging</artifactId>
         </exclusion>
       </exclusions>
-      <scope>compile</scope>
-    </dependency>
-    -->
-    <dependency>
-      <groupId>javassist</groupId>
-      <artifactId>javassist</artifactId>
-      <version>3.12.1.GA</version>
       <scope>compile</scope>
     </dependency>
   </dependencies>

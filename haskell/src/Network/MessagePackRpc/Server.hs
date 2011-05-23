@@ -37,15 +37,21 @@ import Control.Applicative
 import Control.Concurrent
 import Control.DeepSeq
 import Control.Exception as E
+import Data.Enumerator
+import Data.Enumerator.Binary
 import Control.Monad
 import Control.Monad.IO.Class
-import Data.Iteratee.Exception as I
+import Data.Attoparsec.Enumerator
+import qualified Data.ByteString.Lazy as BL
 import Data.Maybe
 import Data.MessagePack
 import Network
 import System.IO
 
 import Prelude hiding (catch)
+
+bufferSize :: Integer
+bufferSize = 4096
 
 type RpcMethod = [Object] -> IO Object
 
@@ -80,24 +86,27 @@ serve port methods = withSocketsDo $ do
     (h, host, hostport) <- accept sock
     forkIO $
       (processRequests h `finally` hClose h) `catches`
-      [ Handler $ \e -> let _ = (e :: I.EofException) in return ()
-      , Handler $ \e -> hPutStrLn stderr $ host ++ ":" ++ show hostport ++ ": "++ show (e :: SomeException)]
+      [ Handler $ \e ->
+         case e of
+           ParseError ["demandInput"] _ -> return ()
+           _ -> hPutStrLn stderr $ host ++ ":" ++ show hostport ++ ": " ++ show e
+      , Handler $ \e ->
+         hPutStrLn stderr $ host ++ ":" ++ show hostport ++ ": " ++ show (e :: SomeException)]
 
   where
     processRequests h =
-      unpackFromHandleI h $ forever $ processRequest h
+      run_ $ enumHandle bufferSize h $$ forever $ processRequest h
     
     processRequest h = do
-      (rtype, msgid, method, args) <- getI
+      (rtype, msgid, method, args) <- iterParser get
       liftIO $ do
         resp <- try $ getResponse rtype method args
         case resp of
           Left err ->
-            packToHandle' h $
-            put (1 :: Int, msgid :: Int, show (err :: SomeException), ())
+            BL.hPutStr h $ pack (1 :: Int, msgid :: Int, show (err :: SomeException), ())
           Right ret ->
-            packToHandle' h $
-            put (1 :: Int, msgid :: Int, (), ret)
+            BL.hPutStr h $ pack (1 :: Int, msgid :: Int, (), ret)
+        hFlush h
 
     getResponse rtype method args = do
       when (rtype /= (0 :: Int)) $

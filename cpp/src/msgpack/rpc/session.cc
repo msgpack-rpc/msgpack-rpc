@@ -30,7 +30,7 @@ session_impl::session_impl(const address& addr, loop lo) :
 	m_addr(addr),
 	m_loop(lo),
 	m_msgid_rr(0),  // FIXME rand()?
-	m_timeout(30)  // FIXME
+	m_timeout(30)
 { }
 
 session_impl::~session_impl() { }
@@ -38,6 +38,7 @@ session_impl::~session_impl() { }
 void session_impl::build(const builder& b)
 {
 	m_tran = b.build(this, m_addr);
+	m_timeout = b.get_timeout();
 }
 
 shared_session session_impl::create(const builder& b, const address addr, loop lo)
@@ -91,12 +92,19 @@ void session_impl::step_timeout()
 	LOG_TRACE("step_timeout");
 	std::vector<shared_future> timedout;
 	m_reqtable.step_timeout(&timedout);
-	if(timedout.empty()) { return ;}
-	for(std::vector<shared_future>::iterator it(timedout.begin()),
-			it_end(timedout.end()); it != it_end; ++it) {
-		shared_future& f = *it;
-		f->set_result(object(), TIMEOUT_ERROR, auto_zone());
+	if(!timedout.empty()) {
+		for(std::vector<shared_future>::iterator it(timedout.begin()),
+				it_end(timedout.end()); it != it_end; ++it) {
+			shared_future& f = *it;
+			f->set_result(object(), TIMEOUT_ERROR, auto_zone());
+		}
 	}
+}
+
+void session_impl::step_timeout(std::vector<shared_future>* timedout)
+{
+	LOG_TRACE("step_timeout");
+	m_reqtable.step_timeout(timedout);
 }
 
 void session_impl::on_connect_failed()

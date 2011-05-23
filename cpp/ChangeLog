@@ -1,4 +1,8 @@
 
+2011-02-20 version 0.3.1
+
+  * session_pool keeps released connection upto 60 seconds
+
 2010-08-16 version 0.3.0
 
   * increments library's version-info

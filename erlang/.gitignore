@@ -8,3 +8,4 @@ edoc/*.css
 edoc/edoc-info
 .omakedb*
 *.omc
+.eunit/

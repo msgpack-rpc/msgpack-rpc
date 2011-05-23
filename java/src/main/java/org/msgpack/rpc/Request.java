@@ -17,27 +17,26 @@
 //
 package org.msgpack.rpc;
 
-import java.io.*;
-import java.util.*;
-import org.msgpack.rpc.transport.*;
-import org.msgpack.*;
+import org.msgpack.MessagePackObject;
+import org.msgpack.rpc.message.ResponseMessage;
+import org.msgpack.rpc.transport.MessageSendable;
 
 public class Request {
-	private MessageSendable ms;  // synchronized?
+	private MessageSendable channel;  // synchronized?
 	private int msgid;
 	private String method;
 	private MessagePackObject args;
 
-	public Request(MessageSendable ms, int msgid,
-			String method, MessagePackObject args) {
-		this.ms = ms;
+	public Request(MessageSendable channel,
+			int msgid, String method, MessagePackObject args) {
+		this.channel = channel;
 		this.msgid = msgid;
 		this.method = method;
 		this.args = args;
 	}
 
 	public Request(String method, MessagePackObject args) {
-		this.ms = null;
+		this.channel = null;
 		this.msgid = 0;
 		this.method = method;
 		this.args = args;
@@ -68,12 +67,12 @@ public class Request {
 	}
 
 	public synchronized void sendResponse(Object result, Object error) {
-		if(ms == null) {
+		if(channel == null) {
 			return;
 		}
 		ResponseMessage msg = new ResponseMessage(msgid, error, result);
-		ms.sendMessage(msg);
-		ms = null;
+		channel.sendMessage(msg);
+		channel = null;
 	}
 }
 

@@ -14,7 +14,7 @@ public:
 	server(msgpack::rpc::loop lo = msgpack::rpc::loop()) :
 		msgpack::rpc::server::base(lo) { }
 
-	~server() { }
+	virtual ~server() { }
 
 	void dispatch(msgpack::rpc::request req);
 
@@ -31,8 +31,9 @@ private:
 
 public:
 	%functions.each do |m|
-	void {{m.function_name}}(msgpack::rpc::request::type<{{m.type}}>, {{type_name}}::{{m.function_name}}&);
+	virtual void {{m.function_name}}(msgpack::rpc::request::type<{{m.type}}>, {{type_name}}::{{m.function_name}}&) = 0;
 	%end
+	%# TODO default implementation (throws not implemented error)
 };
 
 

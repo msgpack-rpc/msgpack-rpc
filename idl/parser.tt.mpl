@@ -358,7 +358,7 @@ grammar MessagePackIDL
 	end
 
 	rule literal_int
-		val:([\+\-]? (decimal_int / hex_int / octal_int)) word_spacing {
+		val:([\+\-]? (hex_int / octal_int / decimal_int)) word_spacing {
 			def number
 				val.text_value.to_i
 			end
@@ -369,7 +369,7 @@ grammar MessagePackIDL
 	end
 
 	rule literal_uint
-		val:((decimal_int / hex_int / octal_int)) word_spacing {
+		val:((hex_int / octal_int / decimal_int)) word_spacing {
 			def number
 				val.text_value.to_i
 			end

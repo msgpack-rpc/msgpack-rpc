@@ -17,11 +17,16 @@
 //
 #include "session_pool_impl.h"
 #include "session_impl.h"
+#include "future_impl.h"
+#include "exception_impl.h"
 #include "transport/tcp.h"
 #include "cclog/cclog.h"
 
 namespace msgpack {
 namespace rpc {
+
+
+static const unsigned int SESSION_POOL_TIME_LIMIT = 60;  // TODO
 
 
 MP_UTIL_DEF(session_pool) {
@@ -59,30 +64,43 @@ session session_pool_impl::get_session(const address& addr)
 
 	table_t::iterator found = ref->find(addr);
 	if(found != ref->end()) {
-		shared_session s = found->second.lock();
-		if(s) {
-			return session(s);
-		}
-		ref->erase(found);
+		found->second.ttl = SESSION_POOL_TIME_LIMIT;
+		return session(found->second.session);
 	}
 
 	shared_session s(session_impl::create(*m_builder, addr, m_loop));
-	ref->insert( table_t::value_type(addr, weak_session(s)) );
+	ref->insert( table_t::value_type(addr, entry_t(s, SESSION_POOL_TIME_LIMIT)) );
 
 	return session(s);
 }
 
 void session_pool_impl::step_timeout()
 {
+	std::vector<shared_future> timedout;
+
 	table_ref ref(m_table);
-	for(table_t::iterator it(ref->begin());
-			it != ref->end(); ) {
-		shared_session s(it->second.lock());
-		if(s) {
-			s->step_timeout();
-			++it;
-		} else {
-			ref->erase(it++);
+	for(table_t::iterator it(ref->begin()); it != ref->end(); ) {
+		entry_t& e = it->second;
+		if(e.session.unique()) {
+			// There are no contexts that references the session.
+			if(e.ttl <= 0) {
+				// If e.session.unique() is true, m_pimpl->m_reqtable is empty
+				// because it contains futures that references a session.
+				ref->erase(it++);
+				continue;
+			}
+			--e.ttl;
+		}
+		e.session->step_timeout(&timedout);
+		++it;
+	}
+	ref.reset();
+
+	if(!timedout.empty()) {
+		for(std::vector<shared_future>::iterator it(timedout.begin()),
+				it_end(timedout.end()); it != it_end; ++it) {
+			shared_future& f = *it;
+			f->set_result(object(), TIMEOUT_ERROR, auto_zone());
 		}
 	}
 }
