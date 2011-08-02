@@ -47,5 +47,5 @@ def serve(daemon=False):
             pass
 
 if __name__ == '__main__':
-    port = serve(False)
+    server, port = serve(False)
     print "Serving on localhost:%d\n" % (port,)
