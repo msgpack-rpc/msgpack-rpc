@@ -28,12 +28,10 @@ class ChannelAdaptor implements ClientTransport {
 		this.channel = channel;
 	}
 
-	@Override
 	public void sendMessage(Object msg) {
 		Channels.write(channel, msg);
 	}
 
-	@Override
 	public void close() {
 		channel.close();
 	}

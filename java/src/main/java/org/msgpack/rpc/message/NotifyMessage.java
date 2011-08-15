@@ -40,7 +40,6 @@ public class NotifyMessage implements MessagePackable {
 	//	return args;
 	//}
 
-	@Override
 	public void messagePack(Packer pk) throws IOException {
 		pk.packArray(3);
 		pk.packInt(Messages.NOTIFY);
