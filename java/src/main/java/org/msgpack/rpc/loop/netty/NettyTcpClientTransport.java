@@ -17,6 +17,8 @@
 //
 package org.msgpack.rpc.loop.netty;
 
+import java.util.Map;
+
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ChannelFuture;
@@ -31,7 +33,8 @@ import org.msgpack.rpc.transport.RpcMessageHandler;
 import org.msgpack.rpc.transport.PooledStreamClientTransport;
 
 class NettyTcpClientTransport extends PooledStreamClientTransport<Channel, ChannelBufferOutputStream> {
-	private ClientBootstrap bootstrap;
+	private final ClientBootstrap bootstrap;
+	private static final String TCP_NO_DELAY = "tcpNoDelay";
 
 	NettyTcpClientTransport(TcpClientConfig config, Session session,
 			NettyEventLoop loop) {
@@ -42,7 +45,9 @@ class NettyTcpClientTransport extends PooledStreamClientTransport<Channel, Chann
 
 		bootstrap = new ClientBootstrap(loop.getClientFactory());
 		bootstrap.setPipelineFactory(new StreamPipelineFactory(handler));
-		bootstrap.setOption("tcpNoDelay", true);
+		Map<String, Object> options = config.getOptions();
+		setIfNotPresent(options, TCP_NO_DELAY, Boolean.TRUE, bootstrap);
+		bootstrap.setOptions(options);
 	}
 
 	private final ChannelFutureListener connectListener =
@@ -104,5 +109,12 @@ class NettyTcpClientTransport extends PooledStreamClientTransport<Channel, Chann
 	protected void closeChannel(Channel c) {
 		c.close();
 	}
+	
+    private static void setIfNotPresent(Map<String, Object> options,
+            String key, Object value, ClientBootstrap bootstrap) {
+        if (!options.containsKey(key)) {
+            bootstrap.setOption(key, value);
+        }
+    }
 }
 

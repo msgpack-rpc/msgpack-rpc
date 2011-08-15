@@ -17,7 +17,11 @@
 //
 package org.msgpack.rpc.config;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public abstract class ClientConfig {
+    private Map<String, Object> options = new HashMap<String, Object>();
 	protected int requestTimeout = 30;  // FIXME default timeout time
 
 	public void setRequestTimeout(int sec) {
@@ -27,5 +31,13 @@ public abstract class ClientConfig {
 	public int getRequestTimeout() {
 		return this.requestTimeout;
 	}
+	
+    public Object getOption(String key) {
+        return options.get(key);
+    }
+
+    public Map<String, Object> getOptions() {
+        return options;
+    }
 }
 
