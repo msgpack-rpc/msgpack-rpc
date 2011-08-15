@@ -72,7 +72,6 @@ public class JavassistInvokerBuilder extends InvokerBuilder {
             }
         }
 
-        @Override
         public void invoke(Object target, Request request) throws Exception {
             Object[] params = new Object[parameterLength];
             if(async) {

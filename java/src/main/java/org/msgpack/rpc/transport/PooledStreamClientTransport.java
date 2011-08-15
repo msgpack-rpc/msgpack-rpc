@@ -48,7 +48,6 @@ public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends
 		return config;
 	}
 
-	@Override
 	public void sendMessage(Object msg) {
 		synchronized(lock) {
 			if(connecting == -1) { return; }  // already closed
@@ -72,7 +71,6 @@ public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends
 		}
 	}
 
-	@Override
 	public void close() {
 		synchronized(lock) {
 			if(pendingBuffer != null) {
