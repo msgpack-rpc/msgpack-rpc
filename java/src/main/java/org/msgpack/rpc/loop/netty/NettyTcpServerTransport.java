@@ -17,6 +17,8 @@
 //
 package org.msgpack.rpc.loop.netty;
 
+import java.util.Map;
+
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.msgpack.rpc.Server;
@@ -26,28 +28,37 @@ import org.msgpack.rpc.transport.ServerTransport;
 import org.msgpack.rpc.address.Address;
 
 class NettyTcpServerTransport implements ServerTransport {
-	private Server server;
 	private Channel listenChannel;
+	private final static String CHILD_TCP_NODELAY = "child.tcpNoDelay";
+	private final static String REUSE_ADDRESS = "reuseAddress";
 
 	NettyTcpServerTransport(TcpServerConfig config, Server server,
 			NettyEventLoop loop) {
-		// TODO: check server != null
-		this.server = server;
-
+	    if (server == null) {
+	        throw new IllegalArgumentException("Server must not be null");
+	    }
 		Address address = config.getListenAddress();
 		RpcMessageHandler handler = new RpcMessageHandler(server);
 		handler.useThread(true);
 
 		ServerBootstrap bootstrap = new ServerBootstrap(loop.getServerFactory());
 		bootstrap.setPipelineFactory(new StreamPipelineFactory(handler));
-		bootstrap.setOption("child.tcpNoDelay", true);
-		bootstrap.setOption("reuseAddress", true);
-
+		final Map<String, Object> options = config.getOptions();
+		setIfNotPresent(options, CHILD_TCP_NODELAY, Boolean.TRUE, bootstrap);
+        setIfNotPresent(options, REUSE_ADDRESS, Boolean.TRUE, bootstrap);
+        bootstrap.setOptions(options);
 		this.listenChannel = bootstrap.bind(address.getSocketAddress());
 	}
 
 	public void close() {
 		listenChannel.close();
 	}
+	
+    private static void setIfNotPresent(Map<String, Object> options,
+            String key, Object value, ServerBootstrap bootstrap) {
+        if (!options.containsKey(key)) {
+            bootstrap.setOption(key, value);
+        }
+    }
 }
 
