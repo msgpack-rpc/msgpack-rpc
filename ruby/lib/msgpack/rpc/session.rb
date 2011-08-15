@@ -188,6 +188,7 @@ class Session
 		@seqid += 1; if @seqid >= 1<<31 then @seqid = 0 end
 		data = [REQUEST, msgid, method, param].to_msgpack
 		@transport.send_data(data)
+    @loop.run_once
 		@reqtable[msgid] = Future.new(self, @loop)
 	end
 
@@ -195,6 +196,7 @@ class Session
 		method = method.to_s
 		data = [NOTIFY, method, param].to_msgpack
 		@transport.send_data(data)
+    @loop.run_once
 		nil
 	end
 end
