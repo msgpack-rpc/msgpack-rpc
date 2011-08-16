@@ -34,7 +34,7 @@ public class MethodSelector {
 
 	public static Method[] selectRpcClientMethod(Class<?> iface) {
 		List<Method> methods = new ArrayList();
-		for(Method method : iface.getDeclaredMethods()) {
+		for(Method method : iface.getMethods()) {
 			if(isRpcClientMethod(method)) {
 				methods.add(method);
 			}
