@@ -82,30 +82,30 @@ public abstract class ReflectTest extends TestCase {
 	}
 
 	public static class AsyncHandler {
-		public void m01(Request request) {
-			request.sendResult("m01");
-		}
+        public void m01(Callback<String> callback) {
+            callback.run("m01");
+        }
 
-		public void m02(Request request, String a1) {
-			request.sendResult("m02"+a1);
-		}
+        public void m02(Callback<String> callback, String a1) {
+            callback.run("m02"+a1);
+        }
 
-		public void m03(Request request, int a1) {
-			request.sendResult("m03"+a1);
-		}
+        public void m03(Callback<String> callback, int a1) {
+            callback.run("m03"+a1);
+        }
 
-		public void m04(Request request, List<String> a1) {
-			request.sendResult("m04"+stringify1(a1));
-		}
+        public void m04(Callback<String> callback, List<String> a1) {
+            callback.run("m04"+stringify1(a1));
+        }
 
-		public void m05(Request request, List<List<String>> a1) {
-			request.sendResult("m05"+stringify2(a1));
-		}
+        public void m05(Callback<String> callback, List<List<String>> a1) {
+            callback.run("m05"+stringify2(a1));
+        }
 
-		public void m06(Request request, String a1, int a2) {
-			request.sendResult("m06"+a1+a2);
-		}
-	}
+        public void m06(Callback<String> callback, String a1, int a2) {
+            callback.run("m06"+a1+a2);
+        }
+    }
 
 	static class Context {
 		Server server;
