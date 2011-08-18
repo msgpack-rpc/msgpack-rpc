@@ -39,5 +39,9 @@ public abstract class ClientConfig {
     public Map<String, Object> getOptions() {
         return options;
     }
+    
+    public void setOption(String key, Object value) {
+        options.put(key, value);
+    }
 }
 
