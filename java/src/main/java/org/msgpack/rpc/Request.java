@@ -21,7 +21,7 @@ import org.msgpack.MessagePackObject;
 import org.msgpack.rpc.message.ResponseMessage;
 import org.msgpack.rpc.transport.MessageSendable;
 
-public class Request {
+public class Request implements Callback<Object>{
 	private MessageSendable channel;  // synchronized?
 	private int msgid;
 	private String method;
@@ -74,5 +74,13 @@ public class Request {
 		channel.sendMessage(msg);
 		channel = null;
 	}
+
+    public void onError(Object result, Object error) {
+        sendResponse(result, error);
+    }
+
+    public void run(Object result) {
+        sendResult(result);
+    }
 }
 

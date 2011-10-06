@@ -24,6 +24,7 @@ import java.lang.annotation.*;
 import org.msgpack.annotation.*;
 import org.msgpack.*;
 import org.msgpack.template.*;
+import org.msgpack.rpc.Callback;
 import org.msgpack.rpc.Request;
 
 public abstract class InvokerBuilder {
@@ -168,8 +169,8 @@ public abstract class InvokerBuilder {
 	//}
 
 	static boolean isAsyncMethod(Method targetMethod) {
-		Type[] types = targetMethod.getParameterTypes();
-		return types.length > 0 && types[0].equals(Request.class);
+		final Class<?>[] types = targetMethod.getParameterTypes();
+		return types.length > 0 && Callback.class.isAssignableFrom(types[0]);
 	}
 
 

@@ -82,16 +82,31 @@ class Address
 		Address.parse(@serial)
 	end
 
-	def self.parse_sockaddr(raw)
-		if raw.length == 6
-			addr = Socket.pack_sockaddr_in(0, '0.0.0.0')
-			addr[2,6] = raw[0,6]
-		else
-			addr = Socket.pack_sockaddr_in(0, '::')
-			addr[2,2]  = raw[0,2]
-			addr[8,16] = raw[2,16]
+	if "".respond_to?(:encoding)
+		def self.parse_sockaddr(raw)
+			raw.force_encoding('ASCII-8BIT')
+			if raw.length == 6
+				addr = Socket.pack_sockaddr_in(0, '0.0.0.0')
+				addr[2,6] = raw[0,6]
+			else
+				addr = Socket.pack_sockaddr_in(0, '::')
+				addr[2,2]  = raw[0,2]
+				addr[8,16] = raw[2,16]
+			end
+			addr
 		end
-		addr
+	else
+		def self.parse_sockaddr(raw)
+			if raw.length == 6
+				addr = Socket.pack_sockaddr_in(0, '0.0.0.0')
+				addr[2,6] = raw[0,6]
+			else
+				addr = Socket.pack_sockaddr_in(0, '::')
+				addr[2,2]  = raw[0,2]
+				addr[8,16] = raw[2,16]
+			end
+			addr
+		end
 	end
 
 	def self.parse(raw)
