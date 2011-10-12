@@ -4,7 +4,7 @@ package org.msgpack.inrealworld;
  * User: takeshita
  * Create: 11/10/11 16:02
  */
-public interface DisconnectTestInterface {
+public interface KillProcessInterface {
 
 
     public boolean sendMessage( String message);

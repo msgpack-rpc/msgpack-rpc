@@ -11,7 +11,7 @@ import java.io.IOException;
  * User: takeshita
  * Create: 11/10/11 16:00
  */
-public class DisconnectTestServer implements  DisconnectTestInterface{
+public class KillProcessServer implements KillProcessInterface {
 
     public static final int PORT = 14522;
     public static final String LOG_FILE = "disconnect.log";
@@ -27,7 +27,7 @@ public class DisconnectTestServer implements  DisconnectTestInterface{
 
         try{
             System.out.println("waiting port " + port);
-            DisconnectTestServer server =new DisconnectTestServer(safeFilename);
+            KillProcessServer server =new KillProcessServer(safeFilename);
             svr.serve(server);
             svr.listen(port);
             System.out.println("start");
@@ -40,7 +40,7 @@ public class DisconnectTestServer implements  DisconnectTestInterface{
 
     File file;
 
-    public DisconnectTestServer(String saveFile){
+    public KillProcessServer(String saveFile){
         file = new File(saveFile);
 
     }

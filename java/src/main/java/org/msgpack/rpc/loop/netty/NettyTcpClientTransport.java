@@ -54,7 +54,7 @@ class NettyTcpClientTransport extends PooledStreamClientTransport<Channel, Chann
 		new ChannelFutureListener() {
 			public void operationComplete(ChannelFuture future) throws Exception {
 				if(!future.isSuccess()) {
-					onConnectFailed(future.getCause());
+					onConnectFailed(future.getChannel(),future.getCause());
 					return;
 				}
 				Channel c = future.getChannel();
@@ -93,6 +93,7 @@ class NettyTcpClientTransport extends PooledStreamClientTransport<Channel, Chann
 	@Override
 	protected void flushPendingBuffer(ChannelBufferOutputStream b, Channel c) {
 		Channels.write(c, b.buffer());
+        b.buffer().clear();
 	}
 
 	@Override

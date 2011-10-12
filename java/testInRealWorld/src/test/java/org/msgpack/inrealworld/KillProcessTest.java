@@ -1,13 +1,13 @@
 package org.msgpack.inrealworld;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.msgpack.rpc.Client;
 import org.msgpack.rpc.loop.EventLoop;
 
 import java.io.*;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 
 /**
  *
@@ -18,12 +18,13 @@ import java.util.Arrays;
  * User: takeshita
  * Create: 11/10/11 16:01
  */
-public class DisconnectTest {
+public class KillProcessTest {
 
     String classPath = null;
     File serverRoot = null;
 
-    void init(){
+    @Before
+    public void init(){
 
         String osName = System.getProperty("os.name");
 
@@ -99,20 +100,19 @@ public class DisconnectTest {
     @Test
     public void testConnectAndDisconnect() {
 
-        init();
 
-        Process p = null;//runServer(DisconnectTestServer.class);
+        Process p = null;//runServer(KillProcessServer.class);
 
 
         try{
             System.out.println("start");
 		    EventLoop loop = EventLoop.start();
-            Client client = new Client("localhost",DisconnectTestServer.PORT,loop);
+            Client client = new Client("localhost", KillProcessServer.PORT,loop);
             client.setRequestTimeout(1000);
-            DisconnectTestInterface proxy =  client.proxy(DisconnectTestInterface.class);
+            KillProcessInterface proxy =  client.proxy(KillProcessInterface.class);
 
 
-            p = runServer(DisconnectTestServer.class);
+            p = runServer(KillProcessServer.class);
             Thread.sleep(1000);
 
             System.out.println("Begin access");
@@ -127,13 +127,13 @@ public class DisconnectTest {
             for(int i = 0;i < 5;i++){
                 p.destroy();
                 Thread.sleep(100);
-                p = runServer(DisconnectTestServer.class);
-                proxy.sendMessage( (i + 3) + "");
+                p = runServer(KillProcessServer.class);
+                proxy.sendMessage((i + 3) + "");
             }
 
             System.out.println("Success second access");
 
-            String f = readAsString(new FileInputStream("target/classes/" + DisconnectTestServer.LOG_FILE));
+            String f = readAsString(new FileInputStream("target/classes/" + KillProcessServer.LOG_FILE));
             System.out.println("File:" + f);
             Assert.assertEquals("1234567",f);
 
