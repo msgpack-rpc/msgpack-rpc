@@ -28,13 +28,13 @@ class UNIXTransport
 		UNIXClientTransport.new(session, address)
 	end
 
-	class BasicSocket < Rev::UNIXSocket
+	class BasicSocket < Cool.io::UNIXSocket
 		def initialize(io)
 			super(io)
 			@pac = MessagePack::Unpacker.new
 		end
 
-		# from Rev::TCPSocket
+		# from Cool.io::TCPSocket
 		def on_readable
 			super
 		rescue
@@ -43,7 +43,7 @@ class UNIXTransport
 			close
 		end
 
-		# from Rev::UNIXSocket
+		# from Cool.io::UNIXSocket
 		def on_read(data)
 			@pac.feed_each(data) {|obj|
 				on_message(obj)
@@ -123,7 +123,7 @@ class UNIXServerTransport
 	# ServerTransport interface
 	def listen(server)
 		@server = server
-		@lsock  = Rev::UNIXServer.new(@address, ServerSocket, @server)
+		@lsock  = Cool.io::UNIXServer.new(@address, ServerSocket, @server)
 		begin
 			@server.loop.attach(@lsock)
 		rescue
