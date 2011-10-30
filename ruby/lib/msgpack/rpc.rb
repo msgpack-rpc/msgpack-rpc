@@ -233,7 +233,7 @@ end  # module MessagePack
 
 require 'msgpack'
 require 'socket'
-require 'rev'
+require 'cool.io'
 require 'msgpack/rpc/version'
 require 'msgpack/rpc/address'
 require 'msgpack/rpc/message'

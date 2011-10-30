@@ -28,7 +28,7 @@ class UDPTransport
 		UDPClientTransport.new(session, address)
 	end
 
-	class BasicSocket < Rev::IOWatcher
+	class BasicSocket < Cool.io::IOWatcher
 		HAVE_DNRL = UDPSocket.public_instance_methods.include?(:do_not_reverse_lookup)
 
 		def initialize(io)

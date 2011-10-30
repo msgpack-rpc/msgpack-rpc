@@ -19,13 +19,13 @@ module MessagePack
 module RPC
 
 
-Loop = Rev::Loop
+Loop = Cool.io::Loop
 
 
 module LoopUtil
 	attr_reader :loop
 
-	class Timer < Rev::TimerWatcher
+	class Timer < Cool.io::TimerWatcher
 		def initialize(interval, repeating, &block)
 			@block = block
 			super(interval, repeating)
@@ -39,7 +39,7 @@ module LoopUtil
 		@loop.attach Timer.new(interval, repeating, &block)
 	end
 
-	class TaskQueue < Rev::AsyncWatcher
+	class TaskQueue < Cool.io::AsyncWatcher
 		def initialize
 			@queue = []
 			super
@@ -77,7 +77,7 @@ module LoopUtil
 		@queue.detach if @queue && @queue.attached?
 		@loop.stop
 		# attach dummy timer
-		@loop.attach Rev::TimerWatcher.new(0, false)
+		@loop.attach Cool.io::TimerWatcher.new(0, false)
 		nil
 	end
 end
