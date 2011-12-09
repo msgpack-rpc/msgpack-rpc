@@ -5,7 +5,7 @@
   <groupId>org.msgpack</groupId>
   <artifactId>msgpack-rpc</artifactId>
   <packaging>jar</packaging>
-  <version>0.6.1-devel</version>
+  <version>0.7.0-SNAPSHOT</version>
 
   <name>msgpack-rpc</name>
   <url>http://msgpack.org/</url>
@@ -105,15 +105,9 @@
 
   <dependencies>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.8.1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.msgpack</groupId>
       <artifactId>msgpack</artifactId>
-      <version>0.5.1-devel</version>
+      <version>0.6.3</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -131,6 +125,12 @@
         </exclusion>
       </exclusions>
       <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.8.2</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
