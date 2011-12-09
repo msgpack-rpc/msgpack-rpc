@@ -31,13 +31,13 @@ class TCPTransport
 		TCPClientTransport.new(session, address, @reconnect_limit)
 	end
 
-	class BasicSocket < Rev::TCPSocket
+	class BasicSocket < Cool.io::TCPSocket
 		def initialize(io)
 			super(io)
 			@pac = MessagePack::Unpacker.new
 		end
 
-		# from Rev::TCPSocket
+		# from Cool.io::TCPSocket
 		def on_readable
 			super
 		rescue
@@ -46,7 +46,7 @@ class TCPTransport
 			close
 		end
 
-		# from Rev::TCPSocket
+		# from Cool.io::TCPSocket
 		def on_read(data)
 			@pac.feed_each(data) {|obj|
 				on_message(obj)
@@ -162,13 +162,13 @@ class TCPClientTransport
 			@s.on_response(self, msgid, error, result)
 		end
 
-		# from Rev::TCPSocket
+		# from Cool.io::TCPSocket
 		def on_connect
 			return unless @t
 			@t.on_connect(self)
 		end
 
-		# from Rev::TCPSocket
+		# from Cool.io::TCPSocket
 		def on_connect_failed
 			return unless @t
 			@t.on_connect_failed(self)
@@ -176,7 +176,7 @@ class TCPClientTransport
 			nil
 		end
 
-		# from Rev::TCPSocket
+		# from Cool.io::TCPSocket
 		def on_close
 			return unless @t
 			@t.on_close(self)
@@ -199,7 +199,7 @@ class TCPServerTransport
 	def listen(server)
 		@server = server
 		host, port = *@address.unpack
-		@lsock  = Rev::TCPServer.new(host, port, ServerSocket, @server)
+		@lsock  = Cool.io::TCPServer.new(host, port, ServerSocket, @server)
 		begin
 			@server.loop.attach(@lsock)
 		rescue
