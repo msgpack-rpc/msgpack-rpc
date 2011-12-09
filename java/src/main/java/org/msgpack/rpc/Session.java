@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.msgpack.MessagePackObject;
 import org.msgpack.rpc.address.Address;
 import org.msgpack.rpc.message.RequestMessage;
 import org.msgpack.rpc.message.NotifyMessage;
@@ -31,11 +30,14 @@ import org.msgpack.rpc.reflect.Reflect;
 import org.msgpack.rpc.transport.ClientTransport;
 import org.msgpack.rpc.config.ClientConfig;
 import org.msgpack.rpc.loop.EventLoop;
+import org.msgpack.type.Value;
+import org.msgpack.type.ValueFactory;
 
 public class Session {
 	protected Address address;
 	protected EventLoop loop;
 	private ClientTransport transport;
+    private Reflect reflect;
 
 	private int requestTimeout;
 	private AtomicInteger seqid = new AtomicInteger(0);  // FIXME rand()?
@@ -46,10 +48,11 @@ public class Session {
 		this.loop = loop;
 		this.requestTimeout = config.getRequestTimeout();
 		this.transport = loop.openTransport(config, this);
+        reflect = new Reflect(loop.getMessagePack());
 	}
 
 	public <T> T proxy(Class<T> iface) {
-		return Reflect.reflectProxy(iface).newProxyInstance(this);
+		return reflect.getProxy(iface).newProxyInstance(this);//  Reflect.reflectProxy(iface,loop.getMessagePack()).newProxyInstance(this);
 	}
 
 	public Address getAddress() {
@@ -69,8 +72,8 @@ public class Session {
 		this.requestTimeout = requestTimeout;
 	}
 
-	public MessagePackObject callApply(String method, Object[] args) {
-		Future<MessagePackObject> f = sendRequest(method, args);
+	public Value callApply(String method, Object[] args) {
+		Future<Value> f = sendRequest(method, args);
 		while(true) {
 			try {
 				return f.get();
@@ -80,7 +83,7 @@ public class Session {
 		}
 	}
 
-	public Future<MessagePackObject> callAsyncApply(String method, Object[] args) {
+	public Future<Value> callAsyncApply(String method, Object[] args) {
 		return sendRequest(method, args);
 	}
 
@@ -88,7 +91,7 @@ public class Session {
 		sendNotify(method, args);
 	}
 
-	public Future<MessagePackObject> sendRequest(String method, Object[] args) {
+	public Future<Value> sendRequest(String method, Object[] args) {
 		int msgid = seqid.getAndAdd(1);
 		RequestMessage msg = new RequestMessage(msgid, method, args);
 		FutureImpl f = new FutureImpl(this);
@@ -98,7 +101,7 @@ public class Session {
 		}
 		transport.sendMessage(msg);
 
-		return new Future<MessagePackObject>(f);
+		return new Future<Value>(loop.getMessagePack(), f);
 	}
 
 	public void sendNotify(String method, Object[] args) {
@@ -112,7 +115,7 @@ public class Session {
 			for(Map.Entry<Integer,FutureImpl> pair : reqtable.entrySet()) {
 				// FIXME error result
 				FutureImpl f = pair.getValue();
-				f.setResult(null,org.msgpack.object.RawType.create("session closed"));
+				f.setResult(null,ValueFactory.createRawValue("session closed"));
 			}
 			reqtable.clear();
 		}
@@ -129,7 +132,7 @@ public class Session {
 	//	}
 	}
 
-	public void onResponse(int msgid, MessagePackObject result, MessagePackObject error) {
+	public void onResponse(int msgid, Value result, Value error) {
 		FutureImpl f;
 		synchronized(reqtable) {
 			f = reqtable.remove(msgid);
@@ -155,7 +158,7 @@ public class Session {
 		}
 		for(FutureImpl f : timedout) {
 			// FIXME error result
-			f.setResult(null,org.msgpack.object.RawType.create("timedout"));
+			f.setResult(null, ValueFactory.createRawValue("timedout"));
 		}
 	}
 }

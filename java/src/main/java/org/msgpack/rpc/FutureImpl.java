@@ -17,9 +17,10 @@
 //
 package org.msgpack.rpc;
 
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.msgpack.MessagePackObject;
+import org.msgpack.type.Value;
 
 class FutureImpl {
 	private Session session;
@@ -29,8 +30,8 @@ class FutureImpl {
 	private int timeout;
 	private volatile boolean done = false;
 
-	private MessagePackObject result;
-	private MessagePackObject error;
+	private Value result;
+	private Value error;
 
 	FutureImpl(Session session) {
 		this.session = session;
@@ -66,15 +67,15 @@ class FutureImpl {
 		return done;
 	}
 
-	public MessagePackObject getResult() {
+	public Value getResult() {
 		return result;
 	}
 
-	public MessagePackObject getError() {
+	public Value getError() {
 		return error;
 	}
 
-	public void setResult(MessagePackObject result, MessagePackObject error) {
+	public void setResult(Value result, Value error) {
 		synchronized(lock) {
 			this.result = result;
 			this.error = error;

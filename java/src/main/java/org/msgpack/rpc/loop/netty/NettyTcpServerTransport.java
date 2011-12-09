@@ -42,7 +42,7 @@ class NettyTcpServerTransport implements ServerTransport {
 		handler.useThread(true);
 
 		ServerBootstrap bootstrap = new ServerBootstrap(loop.getServerFactory());
-		bootstrap.setPipelineFactory(new StreamPipelineFactory(handler));
+		bootstrap.setPipelineFactory(new StreamPipelineFactory(loop.getMessagePack(),handler));
 		final Map<String, Object> options = config.getOptions();
 		setIfNotPresent(options, CHILD_TCP_NODELAY, Boolean.TRUE, bootstrap);
         setIfNotPresent(options, REUSE_ADDRESS, Boolean.TRUE, bootstrap);

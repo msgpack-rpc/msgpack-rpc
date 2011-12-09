@@ -18,6 +18,7 @@
 package org.msgpack.rpc.error;
 
 import org.msgpack.*;
+import org.msgpack.type.Value;
 
 public class ErrorMap {
 	// FIXME TreeMap<String, Class<RPCError>> map;
@@ -31,7 +32,7 @@ public class ErrorMap {
 		// FIXME
 	}
 
-	public void raise(String code, MessagePackObject data) throws RPCError {
+	public void raise(String code, Value data) throws RPCError {
 		// FIXME
 	}
 

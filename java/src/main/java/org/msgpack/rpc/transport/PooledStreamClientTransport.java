@@ -21,13 +21,18 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.jboss.netty.logging.InternalLogger;
+import org.jboss.netty.logging.InternalLoggerFactory;
 import org.msgpack.rpc.Session;
 import org.msgpack.rpc.config.StreamClientConfig;
 import org.msgpack.MessagePack;
 
 public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends OutputStream> implements ClientTransport {
+    private final InternalLogger logger = InternalLoggerFactory.getInstance(PooledStreamClientTransport.class);
 	private final Object lock = new Object();
 	private final List<Channel> pool = new ArrayList<Channel>();
+	private final List<Channel> errorChannelPool = new ArrayList<Channel>();
 	private int reconnectionLimit;
 	private int connecting = 0;
 
@@ -73,6 +78,7 @@ public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends
 
 	public void close() {
 		synchronized(lock) {
+            logger.info("Close all channels");
 			if(pendingBuffer != null) {
 				closePendingBuffer(pendingBuffer);
 				pendingBuffer = null;
@@ -81,13 +87,18 @@ public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends
 			for(Channel c : pool) {
 				closeChannel(c);
 			}
+            for(Channel c : errorChannelPool){
+                closeChannel(c);
+            }
 			pool.clear();
+            errorChannelPool.clear();
 		}
 	}
 
 	public void onConnected(Channel c) {
 		synchronized(lock) {
 			if(connecting == -1) { closeChannel(c); return; }  // already closed
+            logger.debug("Success to connect new channel " + c);
 			pool.add(c);
 			connecting = 0;
 			if(pendingBuffer != null) {
@@ -96,17 +107,22 @@ public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends
 		}
 	}
 
-	public void onConnectFailed(Throwable cause) {
+	public void onConnectFailed(Channel c,Throwable cause) {
 		synchronized(lock) {
 			if(connecting == -1) { return; }  // already closed
 			if(connecting < reconnectionLimit) {
+                logger.info( String.format("Reconnect %s(retry:%s)",c,connecting + 1),cause);
 				connecting++;
+                if(pool.remove(c)){//remove error channel
+                    errorChannelPool.add(c);
+                }
 				startConnection();
 			} else {
+                logger.error( String.format("Fail to connect %s(tried %s times)",c,reconnectionLimit),cause);
 				connecting = 0;
-				if(pendingBuffer != null) {
-					resetPendingBuffer(pendingBuffer);
-				}
+                if(pendingBuffer != null) {
+                    resetPendingBuffer(pendingBuffer);
+                }
 				session.transportConnectFailed();
 			}
 		}
@@ -115,7 +131,9 @@ public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends
 	public void onClosed(Channel c) {
 		synchronized(lock) {
 			if(connecting == -1) { return; }  // already closed
+            logger.info(String.format("Close channel %s",c));
 			pool.remove(c);
+            errorChannelPool.remove(c);
 		}
 	}
 

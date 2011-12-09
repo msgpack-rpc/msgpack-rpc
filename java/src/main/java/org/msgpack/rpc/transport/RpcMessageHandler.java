@@ -17,7 +17,7 @@
 //
 package org.msgpack.rpc.transport;
 
-import org.msgpack.MessagePackObject;
+import org.msgpack.type.Value;
 import org.msgpack.rpc.message.Messages;
 import org.msgpack.rpc.Session;
 import org.msgpack.rpc.Server;
@@ -54,10 +54,10 @@ public class RpcMessageHandler {
 	static class HandleMessageTask implements Runnable {
 		private RpcMessageHandler handler;
 		private MessageSendable channel;
-		private MessagePackObject msg;
+		private Value msg;
 
 		HandleMessageTask(RpcMessageHandler handler,
-				MessageSendable channel, MessagePackObject msg) {
+				MessageSendable channel, Value msg) {
 			this.handler = handler;
 			this.channel = channel;
 			this.msg = msg;
@@ -68,7 +68,7 @@ public class RpcMessageHandler {
 		}
 	}
 
-	public void handleMessage(MessageSendable channel, MessagePackObject msg) {
+	public void handleMessage(MessageSendable channel, Value msg) {
 		if(useThread) {
 			loop.getWorkerExecutor()
 				.submit(new HandleMessageTask(this, channel, msg));
@@ -77,29 +77,29 @@ public class RpcMessageHandler {
 		}
 	}
 
-	private void handleMessageImpl(MessageSendable channel, MessagePackObject msg) {
-		MessagePackObject[] array = msg.asArray();
+	private void handleMessageImpl(MessageSendable channel, Value msg) {
+		Value[] array = msg.asArrayValue().getElementArray();
 
 		// TODO check array.length
-		int type = array[0].asInt();
+		int type = array[0].asIntegerValue().getInt();
 		if(type == Messages.REQUEST) {
 			// REQUEST
-			int msgid = array[1].asInt();
-			String method = array[2].asString();
-			MessagePackObject args = array[3];
+			int msgid = array[1].asIntegerValue().getInt();
+			String method = array[2].asRawValue().getString();
+			Value args = array[3];
 			handleRequest(channel, msgid, method, args);
 
 		} else if(type == Messages.RESPONSE) {
 			// RESPONSE
-			int msgid = array[1].asInt();
-			MessagePackObject error = array[2];
-			MessagePackObject result = array[3];
+			int msgid = array[1].asIntegerValue().getInt();
+			Value error = array[2];
+			Value result = array[3];
 			handleResponse(channel, msgid, result, error);
 
 		} else if(type == Messages.NOTIFY) {
 			// NOTIFY
-			String method = array[1].asString();
-			MessagePackObject args = array[2];
+			String method = array[1].asRawValue().getString();
+			Value args = array[2];
 			handleNotify(channel, method, args);
 
 		} else {
@@ -109,7 +109,7 @@ public class RpcMessageHandler {
 	}
 
 	private void handleRequest(MessageSendable channel,
-			int msgid, String method, MessagePackObject args) {
+			int msgid, String method, Value args) {
 		if(server == null) {
 			return;  // FIXME error result
 		}
@@ -117,7 +117,7 @@ public class RpcMessageHandler {
 	}
 
 	private void handleNotify(MessageSendable channel,
-			String method, MessagePackObject args) {
+			String method, Value args) {
 		if(server == null) {
 			return;  // FIXME error result?
 		}
@@ -125,7 +125,7 @@ public class RpcMessageHandler {
 	}
 
 	private void handleResponse(MessageSendable channel,
-			int msgid, MessagePackObject result, MessagePackObject error) {
+			int msgid, Value result, Value error) {
 		if(session == null) {
 			return;  // FIXME error?
 		}

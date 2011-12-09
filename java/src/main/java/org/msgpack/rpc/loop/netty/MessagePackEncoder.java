@@ -28,12 +28,15 @@ import org.msgpack.MessagePack;
 public class MessagePackEncoder extends OneToOneEncoder {
 	private final int estimatedLength;
 
-	public MessagePackEncoder() {
-		this(1024);
+    private MessagePack messagePack;
+
+	public MessagePackEncoder(MessagePack messagePack) {
+		this(1024,messagePack);
 	}
 
-	public MessagePackEncoder(int estimatedLength) {
+	public MessagePackEncoder(int estimatedLength,MessagePack messagePack) {
 		this.estimatedLength = estimatedLength;
+        this.messagePack = messagePack;
 	}
 
 	@Override
@@ -50,7 +53,8 @@ public class MessagePackEncoder extends OneToOneEncoder {
 						estimatedLength,
 						ctx.getChannel().getConfig().getBufferFactory()));
 
-		MessagePack.pack(out, msg);
+		//MessagePack.pack(out, msg);
+        messagePack.write(out,msg);
 
 		ChannelBuffer result = out.buffer();
 		return result;

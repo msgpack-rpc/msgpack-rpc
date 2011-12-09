@@ -85,7 +85,7 @@ public abstract class InvokerBuilder {
 		}
 
 		public boolean isRequired() {
-			return option == FieldOption.REQUIRED;
+			return option == FieldOption.NOTNULLABLE;
 		}
 
 		public boolean isOptional() {
@@ -93,7 +93,7 @@ public abstract class InvokerBuilder {
 		}
 
 		public boolean isNullable() {
-			return option == FieldOption.NULLABLE;
+			return option != FieldOption.NOTNULLABLE;
 		}
 
 		static String arrayTypeToString(Class<?> type) {
@@ -131,16 +131,8 @@ public abstract class InvokerBuilder {
 // TODO ArgumentList を作る ArgumentOptionSet が必要
 // TODO FieldList を作る FieldOptionSet
 
-	private static InvokerBuilder instance;
 
-	synchronized private static InvokerBuilder getInstance() {
-		if(instance == null) {
-			instance = selectDefaultInvokerBuilder();
-		}
-		return instance;
-	}
-
-	private static InvokerBuilder selectDefaultInvokerBuilder() {
+	private static InvokerBuilder selectDefaultInvokerBuilder(MessagePack messagePack) {
 //	    try {
 //	        // FIXME JavassistInvokerBuilder doesn't work on DalvikVM
 //	        if(System.getProperty("java.vm.name").equals("Dalvik")) {
@@ -149,20 +141,9 @@ public abstract class InvokerBuilder {
 //	    } catch (Exception e) {
 //	    }
 //		return JavassistInvokerBuilder.getInstance();
-		return ReflectionInvokerBuilder.getInstance();
+		return new ReflectionInvokerBuilder(messagePack);
 	}
 
-	synchronized static void setInstance(InvokerBuilder builder) {
-		instance = builder;
-	}
-
-	public static Invoker build(Method targetMethod) {
-		return getInstance().buildInvoker(targetMethod);
-	}
-
-	public static Invoker build(Method targetMethod, FieldOption implicitOption) {
-		return getInstance().buildInvoker(targetMethod, implicitOption);
-	}
 
 	//public static Invoker build(Method targetMethod, ArgumentList alist) throws NoSuchFieldException {
 	//	return getInstance().buildInvoker(targetMethod, alist);
@@ -217,11 +198,11 @@ public abstract class InvokerBuilder {
 
 			if(indexed.size() > index && indexed.get(index) != null) {
 				// FIXME exception
-				throw new TemplateBuildException("duplicated index: "+index);
+				throw new MessageTypeException("duplicated index: "+index);
 			}
 			if(index < 0) {
 				// FIXME exception
-				throw new TemplateBuildException("invalid index: "+index);
+				throw new MessageTypeException("invalid index: "+index);
 			}
 
 			while(indexed.size() <= index) {
@@ -251,7 +232,12 @@ public abstract class InvokerBuilder {
 		// FIXME
 		MessagePackMessage a = targetMethod.getAnnotation(MessagePackMessage.class);
 		if(a == null) {
-			return FieldOption.DEFAULT;
+		    Message b = targetMethod.getAnnotation(Message.class);
+            if(b != null){
+                return b.value();
+            }else{
+			    return FieldOption.DEFAULT;
+            }
 		}
 		return a.value();
 	}
@@ -259,24 +245,17 @@ public abstract class InvokerBuilder {
 	private static FieldOption readFieldOption(Type type, Annotation[] as, FieldOption implicitOption) {
 		if(isAnnotated(as, Ignore.class)) {
 			return FieldOption.IGNORE;
-		} else if(isAnnotated(as, Required.class)) {
-			return FieldOption.REQUIRED;
+		} else if(isAnnotated(as, NotNullable.class)) {
+			return FieldOption.NOTNULLABLE;
 		} else if(isAnnotated(as, Optional.class)) {
 			return FieldOption.OPTIONAL;
-		} else if(isAnnotated(as, Nullable.class)) {
-			if(((Class<?>)type).isPrimitive()) {
-				return FieldOption.REQUIRED;
+		} else {
+			if(type instanceof Class<?> && ((Class<?>)type).isPrimitive()) {
+				return FieldOption.NOTNULLABLE;
 			} else {
-				return FieldOption.NULLABLE;
+				return implicitOption;
 			}
 		}
-
-		if(implicitOption != FieldOption.DEFAULT) {
-			return implicitOption;
-		}
-
-		// default mode: Required
-		return FieldOption.REQUIRED;
 	}
 
 	private static int readFieldIndex(Type type, Annotation[] as, int maxIndex) {

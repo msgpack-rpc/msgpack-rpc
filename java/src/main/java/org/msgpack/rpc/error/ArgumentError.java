@@ -18,6 +18,8 @@
 package org.msgpack.rpc.error;
 
 import org.msgpack.*;
+import org.msgpack.packer.Packer;
+
 import java.io.IOException;
 
 public class ArgumentError extends RemoteError {
@@ -30,8 +32,9 @@ public class ArgumentError extends RemoteError {
 	}
 
 	public void messagePack(Packer pk) throws IOException {
-		pk.packArray(1);
-		pk.pack(getMessage());
+        pk.writeArrayBegin(1);
+        pk.write(getMessage());
+        pk.writeArrayEnd();
 	}
 
 	public static final String CODE = "RemoteError.ArgumentError";

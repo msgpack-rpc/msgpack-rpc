@@ -17,12 +17,14 @@
 //
 package org.msgpack.rpc.reflect;
 
+import org.msgpack.MessagePack;
+
 import java.util.Map;
 import java.util.HashMap;
 import java.lang.reflect.Method;
 
 public class Reflect {
-	private static final Reflect instance = new Reflect();
+	/*private static final Reflect instance = new Reflect();
 
 	public static <T> Proxy<T> reflectProxy(Class<T> iface) {
 		return instance.getProxy(iface);
@@ -30,28 +32,34 @@ public class Reflect {
 
 	public static Invoker reflectInvoker(Method method) {
 	    return instance.getInvoker(method);
-	}
+	}*/
 
 	private Map<Class<?>, Proxy<?>> proxyCache = new HashMap<Class<?>, Proxy<?>>();
 
 	private Map<Method, Invoker> invokerCache = new HashMap<Method, Invoker>();
 
-	private Reflect() {
+    private InvokerBuilder invokerBuilder;
+    private ProxyBuilder proxyBuilder;
+
+	public Reflect(MessagePack messagePack) {
+
+        invokerBuilder = new ReflectionInvokerBuilder(messagePack);
+        proxyBuilder = new ReflectionProxyBuilder(messagePack);
 	}
 
-	private synchronized <T> Proxy<T> getProxy(Class<T> iface) {
+	public synchronized <T> Proxy<T> getProxy(Class<T> iface) {
 		Proxy<?> proxy = proxyCache.get(iface);
 		if(proxy == null) {
-			proxy = ProxyBuilder.build(iface);
+			proxy = proxyBuilder.buildProxy(iface);//ProxyBuilder.build(iface);
 			proxyCache.put(iface, proxy);
 		}
 		return (Proxy<T>)proxy;
 	}
 
-	private synchronized Invoker getInvoker(Method method) {
+	public synchronized Invoker getInvoker(Method method) {
 		Invoker invoker = invokerCache.get(method);
 		if(invoker == null) {
-			invoker = InvokerBuilder.build(method);
+			invoker = invokerBuilder.buildInvoker(method);
 			invokerCache.put(method, invoker);
 		}
 		return invoker;

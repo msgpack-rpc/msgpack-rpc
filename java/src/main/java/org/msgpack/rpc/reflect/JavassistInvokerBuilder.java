@@ -19,6 +19,7 @@ package org.msgpack.rpc.reflect;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 
 import javassist.CannotCompileException;
 import javassist.ClassPool;
@@ -30,9 +31,10 @@ import javassist.CtNewMethod;
 import javassist.LoaderClassPath;
 import javassist.NotFoundException;
 
-import org.msgpack.MessagePackObject;
+import org.msgpack.MessagePack;
+import org.msgpack.type.Value;
 import org.msgpack.MessageTypeException;
-import org.msgpack.Template;
+import org.msgpack.template.Template;
 import org.msgpack.rpc.Request;
 import org.msgpack.rpc.reflect.ReflectionInvokerBuilder.ReflectionArgumentEntry;
 import org.msgpack.template.TemplateRegistry;
@@ -42,14 +44,6 @@ import org.slf4j.LoggerFactory;
 public class JavassistInvokerBuilder extends InvokerBuilder {
     private static Logger LOG = LoggerFactory.getLogger(JavassistInvokerBuilder.class);
 
-    private static JavassistInvokerBuilder instance;
-
-	public synchronized static JavassistInvokerBuilder getInstance() {
-		if(instance == null) {
-			instance = new JavassistInvokerBuilder();
-		}
-		return instance;
-	}
 
 	protected abstract static class AbstractInvoker implements Invoker {
         protected Method method;
@@ -66,7 +60,7 @@ public class JavassistInvokerBuilder extends InvokerBuilder {
             this.minimumArrayLength = 0;
             for(int i=0; i < entries.length; i++) {
                 ReflectionArgumentEntry e = entries[i];
-                if(e.isRequired() || e.isNullable()) {
+                if(!e.isOptional()){//e.isRequired() || e.isNullable()) {
                     this.minimumArrayLength = i+1;
                 }
             }
@@ -81,9 +75,9 @@ public class JavassistInvokerBuilder extends InvokerBuilder {
             // TODO set default values here
 
             try {
-                MessagePackObject args = request.getArguments();
+                Value args = request.getArguments();
 
-                MessagePackObject[] array = args.asArray();
+                Value[] array = args.asArrayValue().getElementArray();
                 int length = array.length;
                 if(length < minimumArrayLength) {
                     throw new MessageTypeException();
@@ -96,8 +90,8 @@ public class JavassistInvokerBuilder extends InvokerBuilder {
                         continue;
                     }
 
-                    MessagePackObject obj = array[i];
-                    if(obj.isNil()) {
+                    Value obj = array[i];
+                    if(obj.isNilValue()) {
                         if(e.isRequired()) {
                             // Required + nil => exception
                             throw new MessageTypeException();
@@ -119,8 +113,8 @@ public class JavassistInvokerBuilder extends InvokerBuilder {
                         continue;
                     }
 
-                    MessagePackObject obj = array[i];
-                    if(obj.isNil()) {
+                    Value obj = array[i];
+                    if(obj.isNilValue()) {
                         // this is Optional field becaue i >= minimumArrayLength
                         // Optional + nil => keep default value
                     } else {
@@ -131,7 +125,9 @@ public class JavassistInvokerBuilder extends InvokerBuilder {
                 // latter entries are all Optional + nil => keep default value
 
             } catch (MessageTypeException e) {
+                LOG.error("Fail to invoke",e);
             } catch (Exception e) {
+                LOG.error("Fail to invoke",e);
             }
 
             try {
@@ -149,12 +145,15 @@ public class JavassistInvokerBuilder extends InvokerBuilder {
 
     protected ClassPool pool;
 
-    protected int seqId = 0;
+    protected static int seqId = 0;
 
     protected StringBuilder stringBuilder = null;
 
-    JavassistInvokerBuilder() {
+    protected MessagePack messagePack;
+
+    public JavassistInvokerBuilder(MessagePack messagePack) {
         pool = ClassPool.getDefault();
+        this.messagePack = messagePack;
     }
 
     void addClassLoader(ClassLoader cl) {
@@ -183,8 +182,13 @@ public class JavassistInvokerBuilder extends InvokerBuilder {
 			} else if(type.equals(double.class)) {
 				res[i] = new ReflectionInvokerBuilder.DoubleArgumentEntry(e);
 			} else {
-				Template tmpl = TemplateRegistry.lookup(e.getGenericType(), true);
-				res[i] = new ReflectionInvokerBuilder.ObjectArgumentEntry(e, tmpl);
+                Type t = e.getGenericType();
+				Template tmpl = messagePack.lookup(t);
+                if(tmpl == null){
+                    messagePack.register((Class<?>)t);
+                    tmpl = messagePack.lookup(t);
+                }
+				res[i] = new ReflectionInvokerBuilder.ObjectArgumentEntry(messagePack,e, tmpl);
 			}
 		}
 		return buildInvoker(m, res, async);
@@ -196,6 +200,7 @@ public class JavassistInvokerBuilder extends InvokerBuilder {
             Class<Invoker> invokerClass = buildInvokerClass(invokerCtClass);
             return (Invoker) newInvokerInstance(invokerClass, m, res, async);
         } catch (Throwable t) {
+            t.printStackTrace();
             // FIXME
             // buildInvoker method should throw several exception (non-runtime exception)
             throw new RuntimeException(new NotBuiltException(

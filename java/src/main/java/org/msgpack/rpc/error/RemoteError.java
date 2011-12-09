@@ -18,52 +18,67 @@
 package org.msgpack.rpc.error;
 
 import org.msgpack.*;
-import org.msgpack.object.*;
+import org.msgpack.packer.Packer;
+import org.msgpack.type.ArrayValue;
+import org.msgpack.type.Value;
+import org.msgpack.type.ValueFactory;
+import org.msgpack.unpacker.Unpacker;
+
 import java.io.IOException;
 
 public class RemoteError extends RPCError implements MessagePackable {
-	private MessagePackObject data;
+	private Value data;
 
 	public RemoteError() {
 		super();
-		this.data = ArrayType.create(new MessagePackObject[]{
-			RawType.create("unknown error")
-		});
+		this.data = ValueFactory.createArrayValue(new Value[]{ValueFactory.createRawValue("unknown error")});
+        /* ArrayValue.create(new Value[]{
+                RawType.create("unknown error")
+        });*/
 	}
 
 	public RemoteError(String message) {
 		super(message);
-		this.data = ArrayType.create(new MessagePackObject[]{
+		this.data = ValueFactory.createArrayValue(new Value[]{ValueFactory.createRawValue(message)});
+        /*ArrayType.create(new Value[]{
 			RawType.create(message)
-		});
+		})*/;
 	}
 
-	public RemoteError(MessagePackObject data) {
+	public RemoteError(Value data) {
 		super(loadMessage(data));
 		this.data = data;
 	}
 
-	public MessagePackObject getData() {
+	public Value getData() {
 		return data;
 	}
 
 	public void messagePack(Packer pk) throws IOException {
-		pk.pack(data);
+		pk.write(data);
 	}
 
-	private static String loadMessage(MessagePackObject data) {
+	private static String loadMessage(Value data) {
 		try {
-			if(data.isRawType()) {
-				return data.asString();
+			if(data.isRawValue()) {
+				return data.asRawValue().getString();
 			} else {
-				return data.asArray()[0].asString();
+				return data.asArrayValue().getElementArray()[0].asRawValue().getString();
 			}
 		} catch (MessageTypeException e) {
 			return "unknown error: "+data;
 		}
 	}
 
-	public static final String CODE = "RemoteError";
+    public void writeTo(Packer pk) throws IOException {
+        pk.write(data);
+    }
+
+    public void readFrom(Unpacker u) throws IOException {
+        data = u.readValue();
+    }
+
+    public static final String CODE = "RemoteError";
 
 	@Override
 	public String getCode() {

@@ -72,6 +72,7 @@ public abstract class ProxyBuilder {
 		return buildProxy(iface, entries);
 	}
 
+    /*
 	private static ProxyBuilder instance;
 
 	synchronized private static ProxyBuilder getInstance() {
@@ -92,16 +93,8 @@ public abstract class ProxyBuilder {
 		//} catch (Exception e) {
 		//}
         //return JavassistProxyBuilder.getInstance();
-		return ReflectionProxyBuilder.getInstance();
-	}
-
-	synchronized static void setInstance(ProxyBuilder builder) {
-		instance = builder;
-	}
-
-	public static <T> Proxy<T> build(Class<T> iface) {
-		return getInstance().buildProxy(iface);
-	}
+		return new ReflectionProxyBuilder(messagePack);
+	}*/
 
 
 	static boolean isAsyncMethod(Method targetMethod) {

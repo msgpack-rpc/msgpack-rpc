@@ -31,24 +31,26 @@ import org.msgpack.rpc.*;
 public class MethodDispatcher implements Dispatcher {
 	protected Map<String, Invoker> methodMap;
 	protected Object target;
+    protected Reflect reflect;
 
-	public MethodDispatcher(Object target) {
-		this(target, target.getClass());
+	public MethodDispatcher(Reflect reflect,Object target) {
+		this(reflect,target, target.getClass());
 	}
 
 	// FIXME List<DispatchOption>
-	public MethodDispatcher(Object target, Class<?> iface) {
+	public MethodDispatcher(Reflect reflect,Object target, Class<?> iface) {
 		// FIXME check target instanceof iface
-		this(target, MethodSelector.selectRpcServerMethod(iface));
+		this(reflect,target, MethodSelector.selectRpcServerMethod(iface));
 	}
 
-	public MethodDispatcher(Object target, Method[] methods) {
+	public MethodDispatcher(Reflect reflect,Object target, Method[] methods) {
 		// FIXME check target instanceof method.getClass()
 		this.target = target;
 		this.methodMap = new HashMap<String, Invoker>();
+        this.reflect = reflect;
 		for(Method method : methods) {
 			// FIXME check duplication of the names
-		    methodMap.put(method.getName(), Reflect.reflectInvoker(method));
+		    methodMap.put(method.getName(), reflect.getInvoker(method));
 		}
 	}
 

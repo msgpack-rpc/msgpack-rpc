@@ -23,6 +23,7 @@ import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.ServerSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import org.msgpack.MessagePack;
 import org.msgpack.rpc.Session;
 import org.msgpack.rpc.Server;
 import org.msgpack.rpc.loop.EventLoop;
@@ -35,8 +36,9 @@ public class NettyEventLoop extends EventLoop {
 	public NettyEventLoop(
 			ExecutorService workerExecutor,
 			ExecutorService ioExecutor,
-			ScheduledExecutorService scheduledExecutor) {
-		super(workerExecutor, ioExecutor, scheduledExecutor);
+			ScheduledExecutorService scheduledExecutor,
+            MessagePack messagePack) {
+		super(workerExecutor, ioExecutor, scheduledExecutor,messagePack);
 	}
 
 	private ClientSocketChannelFactory clientFactory = null;

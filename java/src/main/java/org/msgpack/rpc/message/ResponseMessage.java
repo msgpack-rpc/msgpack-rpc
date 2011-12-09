@@ -19,6 +19,11 @@ package org.msgpack.rpc.message;
 
 import java.io.IOException;
 import org.msgpack.*;
+import org.msgpack.packer.Packer;
+import org.msgpack.template.Template;
+import org.msgpack.type.Value;
+import org.msgpack.type.ValueFactory;
+import org.msgpack.unpacker.Unpacker;
 
 public class ResponseMessage implements MessagePackable {
 	private int msgid;
@@ -43,12 +48,28 @@ public class ResponseMessage implements MessagePackable {
 	//	return result;
 	//}
 
-	public void messagePack(Packer pk) throws IOException {
+
+    public void writeTo(Packer pk) throws IOException {
+        pk.writeArrayBegin(4);
+        pk.write(Messages.RESPONSE);
+        pk.write(msgid);
+        pk.write(error);
+        pk.write(result);
+        pk.writeArrayEnd();
+    }
+
+    public void readFrom(Unpacker u) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    public void messagePack(Packer pk) throws IOException {
+        writeTo(pk);
+        /*
 		pk.packArray(4);
 		pk.packInt(Messages.RESPONSE);
 		pk.packInt(msgid);
 		pk.pack(error);
-		pk.pack(result);
+		pk.pack(result);*/
 	}
 
 	// FIXME messageConvert

@@ -17,37 +17,43 @@
 //
 package org.msgpack.rpc;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.msgpack.MessagePackObject;
-import org.msgpack.Template;
+
+import org.msgpack.MessagePack;
+import org.msgpack.annotation.Message;
+import org.msgpack.type.Value;
+import org.msgpack.template.Template;
 import org.msgpack.template.TemplateRegistry;
 import org.msgpack.rpc.error.*;
+import org.msgpack.unpacker.Converter;
+import org.msgpack.unpacker.Unpacker;
 
 public class Future<V> implements java.util.concurrent.Future<V> {
 	private FutureImpl impl;
 	private Template resultTemplate;
+    private MessagePack messagePack;
 
-	Future(FutureImpl impl) {
-		this.impl = impl;
-		this.resultTemplate = null;
+	Future(MessagePack messagePack,FutureImpl impl) {
+        this(messagePack,impl,null);
 	}
 
-	Future(FutureImpl impl, Template resultTemplate) {
+	Future(MessagePack messagePack,FutureImpl impl, Template resultTemplate) {
 		this.impl = impl;
 		this.resultTemplate = resultTemplate;
+        this.messagePack = messagePack;
 	}
 
-	public Future(Future<MessagePackObject> future, Class<V> resultClass) {
-		this.impl = future.impl;
+	public Future(MessagePack messagePack,Future<Value> future, Class<V> resultClass) {
+        this(messagePack,future.impl,null);
 		if(resultClass != void.class) {
-			this.resultTemplate = TemplateRegistry.lookup(resultClass);
+			this.resultTemplate = messagePack.lookup(resultClass);
 		}
 	}
 
-	public Future(Future<MessagePackObject> future, Template resultTemplate) {
-		this.impl = future.impl;
-		this.resultTemplate = resultTemplate;
+	public Future(MessagePack messagePack,Future<Value> future, Template resultTemplate) {
+        this(messagePack,future.impl,resultTemplate);
 	}
 
 	public void attachCallback(Runnable callback) {
@@ -89,22 +95,27 @@ public class Future<V> implements java.util.concurrent.Future<V> {
 	}
 
 	public V getResult() {
-		MessagePackObject result = impl.getResult();
+		Value result = impl.getResult();
 		if(resultTemplate == null) {
 			return (V)result;
-		} else if(result.isNil()) {
+		} else if(result.isNilValue()) {
 			return null;
 		} else {
-			return (V)result.convert(resultTemplate);
-		}
+            try {
+                return (V)resultTemplate.read(new Converter(messagePack,result),null);
+                //return (V)messagePack.c(result,);// result.convert(resultTemplate);
+            } catch (IOException e) {
+                return null;
+            }
+        }
 	}
 
-	public MessagePackObject getError() {
+	public Value getError() {
 		return impl.getError();
 	}
 
 	private void checkThrowError() {
-		if(!getError().isNil()) {
+		if(!getError().isNilValue()) {
 			// FIXME exception
 			throw new RemoteError(getError());
 		}

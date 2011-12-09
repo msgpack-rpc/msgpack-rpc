@@ -18,6 +18,7 @@
 package org.msgpack.rpc.error;
 
 import org.msgpack.*;
+import org.msgpack.type.Value;
 
 public class RPCErrorFactory {
 	// FIXME TreeMap<String, Class<?>> map;
@@ -27,7 +28,7 @@ public class RPCErrorFactory {
 		super();
 	}
 
-	public RPCError createError(String code, MessagePackObject data) {
+	public RPCError createError(String code, Value data) {
 		// FIXME
 		return new RemoteError(data);
 	}

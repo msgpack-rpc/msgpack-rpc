@@ -22,6 +22,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import org.msgpack.MessagePack;
 import org.msgpack.rpc.Session;
 import org.msgpack.rpc.Server;
 import org.msgpack.rpc.transport.ClientTransport;
@@ -63,6 +65,13 @@ public abstract class EventLoop {
 		return start(
 				Executors.newCachedThreadPool());
 	}
+	static public EventLoop start(MessagePack messagePack) {
+		return start(
+				Executors.newCachedThreadPool(),
+                Executors.newCachedThreadPool(),
+                Executors.newScheduledThreadPool(2),
+                messagePack);
+	}
 
 	static public EventLoop start(
 			ExecutorService workerExecutor) {
@@ -77,31 +86,45 @@ public abstract class EventLoop {
 		return start(
 				workerExecutor,
 				ioExecutor,
-				Executors.newScheduledThreadPool(2));
+				Executors.newScheduledThreadPool(2),
+                new MessagePack());
 	}
 
 	static public EventLoop start(
 			ExecutorService workerExecutor,
 			ExecutorService ioExecutor,
-			ScheduledExecutorService scheduledExecutor) {
+			ScheduledExecutorService scheduledExecutor,
+            MessagePack messagePack) {
+
 		return getFactory().make(
 				workerExecutor,
 				ioExecutor,
-				scheduledExecutor);
+				scheduledExecutor,
+                messagePack);
 	}
 
 
-	private ExecutorService workerExecutor;
+    private ExecutorService workerExecutor;
 	private ExecutorService ioExecutor;
 	private ScheduledExecutorService scheduledExecutor;
+    private MessagePack messagePack;
 
+    public MessagePack getMessagePack() {
+        return messagePack;
+    }
+
+    public void setMessagePack(MessagePack messagePack) {
+        this.messagePack = messagePack;
+    }
 	public EventLoop(
 			ExecutorService workerExecutor,
 			ExecutorService ioExecutor,
-			ScheduledExecutorService scheduledExecutor) {
+			ScheduledExecutorService scheduledExecutor,
+            MessagePack messagePack) {
 		this.workerExecutor = workerExecutor;
 		this.scheduledExecutor = scheduledExecutor;
 		this.ioExecutor = ioExecutor;
+        this.messagePack = messagePack;
 	}
 
 	public ExecutorService getWorkerExecutor() {

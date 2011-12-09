@@ -17,7 +17,7 @@
 //
 package org.msgpack.rpc;
 
-import org.msgpack.MessagePackObject;
+import org.msgpack.type.Value;
 import org.msgpack.rpc.message.ResponseMessage;
 import org.msgpack.rpc.transport.MessageSendable;
 
@@ -25,17 +25,17 @@ public class Request implements Callback<Object>{
 	private MessageSendable channel;  // synchronized?
 	private int msgid;
 	private String method;
-	private MessagePackObject args;
+	private Value args;
 
 	public Request(MessageSendable channel,
-			int msgid, String method, MessagePackObject args) {
+			int msgid, String method, Value args) {
 		this.channel = channel;
 		this.msgid = msgid;
 		this.method = method;
 		this.args = args;
 	}
 
-	public Request(String method, MessagePackObject args) {
+	public Request(String method, Value args) {
 		this.channel = null;
 		this.msgid = 0;
 		this.method = method;
@@ -46,7 +46,7 @@ public class Request implements Callback<Object>{
 		return method;
 	}
 
-	public MessagePackObject getArguments() {
+	public Value getArguments() {
 		return args;
 	}
 

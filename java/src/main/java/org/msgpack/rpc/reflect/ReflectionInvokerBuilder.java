@@ -17,26 +17,27 @@
 //
 package org.msgpack.rpc.reflect;
 
+import java.io.IOException;
 import java.lang.reflect.*;
 import org.msgpack.*;
 import org.msgpack.template.*;
 import org.msgpack.rpc.*;
+import org.msgpack.type.Value;
+import org.msgpack.unpacker.Converter;
 
 public class ReflectionInvokerBuilder extends InvokerBuilder {
-	private static ReflectionInvokerBuilder instance;
-	public synchronized static ReflectionInvokerBuilder getInstance() {
-		if(instance == null) {
-			instance = new ReflectionInvokerBuilder();
-		}
-		return instance;
-	}
+    protected  MessagePack messagePack;
+    public ReflectionInvokerBuilder(MessagePack messagePack){
+        this.messagePack = messagePack;
+    }
+
 
 	static abstract class ReflectionArgumentEntry extends ArgumentEntry {
 		ReflectionArgumentEntry(ArgumentEntry e) {
 			super(e);
 		}
 
-		public abstract void convert(Object[] params, MessagePackObject obj) throws MessageTypeException;
+		public abstract void convert(Object[] params, Value obj) throws MessageTypeException;
 
 		public void setNull(Object[] params) {
 			params[getIndex()] = null;
@@ -47,15 +48,15 @@ public class ReflectionInvokerBuilder extends InvokerBuilder {
 		NullArgumentEntry(ArgumentEntry e) {
 			super(e);
 		}
-		public void convert(Object[] params, MessagePackObject obj) throws MessageTypeException { }
+		public void convert(Object[] params, Value obj) throws MessageTypeException { }
 	}
 
 	static class BooleanArgumentEntry extends ReflectionArgumentEntry {
 		BooleanArgumentEntry(ArgumentEntry e) {
 			super(e);
 		}
-		public void convert(Object[] params, MessagePackObject obj) throws MessageTypeException {
-			params[getIndex()] = obj.asBoolean();
+		public void convert(Object[] params, Value obj) throws MessageTypeException {
+			params[getIndex()] = obj.asBooleanValue().getBoolean();
 		}
 	}
 
@@ -63,8 +64,8 @@ public class ReflectionInvokerBuilder extends InvokerBuilder {
 		ByteArgumentEntry(ArgumentEntry e) {
 			super(e);
 		}
-		public void convert(Object[] params, MessagePackObject obj) throws MessageTypeException {
-			params[getIndex()] = obj.asByte();
+		public void convert(Object[] params, Value obj) throws MessageTypeException {
+			params[getIndex()] = obj.asIntegerValue().getByte();
 		}
 	}
 
@@ -72,8 +73,8 @@ public class ReflectionInvokerBuilder extends InvokerBuilder {
 		ShortArgumentEntry(ArgumentEntry e) {
 			super(e);
 		}
-		public void convert(Object[] params, MessagePackObject obj) throws MessageTypeException {
-			params[getIndex()] = obj.asShort();
+		public void convert(Object[] params, Value obj) throws MessageTypeException {
+			params[getIndex()] = obj.asIntegerValue().getShort();
 		}
 	}
 
@@ -81,8 +82,8 @@ public class ReflectionInvokerBuilder extends InvokerBuilder {
 		IntArgumentEntry(ArgumentEntry e) {
 			super(e);
 		}
-		public void convert(Object[] params, MessagePackObject obj) throws MessageTypeException {
-			params[getIndex()] = obj.asInt();
+		public void convert(Object[] params, Value obj) throws MessageTypeException {
+			params[getIndex()] = obj.asIntegerValue().getInt();
 		}
 	}
 
@@ -90,8 +91,8 @@ public class ReflectionInvokerBuilder extends InvokerBuilder {
 		LongArgumentEntry(ArgumentEntry e) {
 			super(e);
 		}
-		public void convert(Object[] params, MessagePackObject obj) throws MessageTypeException {
-			params[getIndex()] = obj.asLong();
+		public void convert(Object[] params, Value obj) throws MessageTypeException {
+			params[getIndex()] = obj.asIntegerValue().getLong();
 		}
 	}
 
@@ -99,8 +100,8 @@ public class ReflectionInvokerBuilder extends InvokerBuilder {
 		FloatArgumentEntry(ArgumentEntry e) {
 			super(e);
 		}
-		public void convert(Object[] params, MessagePackObject obj) throws MessageTypeException {
-			params[getIndex()] = obj.asFloat();
+		public void convert(Object[] params, Value obj) throws MessageTypeException {
+			params[getIndex()] = obj.asFloatValue().getFloat();
 		}
 	}
 
@@ -108,22 +109,29 @@ public class ReflectionInvokerBuilder extends InvokerBuilder {
 		DoubleArgumentEntry(ArgumentEntry e) {
 			super(e);
 		}
-		public void convert(Object[] params, MessagePackObject obj) throws MessageTypeException {
-			params[getIndex()] = obj.asDouble();
+		public void convert(Object[] params, Value obj) throws MessageTypeException {
+			params[getIndex()] = obj.asFloatValue().getDouble();
 		}
 	}
 
 	static class ObjectArgumentEntry extends ReflectionArgumentEntry {
 		private Template template;
 
-		ObjectArgumentEntry(ArgumentEntry e, Template template) {
+        private MessagePack messagePack;
+
+		ObjectArgumentEntry(MessagePack messagePack,ArgumentEntry e, Template template) {
 			super(e);
 			this.template = template;
+            this.messagePack = messagePack;
 		}
 
-		public void convert(Object[] params, MessagePackObject obj) throws MessageTypeException {
-			params[getIndex()] = obj.convert(template);
-		}
+		public void convert(Object[] params, Value obj) throws MessageTypeException {
+            try {
+                params[getIndex()] = template.read(new Converter(messagePack,obj),null);//messagePack.convert(obj,template);
+            } catch (IOException e) {
+                new MessageTypeException(e);
+            }
+        }
 	}
 
 	private static class ReflectionInvoker implements Invoker {
@@ -141,7 +149,7 @@ public class ReflectionInvokerBuilder extends InvokerBuilder {
 			this.minimumArrayLength = 0;
 			for(int i=0; i < entries.length; i++) {
 				ReflectionArgumentEntry e = entries[i];
-				if(e.isRequired() || e.isNullable()) {
+				if(!e.isOptional()){//e.isRequired() || e.isNullable()) {
 					this.minimumArrayLength = i+1;
 				}
 			}
@@ -156,9 +164,9 @@ public class ReflectionInvokerBuilder extends InvokerBuilder {
 			// TODO set default values here
 
 			try {
-				MessagePackObject args = request.getArguments();
+				Value args = request.getArguments();
 
-				MessagePackObject[] array = args.asArray();
+				Value[] array = args.asArrayValue().getElementArray();
 				int length = array.length;
 				if(length < minimumArrayLength) {
 					throw new MessageTypeException();
@@ -171,8 +179,8 @@ public class ReflectionInvokerBuilder extends InvokerBuilder {
 						continue;
 					}
 
-					MessagePackObject obj = array[i];
-					if(obj.isNil()) {
+					Value obj = array[i];
+					if(obj.isNilValue()) {
 						if(e.isRequired()) {
 							// Required + nil => exception
 							throw new MessageTypeException();
@@ -194,8 +202,8 @@ public class ReflectionInvokerBuilder extends InvokerBuilder {
 						continue;
 					}
 
-					MessagePackObject obj = array[i];
-					if(obj.isNil()) {
+					Value obj = array[i];
+					if(obj.isNilValue()) {
 						// this is Optional field becaue i >= minimumArrayLength
 						// Optional + nil => keep default value
 					} else {
@@ -206,7 +214,9 @@ public class ReflectionInvokerBuilder extends InvokerBuilder {
 				// latter entries are all Optional + nil => keep default value
 
 			} catch (MessageTypeException e) {
+                e.printStackTrace();
 			} catch (Exception e) {
+                e.printStackTrace();
 			}
 
 			Object result = method.invoke(target, params);
@@ -245,8 +255,14 @@ public class ReflectionInvokerBuilder extends InvokerBuilder {
 			} else if(type.equals(double.class)) {
 				res[i] = new DoubleArgumentEntry(e);
 			} else {
-				Template tmpl = TemplateRegistry.lookup(e.getGenericType(), true);
-				res[i] = new ObjectArgumentEntry(e, tmpl);
+
+                Type t = e.getGenericType();
+				Template tmpl = messagePack.lookup(t);
+                if(tmpl == null){
+                    messagePack.register((Class<?>)t);
+                    tmpl = messagePack.lookup(t);
+                }
+				res[i] = new ObjectArgumentEntry(messagePack,e, tmpl);
 			}
 		}
 

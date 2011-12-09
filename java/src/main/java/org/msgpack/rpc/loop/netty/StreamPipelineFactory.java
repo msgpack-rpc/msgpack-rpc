@@ -20,19 +20,22 @@ package org.msgpack.rpc.loop.netty;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.msgpack.MessagePack;
 import org.msgpack.rpc.transport.RpcMessageHandler;
 
 class StreamPipelineFactory implements ChannelPipelineFactory {
 	private RpcMessageHandler handler;
+    private MessagePack messagePack;
 
-	StreamPipelineFactory(RpcMessageHandler handler) {
+	StreamPipelineFactory(MessagePack messagePack,RpcMessageHandler handler) {
 		this.handler = handler;
+        this.messagePack = messagePack;
 	}
 
 	public ChannelPipeline getPipeline() throws Exception {
 		ChannelPipeline p = Channels.pipeline();
-		p.addLast("msgpack-decode-stream", new MessagePackStreamDecoder());
-		p.addLast("msgpack-encode", new MessagePackEncoder());
+		p.addLast("msgpack-decode-stream", new MessagePackStreamDecoder(messagePack));
+		p.addLast("msgpack-encode", new MessagePackEncoder(messagePack));
 		p.addLast("message", new MessageHandler(handler));
 		return p;
 	}

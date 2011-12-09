@@ -22,11 +22,17 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.handler.codec.oneone.OneToOneDecoder;
-import org.msgpack.Unpacker;
+import org.msgpack.MessagePack;
+import org.msgpack.type.Value;
+import org.msgpack.unpacker.Unpacker;
 
 public class MessagePackDecoder extends OneToOneDecoder {
-	public MessagePackDecoder() {
+
+    MessagePack messagePack;
+
+	public MessagePackDecoder(MessagePack messagePack) {
 		super();
+        this.messagePack = messagePack;
 	}
 
 	@Override
@@ -48,10 +54,13 @@ public class MessagePackDecoder extends OneToOneDecoder {
 		int offset = buffer.arrayOffset() + buffer.position();
 		int length = buffer.arrayOffset() + buffer.limit();
 
+        Value v =  messagePack.read(bytes,offset,length);
+        return v;
+
 		// TODO MessagePack.unpack()
-		Unpacker pac = new Unpacker();
+		/*Unpacker pac = new Unpacker();
 		pac.wrap(bytes, offset, length);
-		return pac.unpackObject();
+		return pac.unpackObject();*/
 	}
 }
 

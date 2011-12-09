@@ -20,7 +20,9 @@ package org.msgpack.rpc;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import org.msgpack.MessagePackObject;
+
+import org.msgpack.rpc.reflect.Reflect;
+import org.msgpack.type.Value;
 import org.msgpack.rpc.address.Address;
 import org.msgpack.rpc.address.IPAddress;
 import org.msgpack.rpc.dispatcher.Dispatcher;
@@ -32,8 +34,13 @@ import org.msgpack.rpc.transport.ServerTransport;
 import org.msgpack.rpc.transport.MessageSendable;
 import org.msgpack.rpc.loop.EventLoop;
 import org.msgpack.rpc.error.RPCError;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Server extends SessionPool {
+
+	private final static Logger logger = LoggerFactory.getLogger(Server.class);
+
 	private Dispatcher dp;
 	private ServerTransport stran;
 
@@ -58,7 +65,7 @@ public class Server extends SessionPool {
 	}
 
 	public void serve(Object handler) {
-		this.dp = new MethodDispatcher(handler);
+		this.dp = new MethodDispatcher(new Reflect(getEventLoop().getMessagePack()),handler);
 	}
 
 	public void listen(String host, int port) throws UnknownHostException, IOException {
@@ -85,7 +92,7 @@ public class Server extends SessionPool {
 	}
 
 	public void onRequest(MessageSendable channel,
-			int msgid, String method, MessagePackObject args) {
+			int msgid, String method, Value args) {
 		Request request = new Request(channel, msgid, method, args);
 		try {
 			dp.dispatch(request);
@@ -93,12 +100,13 @@ public class Server extends SessionPool {
 			// FIXME
 			request.sendError(e.getCode(), e);
 		} catch(Exception e) {
+			logger.error("Unexpected error occured while calling " + method,e);
 			// FIXME request.sendError("RemoteError", e.getMessage());
 			request.sendError(e.getMessage());
 		}
 	}
 
-	public void onNotify(String method, MessagePackObject args) {
+	public void onNotify(String method, Value args) {
 		Request request = new Request(method, args);
 		try {
 			dp.dispatch(request);

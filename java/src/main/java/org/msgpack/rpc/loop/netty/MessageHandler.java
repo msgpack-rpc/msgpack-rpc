@@ -22,7 +22,7 @@ import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.msgpack.rpc.transport.RpcMessageHandler;
-import org.msgpack.MessagePackObject;
+import org.msgpack.type.Value;
 
 class MessageHandler extends SimpleChannelUpstreamHandler {
 	private RpcMessageHandler handler;
@@ -43,12 +43,12 @@ class MessageHandler extends SimpleChannelUpstreamHandler {
 	public void messageReceived(
 			ChannelHandlerContext ctx, MessageEvent e) {
 		Object m = e.getMessage();
-		if(!(m instanceof MessagePackObject)) {
+		if(!(m instanceof Value)) {
 			ctx.sendUpstream(e);
 			return;
 		}
 
-		MessagePackObject msg = (MessagePackObject)m;
+		Value msg = (Value)m;
 		handler.handleMessage(adaptor, msg);
 	}
 }
