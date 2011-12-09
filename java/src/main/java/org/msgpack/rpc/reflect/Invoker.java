@@ -20,6 +20,5 @@ package org.msgpack.rpc.reflect;
 import org.msgpack.rpc.Request;
 
 public interface Invoker {
-	public void invoke(Object target, Request request) throws Exception;
+    public void invoke(Object target, Request request) throws Exception;
 }
-

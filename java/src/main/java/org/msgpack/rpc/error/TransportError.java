@@ -18,19 +18,20 @@
 package org.msgpack.rpc.error;
 
 public class TransportError extends RPCError {
-	public TransportError(String message) {
-		super(message);
-	}
+    private static final long serialVersionUID = 1L;
 
-	public TransportError(String message, Throwable cause) {
-		super(message, cause);
-	}
+    public TransportError(String message) {
+        super(message);
+    }
 
-	public static final String CODE = "TransportError";
+    public TransportError(String message, Throwable cause) {
+        super(message, cause);
+    }
 
-	@Override
-	public String getCode() {
-		return CODE;
-	}
+    public static final String CODE = "TransportError";
+
+    @Override
+    public String getCode() {
+        return CODE;
+    }
 }
-

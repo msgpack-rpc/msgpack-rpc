@@ -24,45 +24,44 @@ import java.util.HashMap;
 import java.lang.reflect.Method;
 
 public class Reflect {
-	/*private static final Reflect instance = new Reflect();
+    /*
+     * private static final Reflect instance = new Reflect();
+     * 
+     * public static <T> Proxy<T> reflectProxy(Class<T> iface) { return
+     * instance.getProxy(iface); }
+     * 
+     * public static Invoker reflectInvoker(Method method) { return
+     * instance.getInvoker(method); }
+     */
 
-	public static <T> Proxy<T> reflectProxy(Class<T> iface) {
-		return instance.getProxy(iface);
-	}
+    private Map<Class<?>, Proxy<?>> proxyCache = new HashMap<Class<?>, Proxy<?>>();
 
-	public static Invoker reflectInvoker(Method method) {
-	    return instance.getInvoker(method);
-	}*/
-
-	private Map<Class<?>, Proxy<?>> proxyCache = new HashMap<Class<?>, Proxy<?>>();
-
-	private Map<Method, Invoker> invokerCache = new HashMap<Method, Invoker>();
+    private Map<Method, Invoker> invokerCache = new HashMap<Method, Invoker>();
 
     private InvokerBuilder invokerBuilder;
     private ProxyBuilder proxyBuilder;
 
-	public Reflect(MessagePack messagePack) {
+    public Reflect(MessagePack messagePack) {
 
         invokerBuilder = new ReflectionInvokerBuilder(messagePack);
         proxyBuilder = new ReflectionProxyBuilder(messagePack);
-	}
+    }
 
-	public synchronized <T> Proxy<T> getProxy(Class<T> iface) {
-		Proxy<?> proxy = proxyCache.get(iface);
-		if(proxy == null) {
-			proxy = proxyBuilder.buildProxy(iface);//ProxyBuilder.build(iface);
-			proxyCache.put(iface, proxy);
-		}
-		return (Proxy<T>)proxy;
-	}
+    public synchronized <T> Proxy<T> getProxy(Class<T> iface) {
+        Proxy<?> proxy = proxyCache.get(iface);
+        if (proxy == null) {
+            proxy = proxyBuilder.buildProxy(iface);// ProxyBuilder.build(iface);
+            proxyCache.put(iface, proxy);
+        }
+        return (Proxy<T>) proxy;
+    }
 
-	public synchronized Invoker getInvoker(Method method) {
-		Invoker invoker = invokerCache.get(method);
-		if(invoker == null) {
-			invoker = invokerBuilder.buildInvoker(method);
-			invokerCache.put(method, invoker);
-		}
-		return invoker;
-	}
+    public synchronized Invoker getInvoker(Method method) {
+        Invoker invoker = invokerCache.get(method);
+        if (invoker == null) {
+            invoker = invokerBuilder.buildInvoker(method);
+            invokerCache.put(method, invoker);
+        }
+        return invoker;
+    }
 }
-

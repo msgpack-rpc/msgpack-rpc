@@ -25,19 +25,13 @@ import org.msgpack.rpc.loop.EventLoop;
 import org.msgpack.rpc.loop.EventLoopFactory;
 
 public class NettyEventLoopFactory implements EventLoopFactory {
-	public NettyEventLoopFactory() {
-	}
+    public NettyEventLoopFactory() {
+    }
 
-	public EventLoop make(
-			ExecutorService workerExecutor,
-			ExecutorService ioExecutor,
-			ScheduledExecutorService scheduledExecutor,
-            MessagePack messagePack) {
-		return new NettyEventLoop(
-				workerExecutor,
-				ioExecutor,
-				scheduledExecutor,
-                messagePack);
-	}
+    public EventLoop make(ExecutorService workerExecutor,
+            ExecutorService ioExecutor,
+            ScheduledExecutorService scheduledExecutor, MessagePack messagePack) {
+        return new NettyEventLoop(workerExecutor, ioExecutor,
+                scheduledExecutor, messagePack);
+    }
 }
-

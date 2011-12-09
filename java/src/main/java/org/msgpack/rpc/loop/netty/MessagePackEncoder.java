@@ -26,38 +26,34 @@ import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
 import org.msgpack.MessagePack;
 
 public class MessagePackEncoder extends OneToOneEncoder {
-	private final int estimatedLength;
+    private final int estimatedLength;
 
     private MessagePack messagePack;
 
-	public MessagePackEncoder(MessagePack messagePack) {
-		this(1024,messagePack);
-	}
+    public MessagePackEncoder(MessagePack messagePack) {
+        this(1024, messagePack);
+    }
 
-	public MessagePackEncoder(int estimatedLength,MessagePack messagePack) {
-		this.estimatedLength = estimatedLength;
+    public MessagePackEncoder(int estimatedLength, MessagePack messagePack) {
+        this.estimatedLength = estimatedLength;
         this.messagePack = messagePack;
-	}
+    }
 
-	@Override
-	protected Object encode(
-			ChannelHandlerContext ctx, Channel channel,
-			Object msg) throws Exception {
-		if(msg instanceof ChannelBuffer) {
-			return msg;
-		}
+    @Override
+    protected Object encode(ChannelHandlerContext ctx, Channel channel,
+            Object msg) throws Exception {
+        if (msg instanceof ChannelBuffer) {
+            return msg;
+        }
 
-		ChannelBufferOutputStream out =
-			new ChannelBufferOutputStream(
-					ChannelBuffers.dynamicBuffer(
-						estimatedLength,
-						ctx.getChannel().getConfig().getBufferFactory()));
+        ChannelBufferOutputStream out = new ChannelBufferOutputStream(
+                ChannelBuffers.dynamicBuffer(estimatedLength, ctx.getChannel()
+                        .getConfig().getBufferFactory()));
 
-		//MessagePack.pack(out, msg);
-        messagePack.write(out,msg);
+        // MessagePack.pack(out, msg);
+        messagePack.write(out, msg);
 
-		ChannelBuffer result = out.buffer();
-		return result;
-	}
+        ChannelBuffer result = out.buffer();
+        return result;
+    }
 }
-

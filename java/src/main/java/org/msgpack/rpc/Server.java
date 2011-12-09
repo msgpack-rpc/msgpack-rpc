@@ -23,7 +23,6 @@ import java.net.UnknownHostException;
 
 import org.msgpack.rpc.reflect.Reflect;
 import org.msgpack.type.Value;
-import org.msgpack.rpc.address.Address;
 import org.msgpack.rpc.address.IPAddress;
 import org.msgpack.rpc.dispatcher.Dispatcher;
 import org.msgpack.rpc.dispatcher.MethodDispatcher;
@@ -39,80 +38,79 @@ import org.slf4j.LoggerFactory;
 
 public class Server extends SessionPool {
 
-	private final static Logger logger = LoggerFactory.getLogger(Server.class);
+    private final static Logger logger = LoggerFactory.getLogger(Server.class);
 
-	private Dispatcher dp;
-	private ServerTransport stran;
+    private Dispatcher dp;
+    private ServerTransport stran;
 
-	public Server() {
-		super();
-	}
+    public Server() {
+        super();
+    }
 
-	public Server(ClientConfig config) {
-		super(config);
-	}
+    public Server(ClientConfig config) {
+        super(config);
+    }
 
-	public Server(EventLoop loop) {
-		super(loop);
-	}
+    public Server(EventLoop loop) {
+        super(loop);
+    }
 
-	public Server(ClientConfig config, EventLoop loop) {
-		super(config, loop);
-	}
+    public Server(ClientConfig config, EventLoop loop) {
+        super(config, loop);
+    }
 
-	public void serve(Dispatcher dp) {
-		this.dp = dp;
-	}
+    public void serve(Dispatcher dp) {
+        this.dp = dp;
+    }
 
-	public void serve(Object handler) {
-		this.dp = new MethodDispatcher(new Reflect(getEventLoop().getMessagePack()),handler);
-	}
+    public void serve(Object handler) {
+        this.dp = new MethodDispatcher(
+                new Reflect(getEventLoop().getMessagePack()), handler);
+    }
 
-	public void listen(String host, int port) throws UnknownHostException, IOException {
-		listen(new TcpServerConfig(new IPAddress(host,port)));
-	}
+    public void listen(String host, int port) throws UnknownHostException, IOException {
+        listen(new TcpServerConfig(new IPAddress(host, port)));
+    }
 
-	public void listen(InetSocketAddress address) throws IOException {
-		listen(new TcpServerConfig(new IPAddress(address)));
-	}
+    public void listen(InetSocketAddress address) throws IOException {
+        listen(new TcpServerConfig(new IPAddress(address)));
+    }
 
-	public void listen(int port) throws IOException {
-		listen(new TcpServerConfig(new IPAddress(port)));
-	}
+    public void listen(int port) throws IOException {
+        listen(new TcpServerConfig(new IPAddress(port)));
+    }
 
-	public void listen(ServerConfig config) throws IOException {
-		stran = getEventLoop().listenTransport(config, this);
-	}
+    public void listen(ServerConfig config) throws IOException {
+        stran = getEventLoop().listenTransport(config, this);
+    }
 
-	public void close() {
-		if(stran != null) {
-			stran.close();
-		}
-		super.close();
-	}
+    public void close() {
+        if (stran != null) {
+            stran.close();
+        }
+        super.close();
+    }
 
-	public void onRequest(MessageSendable channel,
-			int msgid, String method, Value args) {
-		Request request = new Request(channel, msgid, method, args);
-		try {
-			dp.dispatch(request);
-		} catch(RPCError e) {
-			// FIXME
-			request.sendError(e.getCode(), e);
-		} catch(Exception e) {
-			logger.error("Unexpected error occured while calling " + method,e);
-			// FIXME request.sendError("RemoteError", e.getMessage());
-			request.sendError(e.getMessage());
-		}
-	}
+    public void onRequest(MessageSendable channel, int msgid, String method, Value args) {
+        Request request = new Request(channel, msgid, method, args);
+        try {
+            dp.dispatch(request);
+        } catch (RPCError e) {
+            // FIXME
+            request.sendError(e.getCode(), e);
+        } catch (Exception e) {
+            logger.error("Unexpected error occured while calling " + method, e);
+            // FIXME request.sendError("RemoteError", e.getMessage());
+            request.sendError(e.getMessage());
+        }
+    }
 
-	public void onNotify(String method, Value args) {
-		Request request = new Request(method, args);
-		try {
-			dp.dispatch(request);
-		} catch(Exception e) {
-			// FIXME ignore?
-		}
-	}
+    public void onNotify(String method, Value args) {
+        Request request = new Request(method, args);
+        try {
+            dp.dispatch(request);
+        } catch (Exception e) {
+            // FIXME ignore?
+        }
+    }
 }
-

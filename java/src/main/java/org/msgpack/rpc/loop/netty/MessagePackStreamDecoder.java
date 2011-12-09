@@ -25,49 +25,41 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.handler.codec.frame.FrameDecoder;
 import org.msgpack.MessagePack;
 import org.msgpack.type.Value;
-import org.msgpack.unpacker.MessagePackBufferUnpacker;
 import org.msgpack.unpacker.Unpacker;
 
 public class MessagePackStreamDecoder extends FrameDecoder {
-	protected MessagePack messagePack;
+    protected MessagePack messagePack;
 
-	public MessagePackStreamDecoder(MessagePack messagePack) {
-		super();
+    public MessagePackStreamDecoder(MessagePack messagePack) {
+        super();
         this.messagePack = messagePack;
-	}
+    }
 
-	@Override
-	protected Object decode(
-			ChannelHandlerContext ctx, Channel channel,
-			ChannelBuffer source) throws Exception {
-		ByteBuffer buffer = source.toByteBuffer();
-		if(!buffer.hasRemaining()) {
-			return null;
-		}
+    @Override
+    protected Object decode(ChannelHandlerContext ctx, Channel channel,
+            ChannelBuffer source) throws Exception {
+        ByteBuffer buffer = source.toByteBuffer();
+        if (!buffer.hasRemaining()) {
+            return null;
+        }
 
-		byte[] bytes = buffer.array();  // FIXME buffer must has array
-		int offset = buffer.arrayOffset() + buffer.position();
-		int length = buffer.arrayOffset() + buffer.limit();
-        ByteArrayInputStream stream = new ByteArrayInputStream(bytes,offset,length);
+        byte[] bytes = buffer.array(); // FIXME buffer must has array
+        int offset = buffer.arrayOffset() + buffer.position();
+        int length = buffer.arrayOffset() + buffer.limit();
+        ByteArrayInputStream stream = new ByteArrayInputStream(bytes, offset,
+                length);
         int startAvailable = stream.available();
-        Unpacker unpacker = messagePack.createUnpacker(stream);//new MessagePackBufferUnpacker(messagePack,length);
-        Value v =  unpacker.readValue();
+        Unpacker unpacker = messagePack.createUnpacker(stream);// new MessagePackBufferUnpacker(messagePack,length);
+        Value v = unpacker.readValue();
         source.skipBytes(startAvailable - stream.available());
         return v;
 
         /*
-		int noffset = pac.execute(bytes, offset, length);
-		if(noffset > offset) {
-			source.skipBytes(noffset - offset);
-		}
-
-		if(pac.isFinished()) {
-			Value msg = pac.getData();
-			pac.reset();
-			return msg;
-		} else {
-			return null;
-		}*/
-	}
+         * int noffset = pac.execute(bytes, offset, length); 
+         * if(noffset > offset) { source.skipBytes(noffset - offset); }
+         * if(pac.isFinished()) {
+         *     Value msg = pac.getData(); pac.reset(); return msg;
+         * } else { return null; }
+         */
+    }
 }
-

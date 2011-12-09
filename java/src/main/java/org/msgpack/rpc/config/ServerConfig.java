@@ -1,4 +1,3 @@
-
 //
 // MessagePack-RPC for Java
 //
@@ -24,27 +23,26 @@ import java.util.Map;
 import org.msgpack.rpc.address.Address;
 
 public class ServerConfig {
-	private Address listenAddress;
-	private Map<String, Object> options = new HashMap<String, Object>();
+    private Address listenAddress;
+    private Map<String, Object> options = new HashMap<String, Object>();
 
-	public ServerConfig(Address listenAddress) {
-		this.listenAddress = listenAddress;
-	}
+    public ServerConfig(Address listenAddress) {
+        this.listenAddress = listenAddress;
+    }
 
-	public Address getListenAddress() {
-		return listenAddress;
-	}
-	
-	public void setOption(String key, Object o) {
-	    options.put(key, o);
-	}
-	
-	public Object getOption(String key) {
-	    return options.get(key);
-	}
-	
-	public Map<String, Object> getOptions() {
-	    return options;
-	}
+    public Address getListenAddress() {
+        return listenAddress;
+    }
+
+    public void setOption(String key, Object o) {
+        options.put(key, o);
+    }
+
+    public Object getOption(String key) {
+        return options.get(key);
+    }
+
+    public Map<String, Object> getOptions() {
+        return options;
+    }
 }
-

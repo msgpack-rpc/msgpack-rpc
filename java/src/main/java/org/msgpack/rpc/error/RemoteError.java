@@ -19,7 +19,6 @@ package org.msgpack.rpc.error;
 
 import org.msgpack.*;
 import org.msgpack.packer.Packer;
-import org.msgpack.type.ArrayValue;
 import org.msgpack.type.Value;
 import org.msgpack.type.ValueFactory;
 import org.msgpack.unpacker.Unpacker;
@@ -27,48 +26,46 @@ import org.msgpack.unpacker.Unpacker;
 import java.io.IOException;
 
 public class RemoteError extends RPCError implements MessagePackable {
-	private Value data;
+    private static final long serialVersionUID = 1L;
 
-	public RemoteError() {
-		super();
-		this.data = ValueFactory.createArrayValue(new Value[]{ValueFactory.createRawValue("unknown error")});
-        /* ArrayValue.create(new Value[]{
-                RawType.create("unknown error")
-        });*/
-	}
+    private Value data;
 
-	public RemoteError(String message) {
-		super(message);
-		this.data = ValueFactory.createArrayValue(new Value[]{ValueFactory.createRawValue(message)});
-        /*ArrayType.create(new Value[]{
-			RawType.create(message)
-		})*/;
-	}
+    public RemoteError() {
+        super();
+        this.data = ValueFactory.createArrayValue(
+                new Value[] { ValueFactory.createRawValue("unknown error") });
+    }
 
-	public RemoteError(Value data) {
-		super(loadMessage(data));
-		this.data = data;
-	}
+    public RemoteError(String message) {
+        super(message);
+        this.data = ValueFactory.createArrayValue(
+                new Value[] { ValueFactory.createRawValue(message) });
+    }
 
-	public Value getData() {
-		return data;
-	}
+    public RemoteError(Value data) {
+        super(loadMessage(data));
+        this.data = data;
+    }
 
-	public void messagePack(Packer pk) throws IOException {
-		pk.write(data);
-	}
+    public Value getData() {
+        return data;
+    }
 
-	private static String loadMessage(Value data) {
-		try {
-			if(data.isRawValue()) {
-				return data.asRawValue().getString();
-			} else {
-				return data.asArrayValue().getElementArray()[0].asRawValue().getString();
-			}
-		} catch (MessageTypeException e) {
-			return "unknown error: "+data;
-		}
-	}
+    public void messagePack(Packer pk) throws IOException {
+        pk.write(data);
+    }
+
+    private static String loadMessage(Value data) {
+        try {
+            if (data.isRawValue()) {
+                return data.asRawValue().getString();
+            } else {
+                return data.asArrayValue().getElementArray()[0].asRawValue().getString();
+            }
+        } catch (MessageTypeException e) {
+            return "unknown error: " + data;
+        }
+    }
 
     public void writeTo(Packer pk) throws IOException {
         pk.write(data);
@@ -80,9 +77,8 @@ public class RemoteError extends RPCError implements MessagePackable {
 
     public static final String CODE = "RemoteError";
 
-	@Override
-	public String getCode() {
-		return CODE;
-	}
+    @Override
+    public String getCode() {
+        return CODE;
+    }
 }
-

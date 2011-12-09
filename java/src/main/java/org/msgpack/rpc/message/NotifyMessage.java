@@ -25,31 +25,30 @@ import org.msgpack.MessageTypeException;
 import org.msgpack.unpacker.Unpacker;
 
 public class NotifyMessage implements MessagePackable {
-	private String method;
-	private Object[] args;
+    private String method;
+    private Object[] args;
 
-	public NotifyMessage(String method, Object[] args) {
-		this.method = method;
-		this.args = args;
-	}
+    public NotifyMessage(String method, Object[] args) {
+        this.method = method;
+        this.args = args;
+    }
 
-	//public String getMethodName() {
-	//	return method;
-	//}
+    // public String getMethodName() {
+    // return method;
+    // }
 
-	//public Object getArguments() {
-	//	return args;
-	//}
-
+    // public Object getArguments() {
+    // return args;
+    // }
 
     public void writeTo(Packer pk) throws IOException {
         pk.writeArrayBegin(3);
         pk.write(Messages.NOTIFY);
-		pk.write(method);
-		pk.write(args.length);
-		for(Object arg : args) {
-			pk.write(arg);
-		}
+        pk.write(method);
+        pk.write(args.length);
+        for (Object arg : args) {
+            pk.write(arg);
+        }
         pk.writeArrayEnd();
     }
 
@@ -59,15 +58,11 @@ public class NotifyMessage implements MessagePackable {
 
     public void messagePack(Packer pk) throws IOException {
         writeTo(pk);
-		/*pk.packArray(3);
-		pk.packInt(Messages.NOTIFY);
-		pk.packString(method);
-		pk.packArray(args.length);
-		for(Object arg : args) {
-			pk.pack(arg);
-		}*/
-	}
+        /*
+         * pk.packArray(3); pk.packInt(Messages.NOTIFY); pk.packString(method);
+         * pk.packArray(args.length); for(Object arg : args) { pk.pack(arg); }
+         */
+    }
 
-	// FIXME messageConvert
+    // FIXME messageConvert
 }
-

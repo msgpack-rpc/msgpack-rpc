@@ -17,85 +17,83 @@
 //
 package org.msgpack.rpc;
 
-
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.msgpack.type.Value;
 
 class FutureImpl {
-	private Session session;
-	private Runnable callback = null;
+    private Session session;
+    private Runnable callback = null;
 
-	private Object lock = new Object();
-	private int timeout;
-	private volatile boolean done = false;
+    private Object lock = new Object();
+    private int timeout;
+    private volatile boolean done = false;
 
-	private Value result;
-	private Value error;
+    private Value result;
+    private Value error;
 
-	FutureImpl(Session session) {
-		this.session = session;
-		this.timeout = session.getRequestTimeout();
-	}
+    FutureImpl(Session session) {
+        this.session = session;
+        this.timeout = session.getRequestTimeout();
+    }
 
-	void attachCallback(Runnable callback) {
-		synchronized(lock) {
-			this.callback = callback;
-		}
-		if(done) {
-			session.getEventLoop().getWorkerExecutor().submit(callback);
-		}
-	}
+    void attachCallback(Runnable callback) {
+        synchronized (lock) {
+            this.callback = callback;
+        }
+        if (done) {
+            session.getEventLoop().getWorkerExecutor().submit(callback);
+        }
+    }
 
-	void join() throws InterruptedException {
-		synchronized(lock) {
-			while(done == false) {
-				lock.wait();
-			}
-		}
-	}
+    void join() throws InterruptedException {
+        synchronized (lock) {
+            while (done == false) {
+                lock.wait();
+            }
+        }
+    }
 
-	void join(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
-		synchronized(lock) {
-			while(done == false) {
-				lock.wait(unit.toMillis(timeout));
-			}
-		}
-	}
+    void join(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
+        synchronized (lock) {
+            while (done == false) {
+                lock.wait(unit.toMillis(timeout));
+            }
+        }
+    }
 
-	public boolean isDone() {
-		return done;
-	}
+    public boolean isDone() {
+        return done;
+    }
 
-	public Value getResult() {
-		return result;
-	}
+    public Value getResult() {
+        return result;
+    }
 
-	public Value getError() {
-		return error;
-	}
+    public Value getError() {
+        return error;
+    }
 
-	public void setResult(Value result, Value error) {
-		synchronized(lock) {
-			this.result = result;
-			this.error = error;
-			this.done = true;
-			lock.notifyAll();
-		}
-		if(callback != null) {
-			// FIXME submit?
-			//session.getEventLoop().getWorkerExecutor().submit(callback);
-			callback.run();
-		}
-	}
+    public void setResult(Value result, Value error) {
+        synchronized (lock) {
+            this.result = result;
+            this.error = error;
+            this.done = true;
+            lock.notifyAll();
+        }
+        if (callback != null) {
+            // FIXME #SF submit?
+            // session.getEventLoop().getWorkerExecutor().submit(callback);
+            callback.run();
+        }
+    }
 
-	boolean stepTimeout() {
-		if(timeout <= 0) {
-			return true;
-		} else {
-			timeout--;
-			return false;
-		}
-	}
+    boolean stepTimeout() {
+        if (timeout <= 0) {
+            return true;
+        } else {
+            timeout--;
+            return false;
+        }
+    }
 }
-

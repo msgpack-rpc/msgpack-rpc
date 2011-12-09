@@ -18,8 +18,6 @@
 package org.msgpack.rpc.dispatcher;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.lang.reflect.*;
@@ -29,38 +27,37 @@ import org.msgpack.rpc.reflect.MethodSelector;
 import org.msgpack.rpc.*;
 
 public class MethodDispatcher implements Dispatcher {
-	protected Map<String, Invoker> methodMap;
-	protected Object target;
+    protected Map<String, Invoker> methodMap;
+    protected Object target;
     protected Reflect reflect;
 
-	public MethodDispatcher(Reflect reflect,Object target) {
-		this(reflect,target, target.getClass());
-	}
+    public MethodDispatcher(Reflect reflect, Object target) {
+        this(reflect, target, target.getClass());
+    }
 
-	// FIXME List<DispatchOption>
-	public MethodDispatcher(Reflect reflect,Object target, Class<?> iface) {
-		// FIXME check target instanceof iface
-		this(reflect,target, MethodSelector.selectRpcServerMethod(iface));
-	}
+    // FIXME List<DispatchOption>
+    public MethodDispatcher(Reflect reflect, Object target, Class<?> iface) {
+        // FIXME check target instanceof iface
+        this(reflect, target, MethodSelector.selectRpcServerMethod(iface));
+    }
 
-	public MethodDispatcher(Reflect reflect,Object target, Method[] methods) {
-		// FIXME check target instanceof method.getClass()
-		this.target = target;
-		this.methodMap = new HashMap<String, Invoker>();
+    public MethodDispatcher(Reflect reflect, Object target, Method[] methods) {
+        // FIXME check target instanceof method.getClass()
+        this.target = target;
+        this.methodMap = new HashMap<String, Invoker>();
         this.reflect = reflect;
-		for(Method method : methods) {
-			// FIXME check duplication of the names
-		    methodMap.put(method.getName(), reflect.getInvoker(method));
-		}
-	}
+        for (Method method : methods) {
+            // FIXME check duplication of the names
+            methodMap.put(method.getName(), reflect.getInvoker(method));
+        }
+    }
 
-	public void dispatch(Request request) throws Exception {
-		Invoker ivk = methodMap.get(request.getMethodName());
-		if(ivk == null) {
-			// FIXME
-			throw new IOException(".CallError.NoMethodError");
-		}
-		ivk.invoke(target, request);
-	}
+    public void dispatch(Request request) throws Exception {
+        Invoker ivk = methodMap.get(request.getMethodName());
+        if (ivk == null) {
+            // FIXME
+            throw new IOException(".CallError.NoMethodError");
+        }
+        ivk.invoke(target, request);
+    }
 }
-

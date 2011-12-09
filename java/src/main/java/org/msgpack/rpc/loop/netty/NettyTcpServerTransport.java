@@ -28,32 +28,32 @@ import org.msgpack.rpc.transport.ServerTransport;
 import org.msgpack.rpc.address.Address;
 
 class NettyTcpServerTransport implements ServerTransport {
-	private Channel listenChannel;
-	private final static String CHILD_TCP_NODELAY = "child.tcpNoDelay";
-	private final static String REUSE_ADDRESS = "reuseAddress";
+    private Channel listenChannel;
+    private final static String CHILD_TCP_NODELAY = "child.tcpNoDelay";
+    private final static String REUSE_ADDRESS = "reuseAddress";
 
-	NettyTcpServerTransport(TcpServerConfig config, Server server,
-			NettyEventLoop loop) {
-	    if (server == null) {
-	        throw new IllegalArgumentException("Server must not be null");
-	    }
-		Address address = config.getListenAddress();
-		RpcMessageHandler handler = new RpcMessageHandler(server);
-		handler.useThread(true);
+    NettyTcpServerTransport(TcpServerConfig config, Server server, NettyEventLoop loop) {
+        if (server == null) {
+            throw new IllegalArgumentException("Server must not be null");
+        }
 
-		ServerBootstrap bootstrap = new ServerBootstrap(loop.getServerFactory());
-		bootstrap.setPipelineFactory(new StreamPipelineFactory(loop.getMessagePack(),handler));
-		final Map<String, Object> options = config.getOptions();
-		setIfNotPresent(options, CHILD_TCP_NODELAY, Boolean.TRUE, bootstrap);
+        Address address = config.getListenAddress();
+        RpcMessageHandler handler = new RpcMessageHandler(server);
+        handler.useThread(true);
+
+        ServerBootstrap bootstrap = new ServerBootstrap(loop.getServerFactory());
+        bootstrap.setPipelineFactory(new StreamPipelineFactory(loop.getMessagePack(), handler));
+        final Map<String, Object> options = config.getOptions();
+        setIfNotPresent(options, CHILD_TCP_NODELAY, Boolean.TRUE, bootstrap);
         setIfNotPresent(options, REUSE_ADDRESS, Boolean.TRUE, bootstrap);
         bootstrap.setOptions(options);
-		this.listenChannel = bootstrap.bind(address.getSocketAddress());
-	}
+        this.listenChannel = bootstrap.bind(address.getSocketAddress());
+    }
 
-	public void close() {
-		listenChannel.close();
-	}
-	
+    public void close() {
+        listenChannel.close();
+    }
+
     private static void setIfNotPresent(Map<String, Object> options,
             String key, Object value, ServerBootstrap bootstrap) {
         if (!options.containsKey(key)) {
@@ -61,4 +61,3 @@ class NettyTcpServerTransport implements ServerTransport {
         }
     }
 }
-

@@ -25,31 +25,29 @@ import org.msgpack.rpc.transport.RpcMessageHandler;
 import org.msgpack.type.Value;
 
 class MessageHandler extends SimpleChannelUpstreamHandler {
-	private RpcMessageHandler handler;
-	private ChannelAdaptor adaptor;
+    private RpcMessageHandler handler;
+    private ChannelAdaptor adaptor;
 
-	MessageHandler(RpcMessageHandler handler) {
-		this.handler = handler;
-	}
+    MessageHandler(RpcMessageHandler handler) {
+        this.handler = handler;
+    }
 
-	@Override
-	public void channelOpen(
-			ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
-		this.adaptor = new ChannelAdaptor(e.getChannel());
-		ctx.sendUpstream(e);
-	}
+    @Override
+    public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e)
+            throws Exception {
+        this.adaptor = new ChannelAdaptor(e.getChannel());
+        ctx.sendUpstream(e);
+    }
 
-	@Override
-	public void messageReceived(
-			ChannelHandlerContext ctx, MessageEvent e) {
-		Object m = e.getMessage();
-		if(!(m instanceof Value)) {
-			ctx.sendUpstream(e);
-			return;
-		}
+    @Override
+    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
+        Object m = e.getMessage();
+        if (!(m instanceof Value)) {
+            ctx.sendUpstream(e);
+            return;
+        }
 
-		Value msg = (Value)m;
-		handler.handleMessage(adaptor, msg);
-	}
+        Value msg = (Value) m;
+        handler.handleMessage(adaptor, msg);
+    }
 }
-

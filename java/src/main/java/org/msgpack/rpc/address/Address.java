@@ -20,6 +20,5 @@ package org.msgpack.rpc.address;
 import java.net.SocketAddress;
 
 public abstract class Address {
-	abstract public SocketAddress getSocketAddress();
+    abstract public SocketAddress getSocketAddress();
 }
-

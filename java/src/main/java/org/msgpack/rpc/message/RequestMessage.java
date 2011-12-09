@@ -25,38 +25,37 @@ import org.msgpack.MessageTypeException;
 import org.msgpack.unpacker.Unpacker;
 
 public class RequestMessage implements MessagePackable {
-	private int msgid;
-	private String method;
-	private Object[] args;
+    private int msgid;
+    private String method;
+    private Object[] args;
 
-	public RequestMessage(int msgid, String method, Object[] args) {
-		this.msgid = msgid;
-		this.method = method;
-		this.args = args;
-	}
+    public RequestMessage(int msgid, String method, Object[] args) {
+        this.msgid = msgid;
+        this.method = method;
+        this.args = args;
+    }
 
-	//public int getMessageID() {
-	//	return msgid;
-	//}
+    // public int getMessageID() {
+    // return msgid;
+    // }
 
-	//public String getMethodName() {
-	//	return method;
-	//}
+    // public String getMethodName() {
+    // return method;
+    // }
 
-	//public Object[] getArguments() {
-	//	return args;
-	//}
-
+    // public Object[] getArguments() {
+    // return args;
+    // }
 
     public void writeTo(Packer pk) throws IOException {
-		pk.writeArrayBegin(4);
-		pk.write(Messages.REQUEST);
-		pk.write(msgid);
-		pk.write(method);
-		pk.writeArrayBegin(args.length);
-		for(Object arg : args) {
-			pk.write(arg);
-		}
+        pk.writeArrayBegin(4);
+        pk.write(Messages.REQUEST);
+        pk.write(msgid);
+        pk.write(method);
+        pk.writeArrayBegin(args.length);
+        for (Object arg : args) {
+            pk.write(arg);
+        }
         pk.writeArrayEnd();
     }
 
@@ -66,16 +65,12 @@ public class RequestMessage implements MessagePackable {
 
     public void messagePack(Packer pk) throws IOException {
         writeTo(pk);
-		/*pk.packArray(4);
-		pk.packInt(Messages.REQUEST);
-		pk.packInt(msgid);
-		pk.packString(method);
-		pk.packArray(args.length);
-		for(Object arg : args) {
-			pk.pack(arg);
-		}*/
-	}
+        /*
+         * pk.packArray(4); pk.packInt(Messages.REQUEST); pk.packInt(msgid);
+         * pk.packString(method); pk.packArray(args.length); for(Object arg :
+         * args) { pk.pack(arg); }
+         */
+    }
 
-	// FIXME messageConvert
+    // FIXME messageConvert
 }
-

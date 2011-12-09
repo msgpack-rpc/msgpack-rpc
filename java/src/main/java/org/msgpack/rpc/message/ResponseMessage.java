@@ -26,28 +26,27 @@ import org.msgpack.type.ValueFactory;
 import org.msgpack.unpacker.Unpacker;
 
 public class ResponseMessage implements MessagePackable {
-	private int msgid;
-	private Object error;
-	private Object result;
+    private int msgid;
+    private Object error;
+    private Object result;
 
-	public ResponseMessage(int msgid, Object error, Object result) {
-		this.msgid = msgid;
-		this.error = error;
-		this.result = result;
-	}
+    public ResponseMessage(int msgid, Object error, Object result) {
+        this.msgid = msgid;
+        this.error = error;
+        this.result = result;
+    }
 
-	//public int getMessageID() {
-	//	return msgid;
-	//}
+    // public int getMessageID() {
+    // return msgid;
+    // }
 
-	//public Object getError() {
-	//	return error;
-	//}
+    // public Object getError() {
+    // return error;
+    // }
 
-	//public Object getResult() {
-	//	return result;
-	//}
-
+    // public Object getResult() {
+    // return result;
+    // }
 
     public void writeTo(Packer pk) throws IOException {
         pk.writeArrayBegin(4);
@@ -65,13 +64,10 @@ public class ResponseMessage implements MessagePackable {
     public void messagePack(Packer pk) throws IOException {
         writeTo(pk);
         /*
-		pk.packArray(4);
-		pk.packInt(Messages.RESPONSE);
-		pk.packInt(msgid);
-		pk.pack(error);
-		pk.pack(result);*/
-	}
+         * pk.packArray(4); pk.packInt(Messages.RESPONSE); pk.packInt(msgid);
+         * pk.pack(error); pk.pack(result);
+         */
+    }
 
-	// FIXME messageConvert
+    // FIXME messageConvert
 }
-

@@ -29,57 +29,60 @@ import org.msgpack.rpc.config.ClientConfig;
 import org.msgpack.rpc.config.TcpClientConfig;
 
 public class Client extends Session implements Closeable {
-	private ScheduledFuture<?> timer;
+    private ScheduledFuture<?> timer;
 
-	public Client(String host, int port) throws UnknownHostException {
-		this(new IPAddress(host, port), new TcpClientConfig(), EventLoop.defaultEventLoop());
-	}
+    public Client(String host, int port) throws UnknownHostException {
+        this(new IPAddress(host, port), new TcpClientConfig(), EventLoop.defaultEventLoop());
+    }
 
-	public Client(String host, int port, ClientConfig config) throws UnknownHostException {
-		this(new IPAddress(host, port), config, EventLoop.defaultEventLoop());
-	}
+    public Client(String host, int port, ClientConfig config)
+            throws UnknownHostException {
+        this(new IPAddress(host, port), config, EventLoop.defaultEventLoop());
+    }
 
-	public Client(String host, int port, EventLoop loop) throws UnknownHostException {
-		this(new IPAddress(host, port), new TcpClientConfig(), loop);
-	}
+    public Client(String host, int port, EventLoop loop)
+            throws UnknownHostException {
+        this(new IPAddress(host, port), new TcpClientConfig(), loop);
+    }
 
-	public Client(String host, int port, ClientConfig config, EventLoop loop) throws UnknownHostException {
-		this(new IPAddress(host, port), config, loop);
-	}
+    public Client(String host, int port, ClientConfig config, EventLoop loop)
+            throws UnknownHostException {
+        this(new IPAddress(host, port), config, loop);
+    }
 
-	public Client(InetSocketAddress address) {
-		this(new IPAddress(address), new TcpClientConfig(), EventLoop.defaultEventLoop());
-	}
+    public Client(InetSocketAddress address) {
+        this(new IPAddress(address), new TcpClientConfig(), EventLoop.defaultEventLoop());
+    }
 
-	public Client(InetSocketAddress address, ClientConfig config) {
-		this(new IPAddress(address), config, EventLoop.defaultEventLoop());
-	}
+    public Client(InetSocketAddress address, ClientConfig config) {
+        this(new IPAddress(address), config, EventLoop.defaultEventLoop());
+    }
 
-	public Client(InetSocketAddress address, EventLoop loop) {
-		this(new IPAddress(address), new TcpClientConfig(), loop);
-	}
+    public Client(InetSocketAddress address, EventLoop loop) {
+        this(new IPAddress(address), new TcpClientConfig(), loop);
+    }
 
-	public Client(InetSocketAddress address, ClientConfig config, EventLoop loop) {
-		this(new IPAddress(address), config, loop);
-	}
+    public Client(InetSocketAddress address, ClientConfig config, EventLoop loop) {
+        this(new IPAddress(address), config, loop);
+    }
 
-	Client(Address address, ClientConfig config, EventLoop loop) {
-		super(address, config, loop);
-		startTimer();
-	}
+    Client(Address address, ClientConfig config, EventLoop loop) {
+        super(address, config, loop);
+        startTimer();
+    }
 
-	private void startTimer() {
-		Runnable command = new Runnable() {
-			public void run() {
-				stepTimeout();
-			}
-		};
-		timer = loop.getScheduledExecutor().scheduleAtFixedRate(command, 1000, 1000, TimeUnit.MILLISECONDS);
-	}
+    private void startTimer() {
+        Runnable command = new Runnable() {
+            public void run() {
+                stepTimeout();
+            }
+        };
+        timer = loop.getScheduledExecutor().scheduleAtFixedRate(
+                command, 1000, 1000, TimeUnit.MILLISECONDS);
+    }
 
-	public void close() {
-		timer.cancel(false);
-		closeSession();
-	}
+    public void close() {
+        timer.cancel(false);
+        closeSession();
+    }
 }
-
