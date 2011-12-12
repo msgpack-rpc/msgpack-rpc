@@ -20,6 +20,5 @@ package org.msgpack.rpc.reflect;
 import org.msgpack.rpc.Session;
 
 public interface Proxy<T> {
-	public T newProxyInstance(Session s);
+    public T newProxyInstance(Session s);
 }
-

@@ -22,18 +22,17 @@ import org.jboss.netty.channel.Channels;
 import org.msgpack.rpc.transport.ClientTransport;
 
 class ChannelAdaptor implements ClientTransport {
-	private Channel channel;
+    private Channel channel;
 
-	ChannelAdaptor(Channel channel) {
-		this.channel = channel;
-	}
+    ChannelAdaptor(Channel channel) {
+        this.channel = channel;
+    }
 
-	public void sendMessage(Object msg) {
-		Channels.write(channel, msg);
-	}
+    public void sendMessage(Object msg) {
+        Channels.write(channel, msg);
+    }
 
-	public void close() {
-		channel.close();
-	}
+    public void close() {
+        channel.close();
+    }
 }
-

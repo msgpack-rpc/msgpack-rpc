@@ -18,7 +18,6 @@
 package org.msgpack.rpc.config;
 
 public class TcpClientConfig extends StreamClientConfig {
-	public TcpClientConfig() {
-	}
+    public TcpClientConfig() {
+    }
 }
-

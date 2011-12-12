@@ -18,15 +18,16 @@
 package org.msgpack.rpc.error;
 
 public class TimeoutError extends RPCError {
-	public TimeoutError(String message) {
-		super(message);
-	}
+    private static final long serialVersionUID = 1L;
 
-	public static final String CODE = "TimeoutError";
+    public TimeoutError(String message) {
+        super(message);
+    }
 
-	@Override
-	public String getCode() {
-		return CODE;
-	}
+    public static final String CODE = "TimeoutError";
+
+    @Override
+    public String getCode() {
+        return CODE;
+    }
 }
-

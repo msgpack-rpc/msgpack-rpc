@@ -19,21 +19,19 @@ package org.msgpack.rpc.loop.netty;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+
+import org.msgpack.MessagePack;
 import org.msgpack.rpc.loop.EventLoop;
 import org.msgpack.rpc.loop.EventLoopFactory;
 
 public class NettyEventLoopFactory implements EventLoopFactory {
-	public NettyEventLoopFactory() {
-	}
+    public NettyEventLoopFactory() {
+    }
 
-	public EventLoop make(
-			ExecutorService workerExecutor,
-			ExecutorService ioExecutor,
-			ScheduledExecutorService scheduledExecutor) {
-		return new NettyEventLoop(
-				workerExecutor,
-				ioExecutor,
-				scheduledExecutor);
-	}
+    public EventLoop make(ExecutorService workerExecutor,
+            ExecutorService ioExecutor,
+            ScheduledExecutorService scheduledExecutor, MessagePack messagePack) {
+        return new NettyEventLoop(workerExecutor, ioExecutor,
+                scheduledExecutor, messagePack);
+    }
 }
-

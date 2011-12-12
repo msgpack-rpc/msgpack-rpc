@@ -23,39 +23,39 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
 public class IPAddress extends Address {
-	private byte[] address;
-	private int port;
+    private byte[] address;
+    private int port;
 
-	public IPAddress(String host, int port) throws UnknownHostException {
-		this.address = InetAddress.getByName(host).getAddress();
-		this.port = port;
-	}
+    public IPAddress(String host, int port) throws UnknownHostException {
+        this.address = InetAddress.getByName(host).getAddress();
+        this.port = port;
+    }
 
-	public IPAddress(int port) {
-		this.address = new InetSocketAddress(port).getAddress().getAddress();
-		this.port = port;
-	}
+    public IPAddress(int port) {
+        this.address = new InetSocketAddress(port).getAddress().getAddress();
+        this.port = port;
+    }
 
-	public IPAddress(InetSocketAddress addr) {
-		this.address = addr.getAddress().getAddress();
-		this.port = addr.getPort();
-	}
+    public IPAddress(InetSocketAddress addr) {
+        this.address = addr.getAddress().getAddress();
+        this.port = addr.getPort();
+    }
 
-	public IPAddress(InetAddress addr, int port) throws UnknownHostException {
-		this.address = addr.getAddress();
-		this.port = port;
-	}
+    public IPAddress(InetAddress addr, int port) throws UnknownHostException {
+        this.address = addr.getAddress();
+        this.port = port;
+    }
 
-	public InetSocketAddress getInetSocketAddress() {
-		try {
-			return new InetSocketAddress(InetAddress.getByAddress(address), port);
-		} catch (UnknownHostException e) {
-			throw new RuntimeException(e.getMessage());
-		}
-	}
+    public InetSocketAddress getInetSocketAddress() {
+        try {
+            return new InetSocketAddress(InetAddress.getByAddress(address),
+                    port);
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
 
-	public SocketAddress getSocketAddress() {
-		return getInetSocketAddress();
-	}
+    public SocketAddress getSocketAddress() {
+        return getInetSocketAddress();
+    }
 }
-

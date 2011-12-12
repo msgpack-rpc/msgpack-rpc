@@ -17,15 +17,14 @@
 //
 package org.msgpack.rpc.loop;
 
+import org.msgpack.MessagePack;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
 public interface EventLoopFactory {
-	public EventLoop make(
-			ExecutorService workerExecutor,
-			ExecutorService ioExecutor,
-			ScheduledExecutorService scheduledExecutor);
+    public EventLoop make(ExecutorService workerExecutor, ExecutorService ioExecutor,
+            ScheduledExecutorService scheduledExecutor, MessagePack messagePack);
 
-	// TODO Map<String, String> EventLoopConfig
+    // TODO Map<String, String> EventLoopConfig
 }
-

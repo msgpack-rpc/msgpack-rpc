@@ -20,8 +20,7 @@ package org.msgpack.rpc.config;
 import org.msgpack.rpc.address.Address;
 
 public class TcpServerConfig extends ServerConfig {
-	public TcpServerConfig(Address listenAddress) {
-		super(listenAddress);
-	}
+    public TcpServerConfig(Address listenAddress) {
+        super(listenAddress);
+    }
 }
-

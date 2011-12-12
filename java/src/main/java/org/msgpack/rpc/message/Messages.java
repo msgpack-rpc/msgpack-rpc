@@ -18,8 +18,7 @@
 package org.msgpack.rpc.message;
 
 public interface Messages {
-	public static final int REQUEST  = 0;
-	public static final int RESPONSE = 1;
-	public static final int NOTIFY   = 2;
+    public static final int REQUEST = 0;
+    public static final int RESPONSE = 1;
+    public static final int NOTIFY = 2;
 }
-

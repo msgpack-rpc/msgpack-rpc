@@ -31,80 +31,81 @@ import org.msgpack.rpc.config.ClientConfig;
 import org.msgpack.rpc.config.TcpClientConfig;
 
 public class SessionPool implements Closeable {
-	private ClientConfig config;
-	private EventLoop loop;
-	private Map<Address, Session> pool = new HashMap<Address, Session>();
-	private ScheduledFuture<?> timer;
+    private ClientConfig config;
+    private EventLoop loop;
+    private Map<Address, Session> pool = new HashMap<Address, Session>();
+    private ScheduledFuture<?> timer;
 
-	public SessionPool() {
-		this(new TcpClientConfig());
-	}
+    public SessionPool() {
+        this(new TcpClientConfig());
+    }
 
-	public SessionPool(ClientConfig config) {
-		this(config, EventLoop.defaultEventLoop());
-	}
+    public SessionPool(ClientConfig config) {
+        this(config, EventLoop.defaultEventLoop());
+    }
 
-	public SessionPool(EventLoop loop) {
-		this(new TcpClientConfig(), loop);
-	}
+    public SessionPool(EventLoop loop) {
+        this(new TcpClientConfig(), loop);
+    }
 
-	public SessionPool(ClientConfig config, EventLoop loop) {
-		this.config = config;
-		this.loop = loop;
-		startTimer();
-	}
+    public SessionPool(ClientConfig config, EventLoop loop) {
+        this.config = config;
+        this.loop = loop;
+        startTimer();
+    }
 
-	// FIXME EventLoopHolder interface?
-	public EventLoop getEventLoop() {
-		return loop;
-	}
+    // FIXME EventLoopHolder interface?
+    public EventLoop getEventLoop() {
+        return loop;
+    }
 
-	public Session getSession(String host, int port) throws UnknownHostException {
-		return getSession(new IPAddress(host, port));
-	}
+    public Session getSession(String host, int port)
+            throws UnknownHostException {
+        return getSession(new IPAddress(host, port));
+    }
 
-	public Session getSession(InetSocketAddress address) {
-		return getSession(new IPAddress(address));
-	}
+    public Session getSession(InetSocketAddress address) {
+        return getSession(new IPAddress(address));
+    }
 
-	Session getSession(Address address) {
-		synchronized(pool) {
-			Session s = pool.get(address);
-			if(s == null) {
-				s = new Session(address, config, loop);
-				pool.put(address, s);
-			}
-			return s;
-		}
-	}
+    Session getSession(Address address) {
+        synchronized (pool) {
+            Session s = pool.get(address);
+            if (s == null) {
+                s = new Session(address, config, loop);
+                pool.put(address, s);
+            }
+            return s;
+        }
+    }
 
-	public void close() {
-		timer.cancel(false);
-		synchronized(pool) {
-			for(Map.Entry<Address,Session> pair : pool.entrySet()) {
-				Session s = pair.getValue();
-				s.closeSession();
-			}
-			pool.clear();
-		}
-	}
+    public void close() {
+        timer.cancel(false);
+        synchronized (pool) {
+            for (Map.Entry<Address, Session> pair : pool.entrySet()) {
+                Session s = pair.getValue();
+                s.closeSession();
+            }
+            pool.clear();
+        }
+    }
 
-	private void startTimer() {
-		Runnable command = new Runnable() {
-			public void run() {
-				stepTimeout();
-			}
-		};
-		timer = loop.getScheduledExecutor().scheduleAtFixedRate(command, 1000, 1000, TimeUnit.MILLISECONDS);
-	}
+    private void startTimer() {
+        Runnable command = new Runnable() {
+            public void run() {
+                stepTimeout();
+            }
+        };
+        timer = loop.getScheduledExecutor().scheduleAtFixedRate(
+                command, 1000, 1000, TimeUnit.MILLISECONDS);
+    }
 
-	void stepTimeout() {
-		synchronized(pool) {
-			for(Map.Entry<Address,Session> pair : pool.entrySet()) {
-				Session s = pair.getValue();
-				s.stepTimeout();
-			}
-		}
-	}
+    void stepTimeout() {
+        synchronized (pool) {
+            for (Map.Entry<Address, Session> pair : pool.entrySet()) {
+                Session s = pair.getValue();
+                s.stepTimeout();
+            }
+        }
+    }
 }
-

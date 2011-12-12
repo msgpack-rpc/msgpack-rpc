@@ -18,7 +18,6 @@
 package org.msgpack.rpc.reflect;
 
 import org.msgpack.*;
-import org.msgpack.object.*;
 import org.msgpack.rpc.*;
 import org.msgpack.rpc.dispatcher.*;
 import org.msgpack.rpc.config.*;

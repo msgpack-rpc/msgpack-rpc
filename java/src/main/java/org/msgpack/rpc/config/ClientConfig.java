@@ -22,16 +22,16 @@ import java.util.Map;
 
 public abstract class ClientConfig {
     private Map<String, Object> options = new HashMap<String, Object>();
-	protected int requestTimeout = 30;  // FIXME default timeout time
+    protected int requestTimeout = 30; // FIXME default timeout time
 
-	public void setRequestTimeout(int sec) {
-		this.requestTimeout = sec;
-	}
+    public void setRequestTimeout(int sec) {
+        this.requestTimeout = sec;
+    }
 
-	public int getRequestTimeout() {
-		return this.requestTimeout;
-	}
-	
+    public int getRequestTimeout() {
+        return this.requestTimeout;
+    }
+
     public Object getOption(String key) {
         return options.get(key);
     }
@@ -39,9 +39,8 @@ public abstract class ClientConfig {
     public Map<String, Object> getOptions() {
         return options;
     }
-    
+
     public void setOption(String key, Object value) {
         options.put(key, value);
     }
 }
-

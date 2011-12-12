@@ -22,6 +22,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import org.msgpack.MessagePack;
 import org.msgpack.rpc.Session;
 import org.msgpack.rpc.Server;
 import org.msgpack.rpc.transport.ClientTransport;
@@ -33,122 +35,126 @@ import org.msgpack.rpc.config.TcpServerConfig;
 import org.msgpack.rpc.loop.netty.NettyEventLoopFactory;
 
 public abstract class EventLoop {
-	static private EventLoopFactory loopFactory;
-	static private EventLoop defaultEventLoop;
+    static private EventLoopFactory loopFactory;
+    static private EventLoop defaultEventLoop;
 
-	static public synchronized void setFactory(EventLoopFactory factory) {
-		loopFactory = factory;
-	}
+    static public synchronized void setFactory(EventLoopFactory factory) {
+        loopFactory = factory;
+    }
 
-	static private synchronized EventLoopFactory getFactory() {
-		if(loopFactory == null) {
-			loopFactory = new NettyEventLoopFactory();
-		}
-		return loopFactory;
-	}
+    static private synchronized EventLoopFactory getFactory() {
+        if (loopFactory == null) {
+            loopFactory = new NettyEventLoopFactory();
+        }
+        return loopFactory;
+    }
 
-	static public synchronized void setDefaultEventLoop(EventLoop eventLoop) {
-		defaultEventLoop = eventLoop;
-	}
+    static public synchronized void setDefaultEventLoop(EventLoop eventLoop) {
+        defaultEventLoop = eventLoop;
+    }
 
-	static public synchronized EventLoop defaultEventLoop() {
-		if(defaultEventLoop == null) {
-			defaultEventLoop = start();
-		}
-		return defaultEventLoop;
-	}
+    static public synchronized EventLoop defaultEventLoop() {
+        if (defaultEventLoop == null) {
+            defaultEventLoop = start();
+        }
+        return defaultEventLoop;
+    }
 
+    static public EventLoop start() {
+        return start(Executors.newCachedThreadPool());
+    }
 
-	static public EventLoop start() {
-		return start(
-				Executors.newCachedThreadPool());
-	}
+    static public EventLoop start(MessagePack messagePack) {
+        return start(Executors.newCachedThreadPool(),
+                Executors.newCachedThreadPool(),
+                Executors.newScheduledThreadPool(2), messagePack);
+    }
 
-	static public EventLoop start(
-			ExecutorService workerExecutor) {
-		return start(
-				workerExecutor,
-				Executors.newCachedThreadPool());
-	}
+    static public EventLoop start(ExecutorService workerExecutor) {
+        return start(workerExecutor, Executors.newCachedThreadPool());
+    }
 
-	static public EventLoop start(
-			ExecutorService workerExecutor,
-			ExecutorService ioExecutor) {
-		return start(
-				workerExecutor,
-				ioExecutor,
-				Executors.newScheduledThreadPool(2));
-	}
+    static public EventLoop start(ExecutorService workerExecutor, ExecutorService ioExecutor) {
+        return start(workerExecutor, ioExecutor,
+                Executors.newScheduledThreadPool(2), new MessagePack());
+    }
 
-	static public EventLoop start(
-			ExecutorService workerExecutor,
-			ExecutorService ioExecutor,
-			ScheduledExecutorService scheduledExecutor) {
-		return getFactory().make(
-				workerExecutor,
-				ioExecutor,
-				scheduledExecutor);
-	}
+    static public EventLoop start(
+            ExecutorService workerExecutor, ExecutorService ioExecutor,
+            ScheduledExecutorService scheduledExecutor, MessagePack messagePack) {
+        return getFactory().make(workerExecutor, ioExecutor, scheduledExecutor, messagePack);
+    }
 
+    private ExecutorService workerExecutor;
+    private ExecutorService ioExecutor;
+    private ScheduledExecutorService scheduledExecutor;
+    private MessagePack messagePack;
 
-	private ExecutorService workerExecutor;
-	private ExecutorService ioExecutor;
-	private ScheduledExecutorService scheduledExecutor;
+    public MessagePack getMessagePack() {
+        return messagePack;
+    }
 
-	public EventLoop(
-			ExecutorService workerExecutor,
-			ExecutorService ioExecutor,
-			ScheduledExecutorService scheduledExecutor) {
-		this.workerExecutor = workerExecutor;
-		this.scheduledExecutor = scheduledExecutor;
-		this.ioExecutor = ioExecutor;
-	}
+    public void setMessagePack(MessagePack messagePack) {
+        this.messagePack = messagePack;
+    }
 
-	public ExecutorService getWorkerExecutor() {
-		return workerExecutor;
-	}
+    public EventLoop(ExecutorService workerExecutor, ExecutorService ioExecutor,
+            ScheduledExecutorService scheduledExecutor, MessagePack messagePack) {
+        this.workerExecutor = workerExecutor;
+        this.scheduledExecutor = scheduledExecutor;
+        this.ioExecutor = ioExecutor;
+        this.messagePack = messagePack;
+    }
 
-	public ExecutorService getIoExecutor() {
-		return ioExecutor;
-	}
+    public ExecutorService getWorkerExecutor() {
+        return workerExecutor;
+    }
 
-	public ScheduledExecutorService getScheduledExecutor() {
-		return scheduledExecutor;
-	}
+    public ExecutorService getIoExecutor() {
+        return ioExecutor;
+    }
 
-	public void shutdown() {
-		scheduledExecutor.shutdown();
-		ioExecutor.shutdown();
-		workerExecutor.shutdown();
-	}
+    public ScheduledExecutorService getScheduledExecutor() {
+        return scheduledExecutor;
+    }
 
-	public void join() throws InterruptedException {
-		// FIXME?
-		scheduledExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
-		ioExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
-		workerExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
-	}
+    public void shutdown() {
+        scheduledExecutor.shutdown();
+        ioExecutor.shutdown();
+        workerExecutor.shutdown();
+    }
 
-	// FIXME join? close?
+    public void join() throws InterruptedException {
+        // FIXME?
+        scheduledExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
+        ioExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
+        workerExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
+    }
 
-	public ClientTransport openTransport(ClientConfig config, Session session) {
-		if(config instanceof TcpClientConfig) {
-			return openTcpTransport((TcpClientConfig)config, session);
-		}
-		// FIXME exception
-		throw new RuntimeException("Unknown transport config: "+config.getClass().getName());
-	}
+    // FIXME join? close?
 
-	public ServerTransport listenTransport(ServerConfig config, Server server) throws IOException {
-		if(config instanceof TcpServerConfig) {
-			return listenTcpTransport((TcpServerConfig)config, server);
-		}
-		// FIXME exception
-		throw new RuntimeException("Unknown transport config: "+config.getClass().getName());
-	}
+    public ClientTransport openTransport(ClientConfig config, Session session) {
+        if (config instanceof TcpClientConfig) {
+            return openTcpTransport((TcpClientConfig) config, session);
+        }
+        // FIXME exception
+        throw new RuntimeException("Unknown transport config: "
+                + config.getClass().getName());
+    }
 
-	protected abstract ClientTransport openTcpTransport(TcpClientConfig config, Session session);
+    public ServerTransport listenTransport(ServerConfig config, Server server)
+            throws IOException {
+        if (config instanceof TcpServerConfig) {
+            return listenTcpTransport((TcpServerConfig) config, server);
+        }
+        // FIXME exception
+        throw new RuntimeException("Unknown transport config: "
+                + config.getClass().getName());
+    }
 
-	protected abstract ServerTransport listenTcpTransport(TcpServerConfig config, Server server);
+    protected abstract ClientTransport openTcpTransport(TcpClientConfig config,
+            Session session);
+
+    protected abstract ServerTransport listenTcpTransport(
+            TcpServerConfig config, Server server);
 }
-

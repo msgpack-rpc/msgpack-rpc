@@ -18,25 +18,27 @@
 package org.msgpack.rpc.error;
 
 public abstract class RPCError extends RuntimeException {
-	public RPCError() {
-		super();
-	}
+    private static final long serialVersionUID = 1L;
 
-	public RPCError(String message) {
-		super(message);
-	}
+    public RPCError() {
+        super();
+    }
 
-	public RPCError(String message, Throwable cause) {
-		super(message, cause);
-	}
+    public RPCError(String message) {
+        super(message);
+    }
 
-	public RPCError(Throwable cause) {
-		super(cause);
-	}
+    public RPCError(String message, Throwable cause) {
+        super(message, cause);
+    }
 
-	// FIXME is_a(RPCError error);
+    public RPCError(Throwable cause) {
+        super(cause);
+    }
 
-	public abstract String getCode();
+    // FIXME is_a(RPCError error);
+
+    public abstract String getCode();
 }
 
 /*
@@ -59,4 +61,3 @@ public abstract class RPCError extends RuntimeException {
  * [RESPONSE, msgid, "RemoteError.NoMethodError", ["no such method: get"]]
  *
  */
-

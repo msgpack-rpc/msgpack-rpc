@@ -17,28 +17,44 @@
 //
 package org.msgpack.rpc.error;
 
-import org.msgpack.*;
+import org.msgpack.packer.Packer;
+import org.msgpack.unpacker.Unpacker;
+
 import java.io.IOException;
 
 public class NoMethodError extends RemoteError {
-	public NoMethodError() {
-		super();
-	}
+    private static final long serialVersionUID = 1L;
 
-	public NoMethodError(String message) {
-		super(message);
-	}
+    public NoMethodError() {
+        super();
+    }
 
-	public void messagePack(Packer pk) throws IOException {
-		pk.packArray(1);
-		pk.pack(getMessage());
-	}
+    public NoMethodError(String message) {
+        super(message);
+    }
 
-	public static final String CODE = "RemoteError.NoMethodError";
+    public void writeTo(Packer pk) throws IOException {
+        pk.writeArrayBegin(1);
+        pk.write(getMessage());
+        pk.writeArrayEnd();
 
-	@Override
-	public String getCode() {
-		return CODE;
-	}
+    }
+
+    public void readFrom(Unpacker u) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    public void messagePack(Packer pk) throws IOException {
+        writeTo(pk);
+        /*
+         * pk.packArray(1); pk.pack(getMessage());
+         */
+    }
+
+    public static final String CODE = "RemoteError.NoMethodError";
+
+    @Override
+    public String getCode() {
+        return CODE;
+    }
 }
-

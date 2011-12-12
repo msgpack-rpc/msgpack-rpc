@@ -22,36 +22,43 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.handler.codec.oneone.OneToOneDecoder;
-import org.msgpack.Unpacker;
+import org.msgpack.MessagePack;
+import org.msgpack.type.Value;
 
 public class MessagePackDecoder extends OneToOneDecoder {
-	public MessagePackDecoder() {
-		super();
-	}
 
-	@Override
-	protected Object decode(
-			ChannelHandlerContext ctx, Channel channel,
-			Object msg) throws Exception {
-		if(!(msg instanceof ChannelBuffer)) {
-			return msg;
-		}
+    MessagePack messagePack;
 
-		ChannelBuffer source = (ChannelBuffer)msg;
+    public MessagePackDecoder(MessagePack messagePack) {
+        super();
+        this.messagePack = messagePack;
+    }
 
-		ByteBuffer buffer = source.toByteBuffer();
-		if(!buffer.hasRemaining()) {
-			return null;
-		}
+    @Override
+    protected Object decode(ChannelHandlerContext ctx, Channel channel,
+            Object msg) throws Exception {
+        if (!(msg instanceof ChannelBuffer)) {
+            return msg;
+        }
 
-		byte[] bytes = buffer.array();  // FIXME buffer must has array
-		int offset = buffer.arrayOffset() + buffer.position();
-		int length = buffer.arrayOffset() + buffer.limit();
+        ChannelBuffer source = (ChannelBuffer) msg;
 
-		// TODO MessagePack.unpack()
-		Unpacker pac = new Unpacker();
-		pac.wrap(bytes, offset, length);
-		return pac.unpackObject();
-	}
+        ByteBuffer buffer = source.toByteBuffer();
+        if (!buffer.hasRemaining()) {
+            return null;
+        }
+
+        byte[] bytes = buffer.array(); // FIXME buffer must has array
+        int offset = buffer.arrayOffset() + buffer.position();
+        int length = buffer.arrayOffset() + buffer.limit();
+
+        Value v = messagePack.read(bytes, offset, length);
+        return v;
+
+        // TODO MessagePack.unpack()
+        /*
+         * Unpacker pac = new Unpacker(); pac.wrap(bytes, offset, length);
+         * return pac.unpackObject();
+         */
+    }
 }
-

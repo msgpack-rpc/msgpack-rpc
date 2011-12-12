@@ -17,21 +17,18 @@
 //
 package org.msgpack.rpc.reflect;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.HashMap;
 import java.lang.reflect.*;
 import org.msgpack.rpc.*;
 import org.msgpack.*;
+import org.msgpack.rpc.loop.netty.MessagePackEncoder;
 import org.msgpack.template.*;
+import org.msgpack.type.Value;
+import org.msgpack.unpacker.Converter;
 
 public class ReflectionProxyBuilder extends ProxyBuilder {
-	private static ReflectionProxyBuilder instance;
-	public synchronized static ReflectionProxyBuilder getInstance() {
-		if(instance == null) {
-			instance = new ReflectionProxyBuilder();
-		}
-		return instance;
-	}
 
 	private static class ReflectionMethodEntry {
 		private String rpcName;
@@ -95,19 +92,24 @@ public class ReflectionProxyBuilder extends ProxyBuilder {
 			}
 			Object[] params = e.sort(args);
 			if(e.isAsync()) {
-				Future<MessagePackObject> f = s.callAsyncApply(e.getRpcName(), params);
-				return new Future<Object>(f, e.getReturnTypeTemplate());
+				Future<Value> f = s.callAsyncApply(e.getRpcName(), params);
+				return new Future<Object>(messagePack, f, e.getReturnTypeTemplate());
 			} else {
-				MessagePackObject obj = s.callApply(e.getRpcName(), params);
-				if(obj.isNil()){
+				Value obj = s.callApply(e.getRpcName(), params);
+				if(obj.isNilValue()){
 					return null;
 				}else{
 					Template tmpl = e.getReturnTypeTemplate();
 					if(tmpl == null) {
 						return null;
 					}
-					return obj.convert(tmpl);
-				}
+                    try {
+                        return tmpl.read(new Converter(messagePack,obj),null);
+                        //return messagePack.convert(obj,tmpl);// obj.convert(tmpl);
+                    } catch (IOException e1) {
+                        return null;
+                    }
+                }
 			}
 		}
 	}
@@ -128,6 +130,13 @@ public class ReflectionProxyBuilder extends ProxyBuilder {
 		}
 	}
 
+    private MessagePack messagePack;
+
+    public ReflectionProxyBuilder(MessagePack messagePack){
+
+        this.messagePack = messagePack;
+    }
+
 	public <T> Proxy<T> buildProxy(Class<T> iface, MethodEntry[] entries) {
 		for(MethodEntry e : entries) {
 			Method method = e.getMethod();
@@ -144,7 +153,7 @@ public class ReflectionProxyBuilder extends ProxyBuilder {
 			if(e.isReturnTypeVoid()) {
 				tmpl = null;
 			} else {
-				tmpl = TemplateRegistry.lookup(e.getGenericReturnType(), true);
+				tmpl = messagePack.lookup(e.getGenericReturnType());// TemplateRegistry.lookup(e.getGenericReturnType(), true);
 			}
 			entryMap.put(e.getMethod(), new ReflectionMethodEntry(e, tmpl));
 		}

@@ -17,28 +17,31 @@
 //
 package org.msgpack.rpc.error;
 
-import org.msgpack.*;
+import org.msgpack.packer.Packer;
+
 import java.io.IOException;
 
 public class ArgumentError extends RemoteError {
-	public ArgumentError() {
-		super();
-	}
+    private static final long serialVersionUID = 1L;
 
-	public ArgumentError(String message) {
-		super(message);
-	}
+    public ArgumentError() {
+        super();
+    }
 
-	public void messagePack(Packer pk) throws IOException {
-		pk.packArray(1);
-		pk.pack(getMessage());
-	}
+    public ArgumentError(String message) {
+        super(message);
+    }
 
-	public static final String CODE = "RemoteError.ArgumentError";
+    public void messagePack(Packer pk) throws IOException {
+        pk.writeArrayBegin(1);
+        pk.write(getMessage());
+        pk.writeArrayEnd();
+    }
 
-	@Override
-	public String getCode() {
-		return CODE;
-	}
+    public static final String CODE = "RemoteError.ArgumentError";
+
+    @Override
+    public String getCode() {
+        return CODE;
+    }
 }
-

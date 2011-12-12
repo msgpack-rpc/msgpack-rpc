@@ -33,84 +33,81 @@ import org.msgpack.rpc.transport.RpcMessageHandler;
 import org.msgpack.rpc.transport.PooledStreamClientTransport;
 
 class NettyTcpClientTransport extends PooledStreamClientTransport<Channel, ChannelBufferOutputStream> {
-	private final ClientBootstrap bootstrap;
-	private static final String TCP_NO_DELAY = "tcpNoDelay";
+    private static final String TCP_NO_DELAY = "tcpNoDelay";
 
-	NettyTcpClientTransport(TcpClientConfig config, Session session,
-			NettyEventLoop loop) {
-		// TODO check session.getAddress() instanceof IPAddress
-		super(config, session);
+    private final ClientBootstrap bootstrap;
 
-		RpcMessageHandler handler = new RpcMessageHandler(session);
+    NettyTcpClientTransport(TcpClientConfig config, Session session,
+            NettyEventLoop loop) {
+        // TODO check session.getAddress() instanceof IPAddress
+        super(config, session);
 
-		bootstrap = new ClientBootstrap(loop.getClientFactory());
-		bootstrap.setPipelineFactory(new StreamPipelineFactory(handler));
-		Map<String, Object> options = config.getOptions();
-		setIfNotPresent(options, TCP_NO_DELAY, Boolean.TRUE, bootstrap);
-		bootstrap.setOptions(options);
-	}
+        RpcMessageHandler handler = new RpcMessageHandler(session);
 
-	private final ChannelFutureListener connectListener =
-		new ChannelFutureListener() {
-			public void operationComplete(ChannelFuture future) throws Exception {
-				if(!future.isSuccess()) {
-					onConnectFailed(future.getChannel(),future.getCause());
-					return;
-				}
-				Channel c = future.getChannel();
-				c.getCloseFuture().addListener(closeListener);
-				onConnected(c);
-			}
-		};
+        bootstrap = new ClientBootstrap(loop.getClientFactory());
+        bootstrap.setPipelineFactory(new StreamPipelineFactory(loop.getMessagePack(), handler));
+        Map<String, Object> options = config.getOptions();
+        setIfNotPresent(options, TCP_NO_DELAY, Boolean.TRUE, bootstrap);
+        bootstrap.setOptions(options);
+    }
 
-	private final ChannelFutureListener closeListener =
-		new ChannelFutureListener() {
-			public void operationComplete(ChannelFuture future) throws Exception {
-				Channel c = future.getChannel();
-				onClosed(c);
-			}
-		};
+    private final ChannelFutureListener connectListener = new ChannelFutureListener() {
+        public void operationComplete(ChannelFuture future) throws Exception {
+            if (!future.isSuccess()) {
+                onConnectFailed(future.getChannel(), future.getCause());
+                return;
+            }
+            Channel c = future.getChannel();
+            c.getCloseFuture().addListener(closeListener);
+            onConnected(c);
+        }
+    };
 
-	@Override
-	protected void startConnection() {
-		ChannelFuture f = bootstrap.connect(
-				session.getAddress().getSocketAddress());
-		f.addListener(connectListener);
-	}
+    private final ChannelFutureListener closeListener = new ChannelFutureListener() {
+        public void operationComplete(ChannelFuture future) throws Exception {
+            Channel c = future.getChannel();
+            onClosed(c);
+        }
+    };
 
-	@Override
-	protected ChannelBufferOutputStream newPendingBuffer() {
-		return new ChannelBufferOutputStream(
-				ChannelBuffers.dynamicBuffer(
-					HeapChannelBufferFactory.getInstance()));
-	}
+    @Override
+    protected void startConnection() {
+        ChannelFuture f = bootstrap.connect(session.getAddress().getSocketAddress());
+        f.addListener(connectListener);
+    }
 
-	@Override
-	protected void resetPendingBuffer(ChannelBufferOutputStream b) {
-		b.buffer().clear();
-	}
+    @Override
+    protected ChannelBufferOutputStream newPendingBuffer() {
+        return new ChannelBufferOutputStream(
+                ChannelBuffers.dynamicBuffer(HeapChannelBufferFactory.getInstance()));
+    }
 
-	@Override
-	protected void flushPendingBuffer(ChannelBufferOutputStream b, Channel c) {
-		Channels.write(c, b.buffer());
+    @Override
+    protected void resetPendingBuffer(ChannelBufferOutputStream b) {
         b.buffer().clear();
-	}
+    }
 
-	@Override
-	protected void closePendingBuffer(ChannelBufferOutputStream b) {
-		b.buffer().clear();
-	}
+    @Override
+    protected void flushPendingBuffer(ChannelBufferOutputStream b, Channel c) {
+        Channels.write(c, b.buffer());
+        b.buffer().clear();
+    }
 
-	@Override
-	protected void sendMessageChannel(Channel c, Object msg) {
-		Channels.write(c, msg);
-	}
+    @Override
+    protected void closePendingBuffer(ChannelBufferOutputStream b) {
+        b.buffer().clear();
+    }
 
-	@Override
-	protected void closeChannel(Channel c) {
-		c.close();
-	}
-	
+    @Override
+    protected void sendMessageChannel(Channel c, Object msg) {
+        Channels.write(c, msg);
+    }
+
+    @Override
+    protected void closeChannel(Channel c) {
+        c.close();
+    }
+
     private static void setIfNotPresent(Map<String, Object> options,
             String key, Object value, ClientBootstrap bootstrap) {
         if (!options.containsKey(key)) {
@@ -118,4 +115,3 @@ class NettyTcpClientTransport extends PooledStreamClientTransport<Channel, Chann
         }
     }
 }
-

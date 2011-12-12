@@ -18,38 +18,51 @@
 package org.msgpack.rpc.message;
 
 import java.io.IOException;
-import org.msgpack.Packer;
 import org.msgpack.MessagePackable;
-import org.msgpack.MessagePackObject;
+import org.msgpack.packer.Packer;
+import org.msgpack.type.Value;
 import org.msgpack.MessageTypeException;
+import org.msgpack.unpacker.Unpacker;
 
 public class NotifyMessage implements MessagePackable {
-	private String method;
-	private Object[] args;
+    private String method;
+    private Object[] args;
 
-	public NotifyMessage(String method, Object[] args) {
-		this.method = method;
-		this.args = args;
-	}
+    public NotifyMessage(String method, Object[] args) {
+        this.method = method;
+        this.args = args;
+    }
 
-	//public String getMethodName() {
-	//	return method;
-	//}
+    // public String getMethodName() {
+    // return method;
+    // }
 
-	//public Object getArguments() {
-	//	return args;
-	//}
+    // public Object getArguments() {
+    // return args;
+    // }
 
-	public void messagePack(Packer pk) throws IOException {
-		pk.packArray(3);
-		pk.packInt(Messages.NOTIFY);
-		pk.packString(method);
-		pk.packArray(args.length);
-		for(Object arg : args) {
-			pk.pack(arg);
-		}
-	}
+    public void writeTo(Packer pk) throws IOException {
+        pk.writeArrayBegin(3);
+        pk.write(Messages.NOTIFY);
+        pk.write(method);
+        pk.write(args.length);
+        for (Object arg : args) {
+            pk.write(arg);
+        }
+        pk.writeArrayEnd();
+    }
 
-	// FIXME messageConvert
+    public void readFrom(Unpacker u) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    public void messagePack(Packer pk) throws IOException {
+        writeTo(pk);
+        /*
+         * pk.packArray(3); pk.packInt(Messages.NOTIFY); pk.packString(method);
+         * pk.packArray(args.length); for(Object arg : args) { pk.pack(arg); }
+         */
+    }
+
+    // FIXME messageConvert
 }
-

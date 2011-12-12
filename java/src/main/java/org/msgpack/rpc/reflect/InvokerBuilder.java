@@ -28,277 +28,265 @@ import org.msgpack.rpc.Callback;
 import org.msgpack.rpc.Request;
 
 public abstract class InvokerBuilder {
-	public static class ArgumentEntry {
-		private int index;
-		private Type genericType;
-		private FieldOption option;
+    public static class ArgumentEntry {
+        private int index;
+        private Type genericType;
+        private FieldOption option;
 
-		public ArgumentEntry() {
-			this.index = -1;
-			this.genericType = null;
-			this.option = FieldOption.IGNORE;
-		}
+        public ArgumentEntry() {
+            this.index = -1;
+            this.genericType = null;
+            this.option = FieldOption.IGNORE;
+        }
 
-		public ArgumentEntry(ArgumentEntry e) {
-			this.index = e.index;
-			this.genericType = e.genericType;
-			this.option = e.option;
-		}
+        public ArgumentEntry(ArgumentEntry e) {
+            this.index = e.index;
+            this.genericType = e.genericType;
+            this.option = e.option;
+        }
 
-		public ArgumentEntry(int index, Type genericType, FieldOption option) {
-			this.index = index;
-			this.genericType = genericType;
-			this.option = option;
-		}
+        public ArgumentEntry(int index, Type genericType, FieldOption option) {
+            this.index = index;
+            this.genericType = genericType;
+            this.option = option;
+        }
 
-		public int getIndex() {
-			return index;
-		}
+        public int getIndex() {
+            return index;
+        }
 
-		public Class<?> getType() {
-			if(genericType instanceof ParameterizedType) {
-				return (Class<?>)((ParameterizedType)genericType).getRawType();
-			} else {
-				return (Class<?>)genericType;
-			}
-		}
+        public Class<?> getType() {
+            if (genericType instanceof ParameterizedType) {
+                return (Class<?>) ((ParameterizedType) genericType)
+                        .getRawType();
+            } else {
+                return (Class<?>) genericType;
+            }
+        }
 
-		public String getJavaTypeName() {
-			Class<?> type = getType();
-			if(type.isArray()) {
-				return arrayTypeToString(type);
-			} else {
-				return type.getName();
-			}
-		}
+        public String getJavaTypeName() {
+            Class<?> type = getType();
+            if (type.isArray()) {
+                return arrayTypeToString(type);
+            } else {
+                return type.getName();
+            }
+        }
 
-		public Type getGenericType() {
-			return genericType;
-		}
+        public Type getGenericType() {
+            return genericType;
+        }
 
-		public FieldOption getOption() {
-			return option;
-		}
+        public FieldOption getOption() {
+            return option;
+        }
 
-		public boolean isAvailable() {
-			return option != FieldOption.IGNORE;
-		}
+        public boolean isAvailable() {
+            return option != FieldOption.IGNORE;
+        }
 
-		public boolean isRequired() {
-			return option == FieldOption.REQUIRED;
-		}
+        public boolean isRequired() {
+            return option == FieldOption.NOTNULLABLE;
+        }
 
-		public boolean isOptional() {
-			return option == FieldOption.OPTIONAL;
-		}
+        public boolean isOptional() {
+            return option == FieldOption.OPTIONAL;
+        }
 
-		public boolean isNullable() {
-			return option == FieldOption.NULLABLE;
-		}
+        public boolean isNullable() {
+            return option != FieldOption.NOTNULLABLE;
+        }
 
-		static String arrayTypeToString(Class<?> type) {
-			int dim = 1;
-			Class<?> baseType = type.getComponentType();
-			while(baseType.isArray()) {
-				baseType = baseType.getComponentType();
-				dim += 1;
-			}
-			StringBuilder sb = new StringBuilder();
-			sb.append(baseType.getName());
-			for (int i = 0; i < dim; ++i) {
-				sb.append("[]");
-			}
-			return sb.toString();
-		}
-	}
+        static String arrayTypeToString(Class<?> type) {
+            int dim = 1;
+            Class<?> baseType = type.getComponentType();
+            while (baseType.isArray()) {
+                baseType = baseType.getComponentType();
+                dim += 1;
+            }
+            StringBuilder sb = new StringBuilder();
+            sb.append(baseType.getName());
+            for (int i = 0; i < dim; ++i) {
+                sb.append("[]");
+            }
+            return sb.toString();
+        }
+    }
 
-	// Override this method
-	public abstract Invoker buildInvoker(Method targetMethod, ArgumentEntry[] entries, boolean async);
+    // Override this method
+    public abstract Invoker buildInvoker(Method targetMethod,
+            ArgumentEntry[] entries, boolean async);
 
-	public Invoker buildInvoker(Method targetMethod, FieldOption implicitOption) {
-		checkValidation(targetMethod);
-		boolean async = isAsyncMethod(targetMethod);
-		return buildInvoker(targetMethod, readArgumentEntries(targetMethod, implicitOption, async), async);
-	}
+    public Invoker buildInvoker(Method targetMethod, FieldOption implicitOption) {
+        checkValidation(targetMethod);
+        boolean async = isAsyncMethod(targetMethod);
+        return buildInvoker(targetMethod,
+                readArgumentEntries(targetMethod, implicitOption, async), async);
+    }
 
-	public Invoker buildInvoker(Method targetMethod) {
-		checkValidation(targetMethod);
-		FieldOption implicitOption = readImplicitFieldOption(targetMethod);
-		boolean async = isAsyncMethod(targetMethod);
-		return buildInvoker(targetMethod, readArgumentEntries(targetMethod, implicitOption, async), async);
-	}
+    public Invoker buildInvoker(Method targetMethod) {
+        checkValidation(targetMethod);
+        FieldOption implicitOption = readImplicitFieldOption(targetMethod);
+        boolean async = isAsyncMethod(targetMethod);
+        return buildInvoker(targetMethod,
+                readArgumentEntries(targetMethod, implicitOption, async), async);
+    }
 
-// TODO ArgumentList を作る ArgumentOptionSet が必要
-// TODO FieldList を作る FieldOptionSet
+    // TODO ArgumentList を作る ArgumentOptionSet が必要
+    // TODO FieldList を作る FieldOptionSet
 
-	private static InvokerBuilder instance;
+    private static InvokerBuilder selectDefaultInvokerBuilder(
+            MessagePack messagePack) {
+        // try {
+        // // FIXME JavassistInvokerBuilder doesn't work on DalvikVM
+        // if(System.getProperty("java.vm.name").equals("Dalvik")) {
+        // return ReflectionInvokerBuilder.getInstance();
+        // }
+        // } catch (Exception e) {
+        // }
+        // return JavassistInvokerBuilder.getInstance();
+        return new ReflectionInvokerBuilder(messagePack);
+    }
 
-	synchronized private static InvokerBuilder getInstance() {
-		if(instance == null) {
-			instance = selectDefaultInvokerBuilder();
-		}
-		return instance;
-	}
+    // public static Invoker build(Method targetMethod, ArgumentList alist)
+    // throws NoSuchFieldException {
+    // return getInstance().buildInvoker(targetMethod, alist);
+    // }
 
-	private static InvokerBuilder selectDefaultInvokerBuilder() {
-//	    try {
-//	        // FIXME JavassistInvokerBuilder doesn't work on DalvikVM
-//	        if(System.getProperty("java.vm.name").equals("Dalvik")) {
-//	            return ReflectionInvokerBuilder.getInstance();
-//	        }
-//	    } catch (Exception e) {
-//	    }
-//		return JavassistInvokerBuilder.getInstance();
-		return ReflectionInvokerBuilder.getInstance();
-	}
+    static boolean isAsyncMethod(Method targetMethod) {
+        final Class<?>[] types = targetMethod.getParameterTypes();
+        return types.length > 0 && Callback.class.isAssignableFrom(types[0]);
+    }
 
-	synchronized static void setInstance(InvokerBuilder builder) {
-		instance = builder;
-	}
+    private static void checkValidation(Method targetMethod) {
+        // TODO
+    }
 
-	public static Invoker build(Method targetMethod) {
-		return getInstance().buildInvoker(targetMethod);
-	}
+    static ArgumentEntry[] readArgumentEntries(Method targetMethod,
+            boolean async) {
+        FieldOption implicitOption = readImplicitFieldOption(targetMethod);
+        return readArgumentEntries(targetMethod, implicitOption, async);
+    }
 
-	public static Invoker build(Method targetMethod, FieldOption implicitOption) {
-		return getInstance().buildInvoker(targetMethod, implicitOption);
-	}
+    static ArgumentEntry[] readArgumentEntries(Method targetMethod,
+            FieldOption implicitOption, boolean async) {
+        Type[] types = targetMethod.getGenericParameterTypes();
+        Annotation[][] annotations = targetMethod.getParameterAnnotations();
 
-	//public static Invoker build(Method targetMethod, ArgumentList alist) throws NoSuchFieldException {
-	//	return getInstance().buildInvoker(targetMethod, alist);
-	//}
+        int paramsOffset = 0;
+        if (async) {
+            paramsOffset = 1;
+        }
 
-	static boolean isAsyncMethod(Method targetMethod) {
-		final Class<?>[] types = targetMethod.getParameterTypes();
-		return types.length > 0 && Callback.class.isAssignableFrom(types[0]);
-	}
+        /*
+         * index:
+         * 
+         * @Index(0) int field_a; // 0
+         * int field_b; // 1
+         * 
+         * @Index(3) int field_c; // 3
+         * int field_d; // 4
+         * 
+         * @Index(2) int field_e; // 2
+         * int field_f; // 5
+         */
+        List<ArgumentEntry> indexed = new ArrayList<ArgumentEntry>();
+        int maxIndex = -1;
+        for (int i = 0 + paramsOffset; i < types.length; i++) {
+            Type t = types[i];
+            Annotation[] as = annotations[i];
 
+            FieldOption opt = readFieldOption(t, as, implicitOption);
+            if (opt == FieldOption.IGNORE) {
+                // skip
+                continue;
+            }
 
-	private static void checkValidation(Method targetMethod) {
-		// TODO
-	}
+            int index = readFieldIndex(t, as, maxIndex);
 
-	static ArgumentEntry[] readArgumentEntries(Method targetMethod, boolean async) {
-		FieldOption implicitOption = readImplicitFieldOption(targetMethod);
-		return readArgumentEntries(targetMethod, implicitOption, async);
-	}
+            if (indexed.size() > index && indexed.get(index) != null) {
+                // FIXME exception
+                throw new MessageTypeException("duplicated index: " + index);
+            }
+            if (index < 0) {
+                // FIXME exception
+                throw new MessageTypeException("invalid index: " + index);
+            }
 
-	static ArgumentEntry[] readArgumentEntries(Method targetMethod, FieldOption implicitOption,
-			boolean async) {
-		Type[] types = targetMethod.getGenericParameterTypes();
-		Annotation[][] annotations = targetMethod.getParameterAnnotations();
+            while (indexed.size() <= index) {
+                indexed.add(null);
+            }
+            indexed.set(index, new ArgumentEntry(i, t, opt));
 
-		int paramsOffset = 0;
-		if(async) {
-			paramsOffset = 1;
-		}
+            if (maxIndex < index) {
+                maxIndex = index;
+            }
+        }
 
-		/* index:
-		 *   @Index(0) int field_a;   // 0
-		 *             int field_b;   // 1
-		 *   @Index(3) int field_c;   // 3
-		 *             int field_d;   // 4
-		 *   @Index(2) int field_e;   // 2
-		 *             int field_f;   // 5
-		 */
-		List<ArgumentEntry> indexed = new ArrayList<ArgumentEntry>();
-		int maxIndex = -1;
-		for(int i=0+paramsOffset; i < types.length; i++) {
-			Type t = types[i];
-			Annotation[] as = annotations[i];
+        ArgumentEntry[] result = new ArgumentEntry[maxIndex + 1];
+        for (int i = 0; i < indexed.size(); i++) {
+            ArgumentEntry e = indexed.get(i);
+            if (e == null) {
+                result[i] = new ArgumentEntry();
+            } else {
+                result[i] = e;
+            }
+        }
 
-			FieldOption opt = readFieldOption(t, as, implicitOption);
-			if(opt == FieldOption.IGNORE) {
-				// skip
-				continue;
-			}
+        return result;
+    }
 
-			int index = readFieldIndex(t, as, maxIndex);
+    private static FieldOption readImplicitFieldOption(Method targetMethod) {
+        // FIXME
+        MessagePackMessage a = targetMethod.getAnnotation(MessagePackMessage.class);
+        if (a == null) {
+            Message b = targetMethod.getAnnotation(Message.class);
+            if (b != null) {
+                return b.value();
+            } else {
+                return FieldOption.DEFAULT;
+            }
+        }
+        return a.value();
+    }
 
-			if(indexed.size() > index && indexed.get(index) != null) {
-				// FIXME exception
-				throw new TemplateBuildException("duplicated index: "+index);
-			}
-			if(index < 0) {
-				// FIXME exception
-				throw new TemplateBuildException("invalid index: "+index);
-			}
+    private static FieldOption readFieldOption(Type type, Annotation[] as, FieldOption implicitOption) {
+        if (isAnnotated(as, Ignore.class)) {
+            return FieldOption.IGNORE;
+        } else if (isAnnotated(as, NotNullable.class)) {
+            return FieldOption.NOTNULLABLE;
+        } else if (isAnnotated(as, Optional.class)) {
+            return FieldOption.OPTIONAL;
+        } else {
+            if (type instanceof Class<?> && ((Class<?>) type).isPrimitive()) {
+                return FieldOption.NOTNULLABLE;
+            } else {
+                return implicitOption;
+            }
+        }
+    }
 
-			while(indexed.size() <= index) {
-				indexed.add(null);
-			}
-			indexed.set(index, new ArgumentEntry(i, t, opt));
+    private static int readFieldIndex(Type type, Annotation[] as, int maxIndex) {
+        Index a = getAnnotation(as, Index.class);
+        if (a == null) {
+            return maxIndex + 1;
+        } else {
+            return a.value();
+        }
+    }
 
-			if(maxIndex < index) {
-				maxIndex = index;
-			}
-		}
+    private static boolean isAnnotated(Annotation[] array,
+            Class<? extends Annotation> with) {
+        return getAnnotation(array, with) != null;
+    }
 
-		ArgumentEntry[] result = new ArgumentEntry[maxIndex+1];
-		for(int i=0; i < indexed.size(); i++) {
-			ArgumentEntry e = indexed.get(i);
-			if(e == null) {
-				result[i] = new ArgumentEntry();
-			} else {
-				result[i] = e;
-			}
-		}
-
-		return result;
-	}
-
-	private static FieldOption readImplicitFieldOption(Method targetMethod) {
-		// FIXME
-		MessagePackMessage a = targetMethod.getAnnotation(MessagePackMessage.class);
-		if(a == null) {
-			return FieldOption.DEFAULT;
-		}
-		return a.value();
-	}
-
-	private static FieldOption readFieldOption(Type type, Annotation[] as, FieldOption implicitOption) {
-		if(isAnnotated(as, Ignore.class)) {
-			return FieldOption.IGNORE;
-		} else if(isAnnotated(as, Required.class)) {
-			return FieldOption.REQUIRED;
-		} else if(isAnnotated(as, Optional.class)) {
-			return FieldOption.OPTIONAL;
-		} else if(isAnnotated(as, Nullable.class)) {
-			if(((Class<?>)type).isPrimitive()) {
-				return FieldOption.REQUIRED;
-			} else {
-				return FieldOption.NULLABLE;
-			}
-		}
-
-		if(implicitOption != FieldOption.DEFAULT) {
-			return implicitOption;
-		}
-
-		// default mode: Required
-		return FieldOption.REQUIRED;
-	}
-
-	private static int readFieldIndex(Type type, Annotation[] as, int maxIndex) {
-		Index a = getAnnotation(as, Index.class);
-		if(a == null) {
-			return maxIndex + 1;
-		} else {
-			return a.value();
-		}
-	}
-
-	private static boolean isAnnotated(Annotation[] array, Class<? extends Annotation> with) {
-		return getAnnotation(array, with) != null;
-	}
-
-	private static <T extends Annotation> T getAnnotation(Annotation[] array, Class<T> key) {
-		for(Annotation a : array) {
-			if(key.isInstance(a)) {
-				return (T)a;
-			}
-		}
-		return null;
-	}
+    private static <T extends Annotation> T getAnnotation(Annotation[] array,
+            Class<T> key) {
+        for (Annotation a : array) {
+            if (key.isInstance(a)) {
+                return (T) a;
+            }
+        }
+        return null;
+    }
 }
-

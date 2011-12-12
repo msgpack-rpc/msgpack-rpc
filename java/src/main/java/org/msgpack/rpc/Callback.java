@@ -40,7 +40,8 @@ public interface Callback<T> {
     /**
      * Passes the methods result back to the caller.
      * 
-     * @param result the methods result
+     * @param result
+     *            the methods result
      */
     public void run(T result);
 
@@ -48,8 +49,10 @@ public interface Callback<T> {
      * Passes the result and an object representing the error back to the caller
      * in the case of an exception.
      * 
-     * @param result the result if any
-     * @param error the error
+     * @param result
+     *            the result if any
+     * @param error
+     *            the error
      */
     public void onError(T result, Object error);
 }

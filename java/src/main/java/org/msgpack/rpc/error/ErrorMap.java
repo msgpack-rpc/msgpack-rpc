@@ -17,30 +17,27 @@
 //
 package org.msgpack.rpc.error;
 
-import org.msgpack.*;
+import org.msgpack.type.Value;
 
 public class ErrorMap {
-	// FIXME TreeMap<String, Class<RPCError>> map;
-	// "RemoteError" => RemoteError.class
-	// static private TreeMap<String, Class<RPCError>> systemMap;
+    // FIXME TreeMap<String, Class<RPCError>> map;
+    // "RemoteError" => RemoteError.class
+    // static private TreeMap<String, Class<RPCError>> systemMap;
 
-	public ErrorMap() {
-	}
+    public ErrorMap() {
+    }
 
-	public void register(String code, Class<RPCError> klass) {
-		// FIXME
-	}
+    public void register(String code, Class<RPCError> klass) {
+        // FIXME
+    }
 
-	public void raise(String code, MessagePackObject data) throws RPCError {
-		// FIXME
-	}
+    public void raise(String code, Value data) throws RPCError {
+        // FIXME
+    }
 
-	/*
-	static private ErrorMap defaultErrorMap;
-
-	static public ErrorMap defaultErrorMap() {
-		// FIXME
-	}
-	*/
+    /*
+     * static private ErrorMap defaultErrorMap;
+     * 
+     * static public ErrorMap defaultErrorMap() { // FIXME }
+     */
 }
-

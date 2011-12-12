@@ -22,53 +22,50 @@ import java.util.List;
 import java.util.ArrayList;
 
 public class MethodSelector {
-	public static Method[] selectRpcServerMethod(Class<?> iface) {
-		List<Method> methods = new ArrayList();
-		for(Method method : iface.getDeclaredMethods()) {
-			if(isRpcServerMethod(method)) {
-				methods.add(method);
-			}
-		}
-		return methods.toArray(new Method[0]);
-	}
+    public static Method[] selectRpcServerMethod(Class<?> iface) {
+        List<Method> methods = new ArrayList();
+        for (Method method : iface.getDeclaredMethods()) {
+            if (isRpcServerMethod(method)) {
+                methods.add(method);
+            }
+        }
+        return methods.toArray(new Method[0]);
+    }
 
-	public static Method[] selectRpcClientMethod(Class<?> iface) {
-		List<Method> methods = new ArrayList();
-		for(Method method : iface.getMethods()) {
-			if(isRpcClientMethod(method)) {
-				methods.add(method);
-			}
-		}
-		return methods.toArray(new Method[0]);
-	}
+    public static Method[] selectRpcClientMethod(Class<?> iface) {
+        List<Method> methods = new ArrayList();
+        for (Method method : iface.getMethods()) {
+            if (isRpcClientMethod(method)) {
+                methods.add(method);
+            }
+        }
+        return methods.toArray(new Method[0]);
+    }
 
-	public static boolean isRpcServerMethod(Method method) {
-		return isRpcMethod(method) &&
-			!ProxyBuilder.isAsyncMethod(method);
-	}
+    public static boolean isRpcServerMethod(Method method) {
+        return isRpcMethod(method) && !ProxyBuilder.isAsyncMethod(method);
+    }
 
-	public static boolean isRpcClientMethod(Method method) {
-		return isRpcMethod(method) &&
-			!InvokerBuilder.isAsyncMethod(method);
-	}
+    public static boolean isRpcClientMethod(Method method) {
+        return isRpcMethod(method) && !InvokerBuilder.isAsyncMethod(method);
+    }
 
-	private static boolean isRpcMethod(Method method) {
-		// TODO @Ignore annotation
-		// TODO @Direct annotation
+    private static boolean isRpcMethod(Method method) {
+        // TODO @Ignore annotation
+        // TODO @Direct annotation
 
-		int mod = method.getModifiers();
-		if(Modifier.isStatic(mod)) {
-			return false;
-		}
+        int mod = method.getModifiers();
+        if (Modifier.isStatic(mod)) {
+            return false;
+        }
 
-		if(!Modifier.isPublic(mod)) {
-			// TODO @Dispatch annotation
-			// TODO default rule
-			return false;
-		}
+        if (!Modifier.isPublic(mod)) {
+            // TODO @Dispatch annotation
+            // TODO default rule
+            return false;
+        }
 
-		return true;
-	}
+        return true;
+    }
 
 }
-

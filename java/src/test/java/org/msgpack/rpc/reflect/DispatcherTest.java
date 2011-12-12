@@ -18,7 +18,6 @@
 package org.msgpack.rpc.reflect;
 
 import org.msgpack.*;
-import org.msgpack.object.*;
 import org.msgpack.rpc.*;
 import org.msgpack.rpc.dispatcher.*;
 import org.msgpack.rpc.config.*;
@@ -27,6 +26,7 @@ import org.msgpack.rpc.loop.netty.*;
 import java.util.*;
 import junit.framework.*;
 import org.junit.Test;
+import org.msgpack.type.Value;
 
 public class DispatcherTest extends ReflectTest {
 	@Test
@@ -34,26 +34,26 @@ public class DispatcherTest extends ReflectTest {
 		Context context = startServer(new SyncHandler());
 		Client c = context.getClient();
 		try {
-			MessagePackObject result;
+			Value result;
 
 			result = c.callApply("m01", new Object[]{});
-			assertTrue(result.isRawType());
-			assertEquals("m01", result.asString());
+			assertTrue(result.isRawValue());
+			assertEquals("m01", result.asRawValue().getString());
 
 			result = c.callApply("m02", new Object[]{"furuhashi"});
-			assertTrue(result.isRawType());
-			assertEquals("m02"+"furuhashi", result.asString());
+			assertTrue(result.isRawValue());
+			assertEquals("m02"+"furuhashi", result.asRawValue().getString());
 
 			result = c.callApply("m03", new Object[]{1978});
-			assertTrue(result.isRawType());
-			assertEquals("m03"+1978, result.asString());
+			assertTrue(result.isRawValue());
+			assertEquals("m03"+1978, result.asRawValue().getString());
 
 			List<String> list = new ArrayList<String>();
 			list.add("sadayuki");
 			list.add("kumofs");
 			result = c.callApply("m04", new Object[]{list});
-			assertTrue(result.isRawType());
-			assertEquals("m04"+stringify1(list), result.asString());
+			assertTrue(result.isRawValue());
+			assertEquals("m04"+stringify1(list), result.asRawValue().getString());
 
 			List<List<String>> alist = new ArrayList<List<String>>();
 			List<String> alist_n1 = new ArrayList<String>();
@@ -67,12 +67,12 @@ public class DispatcherTest extends ReflectTest {
 			alist_n2.add("c");
 			alist.add(alist_n2);
 			result = c.callApply("m05", new Object[]{alist});
-			assertTrue(result.isRawType());
-			assertEquals("m05"+stringify2(alist), result.asString());
+			assertTrue(result.isRawValue());
+			assertEquals("m05"+stringify2(alist), result.asRawValue().getString());
 
 			result = c.callApply("m06", new Object[]{"viver", 2006});
-			assertTrue(result.isRawType());
-			assertEquals("m06"+"viver"+2006, result.asString());
+			assertTrue(result.isRawValue());
+			assertEquals("m06"+"viver"+2006, result.asRawValue().getString());
 
 		} finally {
 			context.close();
@@ -84,26 +84,26 @@ public class DispatcherTest extends ReflectTest {
         Context context = startServer2(new SyncHandler());
         Client c = context.getClient();
         try {
-            MessagePackObject result;
+            Value result;
 
             result = c.callApply("m01", new Object[]{});
-            assertTrue(result.isRawType());
-            assertEquals("m01", result.asString());
+            assertTrue(result.isRawValue());
+            assertEquals("m01", result.asRawValue().getString());
 
             result = c.callApply("m02", new Object[]{"furuhashi"});
-            assertTrue(result.isRawType());
-            assertEquals("m02"+"furuhashi", result.asString());
+            assertTrue(result.isRawValue());
+            assertEquals("m02"+"furuhashi", result.asRawValue().getString());
 
             result = c.callApply("m03", new Object[]{1978});
-            assertTrue(result.isRawType());
-            assertEquals("m03"+1978, result.asString());
+            assertTrue(result.isRawValue());
+            assertEquals("m03"+1978, result.asRawValue().getString());
 
             List<String> list = new ArrayList<String>();
             list.add("sadayuki");
             list.add("kumofs");
             result = c.callApply("m04", new Object[]{list});
-            assertTrue(result.isRawType());
-            assertEquals("m04"+stringify1(list), result.asString());
+            assertTrue(result.isRawValue());
+            assertEquals("m04"+stringify1(list), result.asRawValue().getString());
 
             List<List<String>> alist = new ArrayList<List<String>>();
             List<String> alist_n1 = new ArrayList<String>();
@@ -117,12 +117,12 @@ public class DispatcherTest extends ReflectTest {
             alist_n2.add("c");
             alist.add(alist_n2);
             result = c.callApply("m05", new Object[]{alist});
-            assertTrue(result.isRawType());
-            assertEquals("m05"+stringify2(alist), result.asString());
+            assertTrue(result.isRawValue());
+            assertEquals("m05"+stringify2(alist), result.asRawValue().getString());
 
             result = c.callApply("m06", new Object[]{"viver", 2006});
-            assertTrue(result.isRawType());
-            assertEquals("m06"+"viver"+2006, result.asString());
+            assertTrue(result.isRawValue());
+            assertEquals("m06"+"viver"+2006, result.asRawValue().getString());
 
         } finally {
             context.close();
@@ -134,26 +134,26 @@ public class DispatcherTest extends ReflectTest {
 		Context context = startServer(new AsyncHandler());
 		Client c = context.getClient();
 		try {
-			MessagePackObject result;
+			Value result;
 
 			result = c.callApply("m01", new Object[]{});
-			assertTrue(result.isRawType());
-			assertEquals("m01", result.asString());
+			assertTrue(result.isRawValue());
+			assertEquals("m01", result.asRawValue().getString());
 
 			result = c.callApply("m02", new Object[]{"furuhashi"});
-			assertTrue(result.isRawType());
-			assertEquals("m02"+"furuhashi", result.asString());
+			assertTrue(result.isRawValue());
+			assertEquals("m02"+"furuhashi", result.asRawValue().getString());
 
 			result = c.callApply("m03", new Object[]{1978});
-			assertTrue(result.isRawType());
-			assertEquals("m03"+1978, result.asString());
+			assertTrue(result.isRawValue());
+			assertEquals("m03"+1978, result.asRawValue().getString());
 
 			List<String> list = new ArrayList<String>();
 			list.add("sadayuki");
 			list.add("kumofs");
 			result = c.callApply("m04", new Object[]{list});
-			assertTrue(result.isRawType());
-			assertEquals("m04"+stringify1(list), result.asString());
+			assertTrue(result.isRawValue());
+			assertEquals("m04"+stringify1(list), result.asRawValue().getString());
 
 			List<List<String>> alist = new ArrayList<List<String>>();
 			List<String> alist_n1 = new ArrayList<String>();
@@ -167,12 +167,12 @@ public class DispatcherTest extends ReflectTest {
 			alist_n2.add("c");
 			alist.add(alist_n2);
 			result = c.callApply("m05", new Object[]{alist});
-			assertTrue(result.isRawType());
-			assertEquals("m05"+stringify2(alist), result.asString());
+			assertTrue(result.isRawValue());
+			assertEquals("m05"+stringify2(alist), result.asRawValue().getString());
 
 			result = c.callApply("m06", new Object[]{"viver", 2006});
-			assertTrue(result.isRawType());
-			assertEquals("m06"+"viver"+2006, result.asString());
+			assertTrue(result.isRawValue());
+			assertEquals("m06"+"viver"+2006, result.asRawValue().getString());
 
 		} finally {
 			context.close();
@@ -184,26 +184,26 @@ public class DispatcherTest extends ReflectTest {
         Context context = startServer2(new AsyncHandler());
         Client c = context.getClient();
         try {
-            MessagePackObject result;
+            Value result;
 
             result = c.callApply("m01", new Object[]{});
-            assertTrue(result.isRawType());
-            assertEquals("m01", result.asString());
+            assertTrue(result.isRawValue());
+            assertEquals("m01", result.asRawValue().getString());
 
             result = c.callApply("m02", new Object[]{"furuhashi"});
-            assertTrue(result.isRawType());
-            assertEquals("m02"+"furuhashi", result.asString());
+            assertTrue(result.isRawValue());
+            assertEquals("m02"+"furuhashi", result.asRawValue().getString());
 
             result = c.callApply("m03", new Object[]{1978});
-            assertTrue(result.isRawType());
-            assertEquals("m03"+1978, result.asString());
+            assertTrue(result.isRawValue());
+            assertEquals("m03"+1978, result.asRawValue().getString());
 
             List<String> list = new ArrayList<String>();
             list.add("sadayuki");
             list.add("kumofs");
             result = c.callApply("m04", new Object[]{list});
-            assertTrue(result.isRawType());
-            assertEquals("m04"+stringify1(list), result.asString());
+            assertTrue(result.isRawValue());
+            assertEquals("m04"+stringify1(list), result.asRawValue().getString());
 
             List<List<String>> alist = new ArrayList<List<String>>();
             List<String> alist_n1 = new ArrayList<String>();
@@ -217,12 +217,12 @@ public class DispatcherTest extends ReflectTest {
             alist_n2.add("c");
             alist.add(alist_n2);
             result = c.callApply("m05", new Object[]{alist});
-            assertTrue(result.isRawType());
-            assertEquals("m05"+stringify2(alist), result.asString());
+            assertTrue(result.isRawValue());
+            assertEquals("m05"+stringify2(alist), result.asRawValue().getString());
 
             result = c.callApply("m06", new Object[]{"viver", 2006});
-            assertTrue(result.isRawType());
-            assertEquals("m06"+"viver"+2006, result.asString());
+            assertTrue(result.isRawValue());
+            assertEquals("m06"+"viver"+2006, result.asRawValue().getString());
 
         } finally {
             context.close();

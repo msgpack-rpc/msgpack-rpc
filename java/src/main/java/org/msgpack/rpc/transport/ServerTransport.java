@@ -20,6 +20,5 @@ package org.msgpack.rpc.transport;
 import java.io.Closeable;
 
 public interface ServerTransport extends Closeable {
-	public void close();
+    public void close();
 }
-

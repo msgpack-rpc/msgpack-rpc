@@ -18,23 +18,22 @@
 package org.msgpack.rpc.config;
 
 public abstract class StreamClientConfig extends ClientConfig {
-	protected double connectTimeout = 30;  // FIXME
-	protected int reconnectionLimit = 3;  // FIXME
+    protected double connectTimeout = 30; // FIXME
+    protected int reconnectionLimit = 3; // FIXME
 
-	public double getConnectTimeout() {
-		return connectTimeout;
-	}
+    public double getConnectTimeout() {
+        return connectTimeout;
+    }
 
-	public void setConnectTimeout(double sec) {
-		connectTimeout = sec;
-	}
+    public void setConnectTimeout(double sec) {
+        connectTimeout = sec;
+    }
 
-	public int getReconnectionLimit() {
-		return reconnectionLimit;
-	}
+    public int getReconnectionLimit() {
+        return reconnectionLimit;
+    }
 
-	public void setReconnectionLimit(int num) {
-		reconnectionLimit = num;
-	}
+    public void setReconnectionLimit(int num) {
+        reconnectionLimit = num;
+    }
 }
-
