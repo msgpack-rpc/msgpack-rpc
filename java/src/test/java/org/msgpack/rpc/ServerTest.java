@@ -38,6 +38,21 @@ public class ServerTest extends TestCase {
 		}
 	}
 
+    private static String getBigString() {
+        StringBuilder sb = new StringBuilder(1024 * 1024); // 1M
+        for(int i = 0;i < 1024 * 1024;i++){
+            sb.append("A");
+        }
+        return sb.toString();
+    }
+
+    private static Value BIG_DATA = ValueFactory.createRawValue(getBigString());
+    public static class BigDataDispatcher implements Dispatcher {
+		public void dispatch(Request request) {
+			request.sendResult(BIG_DATA);
+		}
+	}
+
 	@Test
 	public void testSyncLoad() throws Exception {
         MessagePack messagePack = new MessagePack();
@@ -99,5 +114,38 @@ public class ServerTest extends TestCase {
 			loop.shutdown();
 		}
 	}
+
+
+	@Test
+	public void testSyncBigDataLoad() throws Exception {
+        MessagePack messagePack = new MessagePack();
+		EventLoop loop = EventLoop.start(messagePack);
+		Server svr = new Server(loop);
+		Client c = new Client("127.0.0.1", 19850, loop);
+		c.setRequestTimeout(10);
+
+
+		try {
+			svr.serve(new BigDataDispatcher());
+			svr.listen(19850);
+
+			int num = 1000;
+
+			long start = System.currentTimeMillis();
+			for(int i=0; i < num; i++) {
+				Value result = c.callApply("test", new Object[]{});
+				assertEquals(BIG_DATA, result);
+			}
+			long finish = System.currentTimeMillis();
+
+			double result = num / ((double)(finish - start) / 1000);
+			System.out.println("sync: "+result+" calls per sec");
+
+		} finally {
+			svr.close();
+			c.close();
+			loop.shutdown();
+		}
+    }
 }
 
