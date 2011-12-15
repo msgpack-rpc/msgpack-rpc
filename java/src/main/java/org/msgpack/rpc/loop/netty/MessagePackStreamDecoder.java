@@ -18,6 +18,7 @@
 package org.msgpack.rpc.loop.netty;
 
 import java.io.ByteArrayInputStream;
+import java.io.EOFException;
 import java.nio.ByteBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -42,6 +43,7 @@ public class MessagePackStreamDecoder extends FrameDecoder {
         if (!buffer.hasRemaining()) {
             return null;
         }
+        source.markReaderIndex();
 
         byte[] bytes = buffer.array(); // FIXME buffer must has array
         int offset = buffer.arrayOffset() + buffer.position();
@@ -49,10 +51,17 @@ public class MessagePackStreamDecoder extends FrameDecoder {
         ByteArrayInputStream stream = new ByteArrayInputStream(bytes, offset,
                 length);
         int startAvailable = stream.available();
-        Unpacker unpacker = messagePack.createUnpacker(stream);// new MessagePackBufferUnpacker(messagePack,length);
-        Value v = unpacker.readValue();
-        source.skipBytes(startAvailable - stream.available());
-        return v;
+        try{
+            Unpacker unpacker = messagePack.createUnpacker(stream);// new MessagePackBufferUnpacker(messagePack,length);
+            Value v = unpacker.readValue();
+            source.skipBytes(startAvailable - stream.available());
+            return v;
+        }catch( EOFException e ){
+            // not enough buffers.
+            // So retry reading
+            source.resetReaderIndex();
+            return null;
+        }
 
         /*
          * int noffset = pac.execute(bytes, offset, length); 
