@@ -29,16 +29,17 @@ import org.msgpack.type.Value;
 import org.msgpack.unpacker.Unpacker;
 
 public class MessagePackStreamDecoder extends FrameDecoder {
-    protected MessagePack messagePack;
+    protected MessagePack msgpack;
 
-    public MessagePackStreamDecoder(MessagePack messagePack) {
+    public MessagePackStreamDecoder(MessagePack msgpack) {
         super();
-        this.messagePack = messagePack;
+        this.msgpack = msgpack;
     }
 
     @Override
     protected Object decode(ChannelHandlerContext ctx, Channel channel,
             ChannelBuffer source) throws Exception {
+        // TODO #MN will modify the body with MessagePackBufferUnpacker.
         ByteBuffer buffer = source.toByteBuffer();
         if (!buffer.hasRemaining()) {
             return null;
@@ -52,7 +53,7 @@ public class MessagePackStreamDecoder extends FrameDecoder {
                 length);
         int startAvailable = stream.available();
         try{
-            Unpacker unpacker = messagePack.createUnpacker(stream);// new MessagePackBufferUnpacker(messagePack,length);
+            Unpacker unpacker = msgpack.createUnpacker(stream);
             Value v = unpacker.readValue();
             source.skipBytes(startAvailable - stream.available());
             return v;
@@ -62,13 +63,5 @@ public class MessagePackStreamDecoder extends FrameDecoder {
             source.resetReaderIndex();
             return null;
         }
-
-        /*
-         * int noffset = pac.execute(bytes, offset, length); 
-         * if(noffset > offset) { source.skipBytes(noffset - offset); }
-         * if(pac.isFinished()) {
-         *     Value msg = pac.getData(); pac.reset(); return msg;
-         * } else { return null; }
-         */
     }
 }

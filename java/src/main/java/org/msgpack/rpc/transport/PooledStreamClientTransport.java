@@ -29,7 +29,8 @@ import org.msgpack.rpc.config.StreamClientConfig;
 import org.msgpack.MessagePack;
 
 public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends OutputStream> implements ClientTransport {
-    private final InternalLogger logger = InternalLoggerFactory.getInstance(PooledStreamClientTransport.class);
+    private static final InternalLogger LOG =
+        InternalLoggerFactory.getInstance(PooledStreamClientTransport.class);
 
     private final Object lock = new Object();
     private final List<Channel> pool = new ArrayList<Channel>();
@@ -84,7 +85,7 @@ public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends
 
     public void close() {
         synchronized (lock) {
-            logger.info("Close all channels");
+            LOG.info("Close all channels");
             if (pendingBuffer != null) {
                 closePendingBuffer(pendingBuffer);
                 pendingBuffer = null;
@@ -107,7 +108,7 @@ public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends
                 closeChannel(c);
                 return;
             } // already closed
-            logger.debug("Success to connect new channel " + c);
+            LOG.debug("Success to connect new channel " + c);
             pool.add(c);
             connecting = 0;
             if (pendingBuffer != null) {
@@ -122,7 +123,7 @@ public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends
                 return;
             } // already closed
             if (connecting < reconnectionLimit) {
-                logger.info(String.format("Reconnect %s(retry:%s)", c,
+                LOG.info(String.format("Reconnect %s(retry:%s)", c,
                         connecting + 1), cause);
                 connecting++;
                 if (pool.remove(c)) {// remove error channel
@@ -130,7 +131,7 @@ public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends
                 }
                 startConnection();
             } else {
-                logger.error(String.format(
+                LOG.error(String.format(
                         "Fail to connect %s(tried %s times)", c,
                         reconnectionLimit), cause);
                 connecting = 0;
@@ -147,7 +148,7 @@ public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends
             if (connecting == -1) {
                 return;
             } // already closed
-            logger.info(String.format("Close channel %s", c));
+            LOG.info(String.format("Close channel %s", c));
             pool.remove(c);
             errorChannelPool.remove(c);
         }
