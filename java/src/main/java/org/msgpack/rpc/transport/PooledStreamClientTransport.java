@@ -39,12 +39,14 @@ public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends
 
     protected final Session session;
     protected final StreamClientConfig config;
+    protected final MessagePack messagePack;
 
     public PooledStreamClientTransport(StreamClientConfig config,
             Session session) {
         this.session = session;
         this.config = config;
         this.reconnectionLimit = config.getReconnectionLimit();
+        this.messagePack = session.getEventLoop().getMessagePack();
     }
 
     protected Session getSession() {
@@ -67,7 +69,7 @@ public abstract class PooledStreamClientTransport<Channel, PendingBuffer extends
                 }
                 if (pool.isEmpty()) { // may be already connected
                     try {
-                        MessagePack.pack(getPendingBuffer(), msg);
+                        messagePack.write(getPendingBuffer(), msg);
                     } catch (IOException e) {
                         // FIXME
                     }
