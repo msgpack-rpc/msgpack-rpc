@@ -53,7 +53,7 @@ public class NettyEventLoop extends EventLoop {
     public synchronized ServerSocketChannelFactory getServerFactory() {
         if (serverFactory == null) {
             serverFactory = new NioServerSocketChannelFactory(getIoExecutor(),
-                    getIoExecutor()); // TODO: workerCount
+                    getWorkerExecutor()); // TODO: workerCount
             // messages will be dispatched to worker thread on server.
             // see useThread(true) in NettyTcpClientTransport().
         }
