@@ -13,8 +13,8 @@ begin
 		gemspec.rubyforge_project = "msgpack"
 		gemspec.has_rdoc = true
 		gemspec.require_paths = ["lib"]
-		gemspec.add_dependency "msgpack", ">= 0.4.4"
-		gemspec.add_dependency "cool.io", ">= 1.0.0"
+		gemspec.add_dependency "msgpack", "~> 0.4.4"
+		gemspec.add_dependency "cool.io", "~> 1.1.0"
 		gemspec.test_files = Dir["test/test_*.rb"]
 		gemspec.files = Dir["lib/**/*", "ext/**/*", "test/**/*", "spec/**/*", "tasks/**/*"] + %w[AUTHORS ChangeLog NOTICE README]
 		gemspec.add_development_dependency('rspec')
