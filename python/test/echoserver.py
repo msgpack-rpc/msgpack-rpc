@@ -48,4 +48,4 @@ def serve(daemon=False):
 
 if __name__ == '__main__':
     port = serve(False)
-    print "Serving on localhost:%d\n" % (port,)
+    print "Serving on localhost:%d\n" % port[1]
