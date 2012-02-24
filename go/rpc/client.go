@@ -97,7 +97,7 @@ func SendRequestMessage(writer io.Writer, msgId int, funcName string, arguments 
 func ReceiveResponse(reader io.Reader) (int, reflect.Value, error) {
 	data, _, err := msgpack.UnpackReflected(reader)
 	if err != nil {
-		return 0, reflect.Value{}, &RPCError{nil, "RPCError occurred while receiving a response"}
+		return 0, reflect.Value{}, &RPCError{nil, "Error occurred while receiving a response"}
 	}
 
 	msgId, result, err := HandleRPCResponse(data)
