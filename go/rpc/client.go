@@ -122,8 +122,7 @@ func HandleRPCResponse(req reflect.Value) (int, reflect.Value, error) {
 		return rpcResponseError()
 	}
 	msgType := _req[0]
-	ok = msgType.Kind() == reflect.Int || msgType.Kind() == reflect.Int8 || msgType.Kind() == reflect.Int16 || msgType.Kind() == reflect.Int32 || msgType.Kind() == reflect.Int64
-	if !ok {
+	if msgType.Kind() != reflect.Int && msgType.Kind() != reflect.Int8 && msgType.Kind() != reflect.Int16 && msgType.Kind() != reflect.Int32 && msgType.Kind() != reflect.Int64 {
 		return rpcResponseError()
 	}
 	msgId := _req[1]
