@@ -39,7 +39,7 @@ func (self *Session) SendV(funcName string, arguments []interface{}) (reflect.Va
 		return reflect.Value{}, &RPCError{err, "Failed to send a request message"}
 	}
 	_msgId, result, _err := ReceiveResponse(self.conn.(io.Reader))
-	if err != nil {
+	if _err != nil {
 		return reflect.Value{}, _err
 	}
 	if msgId != _msgId {
