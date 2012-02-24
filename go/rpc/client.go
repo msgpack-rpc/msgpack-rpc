@@ -132,19 +132,18 @@ func HandleRPCResponse(req reflect.Value) (int, reflect.Value, error) {
 	}
 	if _req[2].IsValid() {
 		_errorMsg := _req[2]
-		if _errorMsg.Kind() == reflect.Array || _errorMsg.Kind() == reflect.Slice {
-			errorMsg, ok := _errorMsg.Interface().([]uint8)
-			if !ok {
-   		 		return rpcResponseError()
-			}
-			if msgType.Int() != RESPONSE {
-   		 		return rpcResponseError()
-			}
-			if errorMsg != nil {
-				return int(msgId.Int()), reflect.Value{}, &RPCError{nil, string(errorMsg)}
-			}
-		} else {
-   			return rpcResponseError()
+		if _errorMsg.Kind() != reflect.Array && _errorMsg.Kind() != reflect.Slice {
+			return rpcResponseError()
+		}
+		errorMsg, ok := _errorMsg.Interface().([]uint8)
+		if !ok {
+			return rpcResponseError()
+		}
+		if msgType.Int() != RESPONSE {
+			return rpcResponseError()
+		}
+		if errorMsg != nil {
+			return int(msgId.Int()), reflect.Value{}, &RPCError{nil, string(errorMsg)}
 		}
 	}
 	return int(msgId.Int()), _req[3], nil
