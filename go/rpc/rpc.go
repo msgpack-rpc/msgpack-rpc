@@ -10,15 +10,15 @@ const (
 	NOTIFICATION = 2
 )
 
-type Error struct {
+type RPCError struct {
 	Cause   interface{}
 	Message string
 }
 
 type FunctionResolver interface {
-	Resolve(name string, arguments []reflect.Value) (*reflect.FuncValue, *Error)
+	Resolve(name string, arguments []reflect.Value) (reflect.Value, error)
 }
 
-func (self *Error) String() string {
+func (self *RPCError) Error() string {
 	return self.Message
 }

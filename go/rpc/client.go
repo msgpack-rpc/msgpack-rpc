@@ -2,10 +2,9 @@ package rpc
 
 import (
 	"fmt"
+	msgpack "github.com/msgpack/msgpack/go"
 	"io"
-	"msgpack"
 	"net"
-	"os"
 	"reflect"
 )
 
@@ -29,7 +28,7 @@ func coerce(arguments []interface{}) []interface{} {
 }
 
 // Sends a RPC request to the server.
-func (self *Session) SendV(funcName string, arguments []interface{}) (reflect.Value, *Error) {
+func (self *Session) SendV(funcName string, arguments []interface{}) (reflect.Value, error) {
 	var msgId = self.nextId
 	self.nextId += 1
 	if self.autoCoercing {
@@ -37,21 +36,22 @@ func (self *Session) SendV(funcName string, arguments []interface{}) (reflect.Va
 	}
 	err := SendRequestMessage(self.conn.(io.Writer), msgId, funcName, arguments)
 	if err != nil {
-		return nil, &Error{err, "Failed to send a request message"}
+		return reflect.Value{}, &RPCError{err, "Failed to send a request message"}
 	}
 	_msgId, result, _err := ReceiveResponse(self.conn.(io.Reader))
 	if err != nil {
-		return nil, _err
+		return reflect.Value{}, _err
 	}
 	if msgId != _msgId {
-		return nil, &Error{nil, fmt.Sprintf("Message IDs don't match (%d != %d)", msgId, _msgId)}
+		return reflect.Value{}, &RPCError{nil, fmt.Sprintf("Message IDs don't match (%d != %d)", msgId, _msgId)}
 	}
 	if self.autoCoercing {
-		_result, ok := result.(reflect.ArrayOrSliceValue)
-		if ok {
-			elemType, ok := _result.Type().(reflect.ArrayOrSliceType).Elem().(*reflect.UintType)
-			if ok && elemType.Kind() == reflect.Uint8 {
-				result = reflect.NewValue(string(_result.Interface().([]byte)))
+		_result := result
+		if _result.Kind() == reflect.Array || _result.Kind() == reflect.Slice {
+			elemType := _result.Type().Elem()
+			if (elemType.Kind() == reflect.Uint || elemType.Kind() == reflect.Uint8 || elemType.Kind() == reflect.Uint16 || elemType.Kind() == reflect.Uint32 || elemType.Kind() == reflect.Uint64 || elemType.Kind() == reflect.Uintptr) &&
+				elemType.Kind() == reflect.Uint8 {
+				result = reflect.ValueOf(string(_result.Interface().([]byte)))
 			}
 		}
 	}
@@ -59,7 +59,7 @@ func (self *Session) SendV(funcName string, arguments []interface{}) (reflect.Va
 }
 
 // Sends a RPC request to the server.
-func (self *Session) Send(funcName string, arguments ...interface{}) (reflect.Value, *Error) {
+func (self *Session) Send(funcName string, arguments ...interface{}) (reflect.Value, error) {
 	return self.SendV(funcName, arguments)
 }
 
@@ -72,7 +72,7 @@ func NewSession(conn net.Conn, autoCoercing bool) *Session {
 
 // This is a low-level function that is not supposed to be called directly
 // by the user.  Change this if the MessagePack protocol is updated.
-func SendRequestMessage(writer io.Writer, msgId int, funcName string, arguments []interface{}) os.Error {
+func SendRequestMessage(writer io.Writer, msgId int, funcName string, arguments []interface{}) error {
 	_, err := writer.Write([]byte{0x94})
 	if err != nil {
 		return err
@@ -89,61 +89,64 @@ func SendRequestMessage(writer io.Writer, msgId int, funcName string, arguments 
 	if err != nil {
 		return err
 	}
-	_, err = msgpack.PackArray(writer, reflect.NewValue(arguments).(reflect.ArrayOrSliceValue))
+	_, err = msgpack.PackArray(writer, reflect.ValueOf(arguments))
 	return err
 }
 
 // This is a low-level function that is not supposed to be called directly
 // by the user.  Change this if the MessagePack protocol is updated.
-func ReceiveResponse(reader io.Reader) (int, reflect.Value, *Error) {
+func ReceiveResponse(reader io.Reader) (int, reflect.Value, error) {
 	data, _, err := msgpack.UnpackReflected(reader)
 	if err != nil {
-		return 0, nil, &Error{nil, "Error occurred while receiving a response"}
+		return 0, reflect.Value{}, &RPCError{nil, "RPCError occurred while receiving a response"}
 	}
 
 	msgId, result, _err := HandleRPCResponse(data)
 	if _err != nil {
-		return 0, nil, _err
+		return 0, reflect.Value{}, _err
 	}
 	return msgId, result, nil
 }
 
+func rpcResponseError() (int, reflect.Value, error) {
+	return 0, reflect.Value{}, &RPCError{nil, "Invalid message format"}
+}
+
 // This is a low-level function that is not supposed to be called directly
 // by the user.  Change this if the MessagePack protocol is updated.
-func HandleRPCResponse(req reflect.Value) (int, reflect.Value, *Error) {
+func HandleRPCResponse(req reflect.Value) (int, reflect.Value, error) {
 	_req, ok := req.Interface().([]reflect.Value)
 	if !ok {
-		goto err
+		return rpcResponseError()
 	}
 	if len(_req) != 4 {
-		goto err
+		return rpcResponseError()
 	}
-	msgType, ok := _req[0].(*reflect.IntValue)
+	msgType := _req[0]
+	ok = msgType.Kind() == reflect.Int || msgType.Kind() == reflect.Int8 || msgType.Kind() == reflect.Int16 || msgType.Kind() == reflect.Int32 || msgType.Kind() == reflect.Int64
 	if !ok {
-		goto err
+		return rpcResponseError()
 	}
-	msgId, ok := _req[1].(*reflect.IntValue)
-	if !ok {
-		goto err
+	msgId := _req[1]
+	if msgId.Kind() != reflect.Int && msgId.Kind() != reflect.Int8 && msgId.Kind() != reflect.Int16 && msgId.Kind() != reflect.Int32 && msgId.Kind() != reflect.Int64 {
+		return rpcResponseError()
 	}
-	if _req[2] != nil {
-		_errorMsg, ok := _req[2].(reflect.ArrayOrSliceValue)
-		if ok {
+	if _req[2].IsValid() {
+		_errorMsg := _req[2]
+		if _errorMsg.Kind() == reflect.Array || _errorMsg.Kind() == reflect.Slice {
 			errorMsg, ok := _errorMsg.Interface().([]uint8)
 			if !ok {
-				goto err
+   		 		return rpcResponseError()
 			}
-			if msgType.Get() != RESPONSE {
-				goto err
+			if msgType.Int() != RESPONSE {
+   		 		return rpcResponseError()
 			}
 			if errorMsg != nil {
-				return int(msgId.Get()), nil, &Error{nil, string(errorMsg)}
+				return int(msgId.Int()), reflect.Value{}, &RPCError{nil, string(errorMsg)}
 			}
 		} else {
-			goto err
+   			return rpcResponseError()
 		}
 	}
-	return int(msgId.Get()), _req[3], nil
-err:
-	return 0, nil, &Error{nil, "Invalid message format"}
+	return int(msgId.Int()), _req[3], nil
 }

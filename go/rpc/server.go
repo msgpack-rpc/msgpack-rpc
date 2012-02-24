@@ -1,11 +1,10 @@
 package rpc
 
 import (
-	"container/vector"
 	"fmt"
+	msgpack "github.com/msgpack/msgpack/go"
 	"io"
 	"log"
-	"msgpack"
 	"net"
 	"os"
 	"reflect"
@@ -18,7 +17,7 @@ type stringizable interface {
 type Server struct {
 	resolver     FunctionResolver
 	log          *log.Logger
-	listeners    vector.Vector
+	listeners    []net.Listener
 	autoCoercing bool
 	lchan        chan int
 }
@@ -26,13 +25,13 @@ type Server struct {
 // Goes into the event loop to get ready to serve.
 func (self *Server) Run() *Server {
 	lchan := make(chan int)
-	self.listeners.Do(func(listener interface{}) {
+	for _, listener := range self.listeners {
 		_listener := listener.(net.Listener)
 		go (func() {
 			for {
 				conn, err := _listener.Accept()
 				if err != nil {
-					self.log.Println(err.String())
+					self.log.Println(err)
 					continue
 				}
 				if self.lchan == nil {
@@ -40,36 +39,36 @@ func (self *Server) Run() *Server {
 					break
 				}
 				go (func() {
+				NextRequest:
 					for {
 						data, _, err := msgpack.UnpackReflected(conn)
-						if err == os.EOF {
+						if err == io.EOF {
 							break
 						} else if err != nil {
-							self.log.Println(err.String())
+							self.log.Println(err)
 							break
 						}
 						msgId, funcName, _arguments, xerr := HandleRPCRequest(data)
 						if xerr != nil {
-							self.log.Println(xerr.String())
+							self.log.Println(xerr)
 							break
 						}
 						f, xerr := self.resolver.Resolve(funcName, _arguments)
 						if xerr != nil {
-							msg := xerr.String()
-							self.log.Println(msg)
-							SendErrorResponseMessage(conn, msgId, msg)
+							self.log.Println(xerr)
+							SendErrorResponseMessage(conn, msgId, xerr.Error())
 						}
-						funcType := f.Type().(*reflect.FuncType)
+						funcType := f.Type()
 						if funcType.NumIn() != len(_arguments) {
 							msg := fmt.Sprintf("The number of the given arguments (%d) doesn't match the arity (%d)", len(_arguments), funcType.NumIn())
 							self.log.Println(msg)
 							SendErrorResponseMessage(conn, msgId, msg)
-							goto next
+							continue NextRequest
 						}
 						if funcType.NumOut() != 1 && funcType.NumOut() != 2 {
 							self.log.Println("The number of return values must be 1 or 2")
 							SendErrorResponseMessage(conn, msgId, "Internal server error")
-							goto next
+							continue NextRequest
 						}
 						var arguments []reflect.Value
 						if self.autoCoercing {
@@ -80,12 +79,12 @@ func (self *Server) Run() *Server {
 								if ft == vt {
 									arguments[i] = v
 								} else {
-									if ft.(*reflect.StringType) != nil {
-										_vt, ok := v.Type().(reflect.ArrayOrSliceType)
-										if ok {
-											et := _vt.Elem().(*reflect.UintType)
+									if ft != nil {
+										_vt := v.Type()
+										if _vt.Kind() == reflect.Array || _vt.Kind() == reflect.Slice {
+											et := _vt.Elem()
 											if et != nil && et.Kind() == reflect.Uint8 {
-												arguments[i] = reflect.NewValue(string(v.Interface().([]byte)))
+												arguments[i] = reflect.ValueOf(string(v.Interface().([]byte)))
 												continue
 											}
 										}
@@ -93,7 +92,7 @@ func (self *Server) Run() *Server {
 									msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", i, ft.String(), vt.String())
 									self.log.Println(msg)
 									SendErrorResponseMessage(conn, msgId, msg)
-									goto next
+									continue NextRequest
 								}
 							}
 						} else {
@@ -104,7 +103,7 @@ func (self *Server) Run() *Server {
 									msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", i, ft.String(), vt.String())
 									self.log.Println(msg)
 									SendErrorResponseMessage(conn, msgId, msg)
-									goto next
+									continue NextRequest
 								}
 							}
 							arguments = _arguments
@@ -119,14 +118,14 @@ func (self *Server) Run() *Server {
 								if !ok {
 									self.log.Println("The second argument must have an interface { String() string }")
 									SendErrorResponseMessage(conn, msgId, "Internal server error")
-									goto next
+									continue NextRequest
 								}
 							}
 							if errMsg == nil {
 								if self.autoCoercing {
-									_retval, ok := retvals[0].(*reflect.StringValue)
-									if ok {
-										retvals[0] = reflect.NewValue([]byte(_retval.Get()))
+									_retval := retvals[0]
+									if _retval.Kind() == reflect.String {
+										retvals[0] = reflect.ValueOf([]byte(_retval.String()))
 									}
 								}
 								SendResponseMessage(conn, msgId, retvals[0])
@@ -136,18 +135,17 @@ func (self *Server) Run() *Server {
 						} else {
 							SendResponseMessage(conn, msgId, retvals[0])
 						}
-					next:
 					}
 					conn.Close()
 				})()
 			}
 		})()
-	})
+	}
 	self.lchan = lchan
 	<-lchan
-	self.listeners.Do(func(listener interface{}) {
+	for _, listener := range self.listeners {
 		listener.(net.Listener).Close()
-	})
+	}
 	return self
 }
 
@@ -164,7 +162,7 @@ func (self *Server) Stop() *Server {
 // Listenes on the specified transport.  A single server can listen on the
 // multiple ports.
 func (self *Server) Listen(listener net.Listener) *Server {
-	self.listeners.Push(listener)
+	self.listeners = append(self.listeners, listener)
 	return self
 }
 
@@ -174,59 +172,66 @@ func NewServer(resolver FunctionResolver, autoCoercing bool, _log *log.Logger) *
 	if _log == nil {
 		_log = log.New(os.Stderr, "msgpack", log.Ldate|log.Ltime)
 	}
-	return &Server{resolver, _log, vector.Vector{}, autoCoercing, nil}
+	return &Server{resolver, _log, make([]net.Listener, 0), autoCoercing, nil}
+}
+
+func rpcRequestError() (int, string, []reflect.Value, error) {
+	return 0, "", nil, &RPCError{nil, "Invalid message format"}
 }
 
 // This is a low-level function that is not supposed to be called directly
 // by the user.  Change this if the MessagePack protocol is updated.
-func HandleRPCRequest(req reflect.Value) (int, string, []reflect.Value, *Error) {
+
+func HandleRPCRequest(req reflect.Value) (int, string, []reflect.Value, error) {
 	_req, ok := req.Interface().([]reflect.Value)
 	if !ok {
-		goto err
+		return rpcRequestError()
 	}
 	if len(_req) != 4 {
-		goto err
+		return rpcRequestError()
 	}
-	msgType, ok := _req[0].(*reflect.IntValue)
-	if !ok {
-		goto err
+	msgType := _req[0]
+	if msgType.Kind() != reflect.Int && msgType.Kind() != reflect.Int8 && msgType.Kind() != reflect.Int16 && msgType.Kind() != reflect.Int32 && msgType.Kind() != reflect.Int64 {
+		return rpcRequestError()
 	}
-	msgId, ok := _req[1].(*reflect.IntValue)
-	if !ok {
-		goto err
+
+	msgId := _req[1]
+
+	if msgId.Kind() != reflect.Int && msgId.Kind() != reflect.Int8 && msgId.Kind() != reflect.Int16 && msgId.Kind() != reflect.Int32 && msgId.Kind() != reflect.Int64 {
+		return rpcRequestError()
 	}
-	_funcName, ok := _req[2].(reflect.ArrayOrSliceValue)
-	if !ok {
-		goto err
+
+	_funcName := _req[2]
+	if _funcName.Kind() != reflect.Array && _funcName.Kind() != reflect.Slice {
+		return rpcRequestError()
 	}
+
 	funcName, ok := _funcName.Interface().([]uint8)
-	if !ok {
-		goto err
+
+	if msgType.Int() != REQUEST {
+		return rpcRequestError()
 	}
-	if msgType.Get() != REQUEST {
-		goto err
-	}
-	_arguments, ok := _req[3].(reflect.ArrayOrSliceValue)
+
+	_arguments := _req[3]
 	var arguments []reflect.Value
-	if ok {
-		elemType := _req[3].Type().(reflect.ArrayOrSliceType).Elem()
-		_elemType, ok := elemType.(*reflect.UintType)
+	if _arguments.Kind() == reflect.Array || _arguments.Kind() == reflect.Slice {
+		elemType := _req[3].Type().Elem()
+		_elemType := elemType
+		ok := _elemType.Kind() == reflect.Uint || _elemType.Kind() == reflect.Uint8 || _elemType.Kind() == reflect.Uint16 || _elemType.Kind() == reflect.Uint32 || _elemType.Kind() == reflect.Uint64 || _elemType.Kind() == reflect.Uintptr
 		if !ok || _elemType.Kind() != reflect.Uint8 {
 			arguments, ok = _arguments.Interface().([]reflect.Value)
 		} else {
-			arguments = []reflect.Value{reflect.NewValue(string(_req[3].Interface().([]byte)))}
+			arguments = []reflect.Value{reflect.ValueOf(string(_req[3].Interface().([]byte)))}
 		}
 	} else {
 		arguments = []reflect.Value{_req[3]}
 	}
-	return int(msgId.Get()), string(funcName), arguments, nil
-err:
-	return 0, "", nil, &Error{nil, "Invalid message format"}
+	return int(msgId.Int()), string(funcName), arguments, nil
 }
 
 // This is a low-level function that is not supposed to be called directly
 // by the user.  Change this if the MessagePack protocol is updated.
-func SendResponseMessage(writer io.Writer, msgId int, value reflect.Value) os.Error {
+func SendResponseMessage(writer io.Writer, msgId int, value reflect.Value) error {
 	_, err := writer.Write([]byte{0x94})
 	if err != nil {
 		return err
@@ -249,7 +254,7 @@ func SendResponseMessage(writer io.Writer, msgId int, value reflect.Value) os.Er
 
 // This is a low-level function that is not supposed to be called directly
 // by the user.  Change this if the MessagePack protocol is updated.
-func SendErrorResponseMessage(writer io.Writer, msgId int, errMsg string) os.Error {
+func SendErrorResponseMessage(writer io.Writer, msgId int, errMsg string) error {
 	_, err := writer.Write([]byte{0x94})
 	if err != nil {
 		return err
