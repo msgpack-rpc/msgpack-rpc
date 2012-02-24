@@ -1,4 +1,4 @@
-package msgpack_rpc_test
+package rpc
 
 import (
 	. "msgpack/rpc"
