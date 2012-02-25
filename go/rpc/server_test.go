@@ -18,8 +18,14 @@ func echo(test string) (string, interface {
 	return "Hello, " + test, nil
 }
 
+func add(a, b int) (int, interface {
+	String() string
+},) {
+	return a + b, nil
+}
+
 func TestRun(t *testing.T) {
-	res := Resolver{"echo": reflect.ValueOf(echo)}
+	res := Resolver{"echo": reflect.ValueOf(echo), "add": reflect.ValueOf(add)}
 	serv := NewServer(res, true, nil)
 	l, err := net.Listen("tcp", "127.0.0.1:50000")
 	if err != nil {
@@ -48,4 +54,17 @@ func TestRun(t *testing.T) {
 			t.Error("retval != \"Hello, " + v + "\"")
 		}
 	}
+
+	for _, v := range []struct{ a, b, c int }{{0, 0, 0}, {1, 1, 2}, {2, 3, 5}, {31337, 0x0eadbeef, 31337 + 0x0eadbeef}} {
+		retval, xerr := client.Send("add", v.a, v.b)
+		if xerr != nil {
+			t.Error(xerr)
+			continue
+		}
+		_retval := retval
+		if _retval.Int() != int64(v.c) {
+			t.Errorf("add: got %d expected %d\n", _retval.Int(), int64(v.c))
+		}
+	}
+
 }
