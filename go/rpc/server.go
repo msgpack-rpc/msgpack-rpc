@@ -57,6 +57,7 @@ func (self *Server) Run() *Server {
 						if xerr != nil {
 							self.log.Println(xerr)
 							SendErrorResponseMessage(conn, msgId, xerr.Error())
+							continue NextRequest
 						}
 						funcType := f.Type()
 						if funcType.NumIn() != len(_arguments) {
