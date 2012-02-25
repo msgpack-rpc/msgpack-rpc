@@ -152,6 +152,18 @@ func integerPromote(dType reflect.Type, v reflect.Value) (reflect.Value, bool) {
 		return pv, true
 	}
 
+	if isIntType(dType) && isUintType(vt) && vtsz <= dsz {
+		pv := reflect.New(dType).Elem()
+		pv.SetInt(int64(v.Uint()))
+		return pv, true
+	}
+
+	if isUintType(dType) && isIntType(vt) && vtsz <= dsz {
+		pv := reflect.New(dType).Elem()
+		pv.SetUint(uint64(v.Int()))
+		return pv, true
+	}
+
 	return v, false
 }
 
