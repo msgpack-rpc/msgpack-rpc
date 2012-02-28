@@ -163,7 +163,11 @@ func integerPromote(dType reflect.Type, v reflect.Value) (reflect.Value, bool) {
 	return v, false
 }
 
-func isIntType(t reflect.Type) bool {
+type Kinder interface {
+	Kind() reflect.Kind
+}
+
+func isIntType(t Kinder) bool {
 	return t.Kind() == reflect.Int ||
 		t.Kind() == reflect.Int8 ||
 		t.Kind() == reflect.Int16 ||
@@ -171,7 +175,7 @@ func isIntType(t reflect.Type) bool {
 		t.Kind() == reflect.Int64
 }
 
-func isUintType(t reflect.Type) bool {
+func isUintType(t Kinder) bool {
 	return t.Kind() == reflect.Uint ||
 		t.Kind() == reflect.Uint8 ||
 		t.Kind() == reflect.Uint16 ||
