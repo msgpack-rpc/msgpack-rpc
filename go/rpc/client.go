@@ -27,6 +27,35 @@ func coerce(arguments []interface{}) []interface{} {
 	return _arguments
 }
 
+// CoerceInt takes a reflected value and returns it as an int64
+// panics if not an integer type
+func CoerceInt(v reflect.Value) int64 {
+	if isIntType(v) {
+		return v.Int()
+	}
+
+	if isUintType(v) {
+		return int64(v.Uint())
+	}
+
+	panic("not integer type")
+}
+
+// CoerceUint takes a reflected value and returns it as an uint64
+// panics if not an integer type
+func CoerceUint(v reflect.Value) uint64 {
+
+	if isUintType(v) {
+		return v.Uint()
+	}
+
+	if isIntType(v) {
+		return uint64(v.Int())
+	}
+
+	panic("not integer type")
+}
+
 // Sends a RPC request to the server.
 func (self *Session) SendV(funcName string, arguments []interface{}) (reflect.Value, error) {
 	var msgId = self.nextId
