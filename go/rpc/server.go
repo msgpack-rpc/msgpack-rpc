@@ -10,10 +10,6 @@ import (
 	"reflect"
 )
 
-type stringizable interface {
-	String() string
-}
-
 type Server struct {
 	resolver     FunctionResolver
 	log          *log.Logger
@@ -96,11 +92,11 @@ func (self *Server) Run() *Server {
 							SendResponseMessage(conn, msgId, retvals[0])
 							continue NextRequest
 						}
-						var errMsg stringizable = nil
+						var errMsg fmt.Stringer = nil
 						var ok bool
 						_errMsg := retvals[1].Interface()
 						if _errMsg != nil {
-							errMsg, ok = _errMsg.(stringizable)
+							errMsg, ok = _errMsg.(fmt.Stringer)
 							if !ok {
 								self.log.Println("The second argument must have an interface { String() string }")
 								SendErrorResponseMessage(conn, msgId, "Internal server error")

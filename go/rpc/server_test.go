@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"fmt"
 	"net"
 	"reflect"
 	"testing"
@@ -12,15 +13,11 @@ func (self Resolver) Resolve(name string, arguments []reflect.Value) (reflect.Va
 	return self[name], nil
 }
 
-func echo(test string) (string, interface {
-	String() string
-},) {
+func echo(test string) (string, fmt.Stringer) {
 	return "Hello, " + test, nil
 }
 
-func add(a, b int) (int, interface {
-	String() string
-},) {
+func add(a, b uint) (uint, fmt.Stringer) {
 	return a + b, nil
 }
 
