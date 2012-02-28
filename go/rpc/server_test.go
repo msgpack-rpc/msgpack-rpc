@@ -58,9 +58,9 @@ func TestRun(t *testing.T) {
 			t.Error(xerr)
 			continue
 		}
-		_retval := retval
-		if _retval.Int() != int64(v.c) {
-			t.Errorf("add: got %d expected %d\n", _retval.Int(), int64(v.c))
+		i := CoerceInt(retval)
+		if i != int64(v.c) {
+			t.Errorf("add: got %d expected %d\n", i, int64(v.c))
 		}
 	}
 
