@@ -44,8 +44,8 @@ class MessagePackRPC_Back
 
     $type = $data[0];
     $code = $data[1];
-    $sets = $data[2];
-    $errs = $data[3];
+    $errs = $data[2];
+    $sets = $data[3];
 
     if ($type != 1) {
       throw new Exception($this->errorMessage02);
@@ -63,8 +63,8 @@ class MessagePackRPC_Back
     $data    = array();
     $data[0] = 1;
     $data[1] = $code;
-    $data[2] = $sets;
-    $data[3] = $errs;
+    $data[2] = $errs;
+    $data[3] = $sets;
 
     $send = $this->msgpackEncode($data);
 

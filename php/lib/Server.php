@@ -39,7 +39,7 @@ class MessagePackRPC_Server
             $send = $this->back->serverSendObject($code, call_user_func_array(array($hand, $func), $args), "");
             socket_write($moveItem, $send);
 
-            $move = unset($sockList[array_search($moveItem, $sockList)]);
+            unset($sockList[array_search($moveItem, $sockList)]);
             socket_close($moveItem);
           }
         }
