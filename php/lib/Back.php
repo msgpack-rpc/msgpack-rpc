@@ -6,10 +6,26 @@ class MessagePackRPC_Back
   public $errorMessage01 = 'Network error';
   public $errorMessage02 = 'Objects error';
   public $size;
+  public static $shared_client_socket = null;
+  public $client_socket = null;
+  public $use_shared_connection = true;
+  public $reuse_connection = true;
 
-  public function __construct($size = 1024)
+  public function __construct($size = 1024, $opts = array())
   {
     $this->size = $size;
+    if (array_key_exists('reuse_connection', $opts))
+      $this->reuse_connection = $opts['reuse_connection'];
+    if (array_key_exists('use_shared_connection', $opts))
+      $this->use_shared_connection = $opts['use_shared_connection'];
+  }
+
+  public function __destruct()
+  {
+    if (self::$shared_client_socket)
+      fclose(self::$shared_client_socket);
+    if ($this->client_socket)
+      fclose($this->client_socket);
   }
 
   public function clientCallObject($code, $func, $args)
@@ -27,15 +43,35 @@ class MessagePackRPC_Back
   {
     $size = $this->size;
     $send = $this->msgpackEncode($call);
-    $sock = fsockopen($host, $port);
+    $sock = $this->connect($host, $port);
     if ($sock === FALSE) throw new Exception($this->errorMessage01);
     $puts = fputs($sock, $send);
     if ($puts === FALSE) throw new Exception($this->errorMessage01);
     $read = fread($sock, $size);
     if ($read === FALSE) throw new Exception($this->errorMessage01);
-    $end = fclose($sock);
+    if (!$this->reuse_connection)
+      fclose($sock);
 
     return $read;
+  }
+
+  public function connect($host, $port) {
+    if (!$this->reuse_connection)
+      return fsockopen($host, $port);
+    $sock = $this->use_shared_connection ? self::$shared_client_socket : $this->client_socket;
+    if ($sock && !feof($sock))
+      return $sock;
+    if (!$sock) {
+        $sock = fsockopen($host, $port);
+    } elseif (feof($sock)) {
+        $sock = fsockopen($host, $port);
+    }
+    if ($this->use_shared_connection) {
+      self::$shared_client_socket = $sock;
+    } else {
+      $this->client_socket = $sock;
+    }
+    return $sock;
   }
 
   public function clientRecvObject($recv)
