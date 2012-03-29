@@ -16,6 +16,11 @@ class App
   {
     return $a + 2;
   }
+
+  public function fail()
+  {
+    throw new Exception('hoge');
+  }
 }
 
 function testIs($no, $a, $b)
