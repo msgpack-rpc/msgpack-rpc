@@ -1,5 +1,5 @@
 <?php
-include_once dirname(__FILE__) . '/Future.php';
+require_once dirname(__FILE__) . '/Future.php';
 
 class MessagePackRPC_Back
 {
