@@ -20,7 +20,7 @@ try {
   testIs('test0001', 5, $client->call('hello2', array(3)));
   try {
     $client->call('fail', array());
-  } catch (Exception $e) {
+  } catch (MessagePackRPC_Error_RequestError $e) {
     echo "OK (proper error)\n";
   }
 } catch (Exception $e) {

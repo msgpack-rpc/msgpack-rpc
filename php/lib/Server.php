@@ -33,7 +33,7 @@ class MessagePackRPC_Server
       $sockList = array($this->_listen_socket);
 
       if ($this->_listen_socket === FALSE) {
-        throw new Exception(); // TODO:
+        throw new MessagePackRPC_Error_NetworkError(error_get_last());
       }
 
       // TODO : Server connection check

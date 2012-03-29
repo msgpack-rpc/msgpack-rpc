@@ -36,7 +36,7 @@ class MessagePackRPC_Client
 	  $errors = print_r($errors, true);
 	}
       }
-      throw new Exception("{$errors}");
+      throw new MessagePackRPC_Error_RequestError("{$errors}");
     }
 
     return $result;

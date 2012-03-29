@@ -3,8 +3,6 @@ require_once dirname(__FILE__) . '/Future.php';
 
 class MessagePackRPC_Back
 {
-  public $errorMessage01 = 'Network error';
-  public $errorMessage02 = 'Objects error';
   public $size;
   public static $shared_client_socket = null;
   public $client_socket = null;
@@ -44,11 +42,11 @@ class MessagePackRPC_Back
     $size = $this->size;
     $send = $this->msgpackEncode($call);
     $sock = $this->connect($host, $port);
-    if ($sock === FALSE) throw new Exception($this->errorMessage01);
+    if ($sock === FALSE) throw new MessagePackRPC_Error_NetworkError(error_get_last());
     $puts = fputs($sock, $send);
-    if ($puts === FALSE) throw new Exception($this->errorMessage01);
+    if ($puts === FALSE) throw new MessagePackRPC_Error_NetworkError(error_get_last());
     $read = fread($sock, $size);
-    if ($read === FALSE) throw new Exception($this->errorMessage01);
+    if ($read === FALSE) throw new MessagePackRPC_Error_NetworkError(error_get_last());
     if (!$this->reuse_connection)
       fclose($sock);
 
@@ -84,7 +82,7 @@ class MessagePackRPC_Back
     $sets = $data[3];
 
     if ($type != 1) {
-      throw new Exception($this->errorMessage02);
+      throw new MessagePackRPC_Error_ProtocolError("Invalid message type for response: {$type}");
     }
 
     $feature = new MessagePackRPC_Future();
@@ -112,7 +110,7 @@ class MessagePackRPC_Back
     $data = $this->msgpackDecode($recv);
 
     if (count($data) != 4) {
-      throw new Exception($this->errorMessage02);
+      throw new MessagePackRPC_Error_ProtocolError("Invalid message structure.");
     }
 
     $type = $data[0];
@@ -121,7 +119,7 @@ class MessagePackRPC_Back
     $args = $data[3];
 
     if ($type != 0) {
-      throw new Exception($this->errorMessage02);
+      throw new MessagePackRPC_Error_ProtocolError("Invalid message type for request: {$type}");
     }
 
     return array($code, $func, $args);
