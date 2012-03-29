@@ -1,4 +1,6 @@
 <?php
+require_once dirname(__FILE__) . '/Error.php';
+
 class MessagePackRPC_Future
 {
   public $result = null;
