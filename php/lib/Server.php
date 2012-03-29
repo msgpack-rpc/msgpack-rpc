@@ -6,6 +6,7 @@ class MessagePackRPC_Server
   public $port = null;
   public $back = null;
   public $hand = null;
+  protected $_listen_socket = null;
 
   public function __construct($port, $hand, $back = null)
   {
@@ -14,13 +15,24 @@ class MessagePackRPC_Server
     $this->hand = $hand;
   }
 
+  public function __destruct()
+  {
+    $this->close_coket();
+  }
+
+  public function close_coket()
+  {
+    if (is_resource($this->_listen_socket))
+      socket_close($this->_listen_socket);
+  }
+
   public function recv()
   {
     try {
-      $sockItem = socket_create_listen($this->port);
-      $sockList = array($sockItem);
+      $this->_listen_socket = socket_create_listen($this->port);
+      $sockList = array($this->_listen_socket);
 
-      if ($sockItem === FALSE) {
+      if ($this->_listen_socket === FALSE) {
         throw new Exception(); // TODO:
       }
 
@@ -30,8 +42,8 @@ class MessagePackRPC_Server
         $moveList = $sockList;
         $moveNums = socket_select($moveList, $w = null, $e = null, null);
         foreach ($moveList as $moveItem) {
-          if ($moveItem == $sockItem) {
-            $acptItem   = socket_accept($sockItem);
+          if ($moveItem == $this->_listen_socket) {
+            $acptItem   = socket_accept($this->_listen_socket);
             $sockList[] = $acptItem;
           } else {
             $data = socket_read($moveItem, $this->back->size);
@@ -47,7 +59,6 @@ class MessagePackRPC_Server
         }
       }
 
-      socket_close($sockItem);
     } catch (Exception $e) {
       // TODO:
     }
