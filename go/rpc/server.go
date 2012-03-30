@@ -7,7 +7,7 @@ import (
     "net"
     "fmt"
     "msgpack"
-    "container/vector"
+    "container/list"
     "reflect"
 );
 
@@ -18,15 +18,21 @@ type stringizable interface {
 type Server struct {
     resolver FunctionResolver
     log *log.Logger
-    listeners vector.Vector
+    listeners list.List
     autoCoercing bool
     lchan chan int
+}
+
+func onList( l list.List, on func(interface{}) ) {
+	for e := l.Front(); e != nil; e = e.Next() {
+		on(e.Value)
+	}
 }
 
 // Goes into the event loop to get ready to serve.
 func (self *Server) Run() *Server {
     lchan := make(chan int)
-    self.listeners.Do(func(listener interface {}) {
+	onList( self.listeners, func(listener interface{}) {
         _listener := listener.(net.Listener)
         go (func() {
             for {
@@ -145,7 +151,7 @@ func (self *Server) Run() *Server {
     });
     self.lchan = lchan
     <-lchan
-    self.listeners.Do(func(listener interface {}) {
+	onList( self.listeners, func(listener interface{}) {
         listener.(net.Listener).Close()
     })
     return self
@@ -164,7 +170,7 @@ func (self *Server) Stop() *Server {
 // Listenes on the specified transport.  A single server can listen on the
 // multiple ports.
 func (self *Server) Listen(listener net.Listener) *Server{
-    self.listeners.Push(listener)
+    self.listeners.PushBack(listener)
     return self
 }
 
@@ -174,7 +180,7 @@ func NewServer(resolver FunctionResolver, autoCoercing bool, _log *log.Logger) *
     if _log == nil {
         _log = log.New(os.Stderr, "msgpack", log.Ldate | log.Ltime)
     }
-    return &Server { resolver, _log, vector.Vector {}, autoCoercing, nil }
+    return &Server { resolver, _log, list.List {}, autoCoercing, nil }
 }
 
 // This is a low-level function that is not supposed to be called directly
