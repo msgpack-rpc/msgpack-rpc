@@ -6,6 +6,7 @@ import (
 	"msgpack"
 	"net"
 	"reflect"
+	"errors"
 )
 
 type Session struct {
@@ -28,7 +29,7 @@ func coerce(arguments []interface{}) []interface{} {
 }
 
 // Sends a RPC request to the server.
-func (self *Session) SendV(funcName string, arguments []interface{}) (reflect.Value, *Error) {
+func (self *Session) SendV(funcName string, arguments []interface{}) (reflect.Value, error) {
 	var msgId = self.nextId
 	self.nextId += 1
 	if self.autoCoercing {
@@ -36,14 +37,14 @@ func (self *Session) SendV(funcName string, arguments []interface{}) (reflect.Va
 	}
 	err := SendRequestMessage(self.conn.(io.Writer), msgId, funcName, arguments)
 	if err != nil {
-		return reflect.Value{}, &Error{err, "Failed to send a request message"}
+		return reflect.Value{}, errors.New("Failed to send a request message: " + err.Error())
 	}
 	_msgId, result, _err := ReceiveResponse(self.conn.(io.Reader))
 	if err != nil {
 		return reflect.Value{}, _err
 	}
 	if msgId != _msgId {
-		return reflect.Value{}, &Error{nil, fmt.Sprintf("Message IDs don't match (%d != %d)", msgId, _msgId)}
+		return reflect.Value{}, errors.New(fmt.Sprintf("Message IDs don't match (%d != %d)", msgId, _msgId))
 	}
 	if self.autoCoercing {
 		_result := result
@@ -59,7 +60,7 @@ func (self *Session) SendV(funcName string, arguments []interface{}) (reflect.Va
 }
 
 // Sends a RPC request to the server.
-func (self *Session) Send(funcName string, arguments ...interface{}) (reflect.Value, *Error) {
+func (self *Session) Send(funcName string, arguments ...interface{}) (reflect.Value, error) {
 	return self.SendV(funcName, arguments)
 }
 
@@ -95,10 +96,10 @@ func SendRequestMessage(writer io.Writer, msgId int, funcName string, arguments 
 
 // This is a low-level function that is not supposed to be called directly
 // by the user.  Change this if the MessagePack protocol is updated.
-func ReceiveResponse(reader io.Reader) (int, reflect.Value, *Error) {
+func ReceiveResponse(reader io.Reader) (int, reflect.Value, error) {
 	data, _, err := msgpack.UnpackReflected(reader)
 	if err != nil {
-		return 0, reflect.Value{}, &Error{nil, "Error occurred while receiving a response"}
+		return 0, reflect.Value{}, errors.New("Error occurred while receiving a response")
 	}
 
 	msgId, result, _err := HandleRPCResponse(data)
@@ -110,7 +111,7 @@ func ReceiveResponse(reader io.Reader) (int, reflect.Value, *Error) {
 
 // This is a low-level function that is not supposed to be called directly
 // by the user.  Change this if the MessagePack protocol is updated.
-func HandleRPCResponse(req reflect.Value) (int, reflect.Value, *Error) {
+func HandleRPCResponse(req reflect.Value) (int, reflect.Value, error) {
 	for{
 		_req, ok := req.Interface().([]reflect.Value)
 		if !ok {
@@ -147,5 +148,5 @@ func HandleRPCResponse(req reflect.Value) (int, reflect.Value, *Error) {
 		}
 		return int(msgId.Int()), _req[3], nil
 	}
-	return 0, reflect.Value{}, &Error{nil, "Invalid message format"}
+	return 0, reflect.Value{}, errors.New("Invalid message format")
 }
