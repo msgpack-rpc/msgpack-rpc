@@ -16,7 +16,7 @@ type Error struct {
 }
 
 type FunctionResolver interface {
-	Resolve(name string, arguments []reflect.Value) (reflect.Value, *Error)
+	Resolve(name string, arguments []reflect.Value) (reflect.Value, error)
 }
 
 func (self *Error) String() string {

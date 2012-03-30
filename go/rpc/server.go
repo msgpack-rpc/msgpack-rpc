@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"reflect"
+	"errors"
 )
 
 type stringizable interface {
@@ -185,7 +186,7 @@ func NewServer(resolver FunctionResolver, autoCoercing bool, _log *log.Logger) *
 
 // This is a low-level function that is not supposed to be called directly
 // by the user.  Change this if the MessagePack protocol is updated.
-func HandleRPCRequest(req reflect.Value) (int, string, []reflect.Value, *Error) {
+func HandleRPCRequest(req reflect.Value) (int, string, []reflect.Value, error) {
 	_req, ok := req.Interface().([]reflect.Value)
 	if !ok {
 		goto err
@@ -194,18 +195,18 @@ func HandleRPCRequest(req reflect.Value) (int, string, []reflect.Value, *Error) 
 		goto err
 	}
 	msgType := _req[0]
-	ok := msgType.Kind() == reflect.Int || msgType.Kind() == reflect.Int8 || msgType.Kind() == reflect.Int16 || msgType.Kind() == reflect.Int32 || msgType.Kind() == reflect.Int64
-	if !ok {
+	typeOk := msgType.Kind() == reflect.Int || msgType.Kind() == reflect.Int8 || msgType.Kind() == reflect.Int16 || msgType.Kind() == reflect.Int32 || msgType.Kind() == reflect.Int64
+	if !typeOk {
 		goto err
 	}
 	msgId := _req[1]
-	ok := msgId.Kind() == reflect.Int || msgId.Kind() == reflect.Int8 || msgId.Kind() == reflect.Int16 || msgId.Kind() == reflect.Int32 || msgId.Kind() == reflect.Int64
-	if !ok {
+	idOk := msgId.Kind() == reflect.Int || msgId.Kind() == reflect.Int8 || msgId.Kind() == reflect.Int16 || msgId.Kind() == reflect.Int32 || msgId.Kind() == reflect.Int64
+	if !idOk {
 		goto err
 	}
 	_funcName := _req[2]
-	ok := _funcName.Kind() == reflect.Array || _funcName.Kind() == reflect.Slice
-	if !ok {
+	funcOk := _funcName.Kind() == reflect.Array || _funcName.Kind() == reflect.Slice
+	if !funcOk {
 		goto err
 	}
 	funcName, ok := _funcName.Interface().([]uint8)
@@ -231,7 +232,7 @@ func HandleRPCRequest(req reflect.Value) (int, string, []reflect.Value, *Error) 
 	}
 	return int(msgId.Int()), string(funcName), arguments, nil
 err:
-	return 0, "", nil, &Error{nil, "Invalid message format"}
+	return 0, "", nil, errors.New("Invalid message format")
 }
 
 // This is a low-level function that is not supposed to be called directly
