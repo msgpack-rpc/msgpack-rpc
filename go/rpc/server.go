@@ -186,50 +186,53 @@ func NewServer(resolver FunctionResolver, autoCoercing bool, _log *log.Logger) *
 // This is a low-level function that is not supposed to be called directly
 // by the user.  Change this if the MessagePack protocol is updated.
 func HandleRPCRequest(req reflect.Value) (int, string, []reflect.Value, error) {
-	_req, ok := req.Interface().([]reflect.Value)
-	if !ok {
-		return 0, "", nil, errors.New("Invalid message format ")
-	}
-	if len(_req) != 4 {
-		return 0, "", nil, errors.New("Invalid message format")
-	}
-	msgType := _req[0]
-	typeOk := msgType.Kind() == reflect.Int || msgType.Kind() == reflect.Int8 || msgType.Kind() == reflect.Int16 || msgType.Kind() == reflect.Int32 || msgType.Kind() == reflect.Int64
-	if !typeOk {
-		return 0, "", nil, errors.New("Invalid message format")
-	}
-	msgId := _req[1]
-	idOk := msgId.Kind() == reflect.Int || msgId.Kind() == reflect.Int8 || msgId.Kind() == reflect.Int16 || msgId.Kind() == reflect.Int32 || msgId.Kind() == reflect.Int64
-	if !idOk {
-		return 0, "", nil, errors.New("Invalid message format")
-	}
-	_funcName := _req[2]
-	funcOk := _funcName.Kind() == reflect.Array || _funcName.Kind() == reflect.Slice
-	if !funcOk {
-		return 0, "", nil, errors.New("Invalid message format")
-	}
-	funcName, ok := _funcName.Interface().([]uint8)
-	if !ok {
-		return 0, "", nil, errors.New("Invalid message format")
-	}
-	if msgType.Int() != REQUEST {
-		return 0, "", nil, errors.New("Invalid message format")
-	}
-	_arguments := _req[3]
-	var arguments []reflect.Value
-	if _arguments.Kind() == reflect.Array || _arguments.Kind() == reflect.Slice {
-		elemType := _req[3].Type().Elem()
-		_elemType := elemType
-		ok := _elemType.Kind() == reflect.Uint || _elemType.Kind() == reflect.Uint8 || _elemType.Kind() == reflect.Uint16 || _elemType.Kind() == reflect.Uint32 || _elemType.Kind() == reflect.Uint64 || _elemType.Kind() == reflect.Uintptr
-		if !ok || _elemType.Kind() != reflect.Uint8 {
-			arguments, ok = _arguments.Interface().([]reflect.Value)
-		} else {
-			arguments = []reflect.Value{reflect.ValueOf(string(_req[3].Interface().([]byte)))}
+	for{
+		_req, ok := req.Interface().([]reflect.Value)
+		if !ok {
+			break;
 		}
-	} else {
-		arguments = []reflect.Value{_req[3]}
+		if len(_req) != 4 {
+			break;
+		}
+		msgType := _req[0]
+		typeOk := msgType.Kind() == reflect.Int || msgType.Kind() == reflect.Int8 || msgType.Kind() == reflect.Int16 || msgType.Kind() == reflect.Int32 || msgType.Kind() == reflect.Int64
+		if !typeOk {
+			break;
+		}
+		msgId := _req[1]
+		idOk := msgId.Kind() == reflect.Int || msgId.Kind() == reflect.Int8 || msgId.Kind() == reflect.Int16 || msgId.Kind() == reflect.Int32 || msgId.Kind() == reflect.Int64
+		if !idOk {
+			break;
+		}
+		_funcName := _req[2]
+		funcOk := _funcName.Kind() == reflect.Array || _funcName.Kind() == reflect.Slice
+		if !funcOk {
+			break;
+		}
+		funcName, ok := _funcName.Interface().([]uint8)
+		if !ok {
+			break;
+		}
+		if msgType.Int() != REQUEST {
+			break;
+		}
+		_arguments := _req[3]
+		var arguments []reflect.Value
+		if _arguments.Kind() == reflect.Array || _arguments.Kind() == reflect.Slice {
+			elemType := _req[3].Type().Elem()
+			_elemType := elemType
+			ok := _elemType.Kind() == reflect.Uint || _elemType.Kind() == reflect.Uint8 || _elemType.Kind() == reflect.Uint16 || _elemType.Kind() == reflect.Uint32 || _elemType.Kind() == reflect.Uint64 || _elemType.Kind() == reflect.Uintptr
+			if !ok || _elemType.Kind() != reflect.Uint8 {
+				arguments, ok = _arguments.Interface().([]reflect.Value)
+			} else {
+				arguments = []reflect.Value{reflect.ValueOf(string(_req[3].Interface().([]byte)))}
+			}
+		} else {
+			arguments = []reflect.Value{_req[3]}
+		}
+		return int(msgId.Int()), string(funcName), arguments, nil
 	}
-	return int(msgId.Int()), string(funcName), arguments, nil
+	return 0, "", nil, errors.New("Invalid message format")
 }
 
 // This is a low-level function that is not supposed to be called directly

@@ -111,38 +111,41 @@ func ReceiveResponse(reader io.Reader) (int, reflect.Value, *Error) {
 // This is a low-level function that is not supposed to be called directly
 // by the user.  Change this if the MessagePack protocol is updated.
 func HandleRPCResponse(req reflect.Value) (int, reflect.Value, *Error) {
-	_req, ok := req.Interface().([]reflect.Value)
-	if !ok {
-		return 0, reflect.Value{}, &Error{nil, "Invalid message format"}
-	}
-	if len(_req) != 4 {
-		return 0, reflect.Value{}, &Error{nil, "Invalid message format"}
-	}
-	msgType := _req[0]
-	typeOk := msgType.Kind() == reflect.Int || msgType.Kind() == reflect.Int8 || msgType.Kind() == reflect.Int16 || msgType.Kind() == reflect.Int32 || msgType.Kind() == reflect.Int64
-	if !typeOk {
-		return 0, reflect.Value{}, &Error{nil, "Invalid message format"}
-	}
-	msgId := _req[1]
-	if msgId.Kind() != reflect.Int && msgId.Kind() != reflect.Int8 && msgId.Kind() != reflect.Int16 && msgId.Kind() != reflect.Int32 && msgId.Kind() != reflect.Int64 {
-		return 0, reflect.Value{}, &Error{nil, "Invalid message format"}
-	}
-	if _req[2].IsValid() {
-		_errorMsg := _req[2]
-		if _errorMsg.Kind() == reflect.Array || _errorMsg.Kind() == reflect.Slice {
-			errorMsg, ok := _errorMsg.Interface().([]uint8)
-			if !ok {
-				return 0, reflect.Value{}, &Error{nil, "Invalid message format"}
-			}
-			if msgType.Int() != RESPONSE {
-				return 0, reflect.Value{}, &Error{nil, "Invalid message format"}
-			}
-			if errorMsg != nil {
-				return int(msgId.Int()), reflect.Value{}, &Error{nil, string(errorMsg)}
-			}
-		} else {
-			return 0, reflect.Value{}, &Error{nil, "Invalid message format"}
+	for{
+		_req, ok := req.Interface().([]reflect.Value)
+		if !ok {
+			break;
 		}
+		if len(_req) != 4 {
+			break;
+		}
+		msgType := _req[0]
+		typeOk := msgType.Kind() == reflect.Int || msgType.Kind() == reflect.Int8 || msgType.Kind() == reflect.Int16 || msgType.Kind() == reflect.Int32 || msgType.Kind() == reflect.Int64
+		if !typeOk {
+			break;
+		}
+		msgId := _req[1]
+		if msgId.Kind() != reflect.Int && msgId.Kind() != reflect.Int8 && msgId.Kind() != reflect.Int16 && msgId.Kind() != reflect.Int32 && msgId.Kind() != reflect.Int64 {
+			break;
+		}
+		if _req[2].IsValid() {
+			_errorMsg := _req[2]
+			if _errorMsg.Kind() == reflect.Array || _errorMsg.Kind() == reflect.Slice {
+				errorMsg, ok := _errorMsg.Interface().([]uint8)
+				if !ok {
+					break;
+				}
+				if msgType.Int() != RESPONSE {
+					break;
+				}
+				if errorMsg != nil {
+					break;
+				}
+			} else {
+				break;
+			}
+		}
+		return int(msgId.Int()), _req[3], nil
 	}
-	return int(msgId.Int()), _req[3], nil
+	return 0, reflect.Value{}, &Error{nil, "Invalid message format"}
 }
