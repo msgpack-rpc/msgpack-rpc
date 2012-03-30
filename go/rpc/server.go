@@ -71,12 +71,12 @@ func (self *Server) Run() *Server {
 							msg := fmt.Sprintf("The number of the given arguments (%d) doesn't match the arity (%d)", len(_arguments), funcType.NumIn())
 							self.log.Println(msg)
 							SendErrorResponseMessage(conn, msgId, msg)
-							goto next
+							continue
 						}
 						if funcType.NumOut() != 1 && funcType.NumOut() != 2 {
 							self.log.Println("The number of return values must be 1 or 2")
 							SendErrorResponseMessage(conn, msgId, "Internal server error")
-							goto next
+							continue
 						}
 						var arguments []reflect.Value
 						if self.autoCoercing {
@@ -100,7 +100,7 @@ func (self *Server) Run() *Server {
 									msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", i, ft.String(), vt.String())
 									self.log.Println(msg)
 									SendErrorResponseMessage(conn, msgId, msg)
-									goto next
+									continue
 								}
 							}
 						} else {
@@ -111,7 +111,7 @@ func (self *Server) Run() *Server {
 									msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", i, ft.String(), vt.String())
 									self.log.Println(msg)
 									SendErrorResponseMessage(conn, msgId, msg)
-									goto next
+									continue
 								}
 							}
 							arguments = _arguments
@@ -126,7 +126,7 @@ func (self *Server) Run() *Server {
 								if !ok {
 									self.log.Println("The second argument must have an interface { String() string }")
 									SendErrorResponseMessage(conn, msgId, "Internal server error")
-									goto next
+									continue
 								}
 							}
 							if errMsg == nil {
@@ -143,7 +143,6 @@ func (self *Server) Run() *Server {
 						} else {
 							SendResponseMessage(conn, msgId, retvals[0])
 						}
-					next:
 					}
 					conn.Close()
 				})()
@@ -189,32 +188,32 @@ func NewServer(resolver FunctionResolver, autoCoercing bool, _log *log.Logger) *
 func HandleRPCRequest(req reflect.Value) (int, string, []reflect.Value, error) {
 	_req, ok := req.Interface().([]reflect.Value)
 	if !ok {
-		goto err
+		return 0, "", nil, errors.New("Invalid message format ")
 	}
 	if len(_req) != 4 {
-		goto err
+		return 0, "", nil, errors.New("Invalid message format")
 	}
 	msgType := _req[0]
 	typeOk := msgType.Kind() == reflect.Int || msgType.Kind() == reflect.Int8 || msgType.Kind() == reflect.Int16 || msgType.Kind() == reflect.Int32 || msgType.Kind() == reflect.Int64
 	if !typeOk {
-		goto err
+		return 0, "", nil, errors.New("Invalid message format")
 	}
 	msgId := _req[1]
 	idOk := msgId.Kind() == reflect.Int || msgId.Kind() == reflect.Int8 || msgId.Kind() == reflect.Int16 || msgId.Kind() == reflect.Int32 || msgId.Kind() == reflect.Int64
 	if !idOk {
-		goto err
+		return 0, "", nil, errors.New("Invalid message format")
 	}
 	_funcName := _req[2]
 	funcOk := _funcName.Kind() == reflect.Array || _funcName.Kind() == reflect.Slice
 	if !funcOk {
-		goto err
+		return 0, "", nil, errors.New("Invalid message format")
 	}
 	funcName, ok := _funcName.Interface().([]uint8)
 	if !ok {
-		goto err
+		return 0, "", nil, errors.New("Invalid message format")
 	}
 	if msgType.Int() != REQUEST {
-		goto err
+		return 0, "", nil, errors.New("Invalid message format")
 	}
 	_arguments := _req[3]
 	var arguments []reflect.Value
@@ -231,8 +230,6 @@ func HandleRPCRequest(req reflect.Value) (int, string, []reflect.Value, error) {
 		arguments = []reflect.Value{_req[3]}
 	}
 	return int(msgId.Int()), string(funcName), arguments, nil
-err:
-	return 0, "", nil, errors.New("Invalid message format")
 }
 
 // This is a low-level function that is not supposed to be called directly
