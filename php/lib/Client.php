@@ -1,5 +1,5 @@
 <?php
-include_once dirname(__FILE__) . '/Back.php';
+require_once dirname(__FILE__) . '/Back.php';
 
 class MessagePackRPC_Client
 {
@@ -26,8 +26,17 @@ class MessagePackRPC_Client
     $result  = $feature->getResult();
     $errors  = $feature->getErrors();
 
-    if (0 < strlen($errors)) {
-      throw new Exception($errors);
+    if (!is_null($errors)) {
+      if (is_array($errors)) {
+	$errors = '[' . implode(', ', $errors) . ']';
+      } else if (is_object($errors)) {
+	if (method_exists($errors, '__toString')) {
+	  $errors = $errors->__toString();
+	} else {
+	  $errors = print_r($errors, true);
+	}
+      }
+      throw new MessagePackRPC_Error_RequestError("{$errors}");
     }
 
     return $result;

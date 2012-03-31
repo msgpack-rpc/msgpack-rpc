@@ -18,6 +18,11 @@ try {
   $client = new MessagePackRPC_Client('localhost', '1985');
   testIs('test0001', 3, $client->call('hello1', array(2)));
   testIs('test0001', 5, $client->call('hello2', array(3)));
+  try {
+    $client->call('fail', array());
+  } catch (MessagePackRPC_Error_RequestError $e) {
+    echo "OK (proper error)\n";
+  }
 } catch (Exception $e) {
   echo $e->getMessage() . "\n";
 }
