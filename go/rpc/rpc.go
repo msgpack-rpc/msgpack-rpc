@@ -1,24 +1,24 @@
 package rpc
 
 import (
-    "reflect"
+	"reflect"
 )
 
 const (
-    REQUEST = 0
-    RESPONSE = 1
-    NOTIFICATION = 2
+	REQUEST      = 0
+	RESPONSE     = 1
+	NOTIFICATION = 2
 )
 
 type Error struct {
-    Cause interface {}
-    Message string
+	Cause   interface{}
+	Message string
 }
 
 type FunctionResolver interface {
-    Resolve(name string, arguments []reflect.Value) (*reflect.FuncValue, *Error)
+	Resolve(name string, arguments []reflect.Value) (reflect.Value, error)
 }
 
 func (self *Error) String() string {
-    return self.Message
+	return self.Message
 }
