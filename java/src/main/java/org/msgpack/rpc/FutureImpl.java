@@ -92,6 +92,9 @@ class FutureImpl {
 
     public void setResult(Value result, Value error) {
         synchronized (lock) {
+            if (done) {
+                return;
+            }
             this.result = result;
             this.error = error;
             this.done = true;
