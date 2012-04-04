@@ -39,10 +39,14 @@ class FutureImpl {
     }
 
     void attachCallback(Runnable callback) {
+        boolean was_already_done;
         synchronized (lock) {
-            this.callback = callback;
+            was_already_done = done;
+            if (!done) {
+                this.callback = callback;
+            }
         }
-        if (done) {
+        if (was_already_done) {
             session.getEventLoop().getWorkerExecutor().submit(callback);
         }
     }
