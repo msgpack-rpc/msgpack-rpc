@@ -20,6 +20,7 @@ package org.msgpack.rpc;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.msgpack.type.Value;
+import org.msgpack.type.ValueFactory;
 
 class FutureImpl {
     private Session session;
@@ -38,10 +39,14 @@ class FutureImpl {
     }
 
     void attachCallback(Runnable callback) {
+        boolean was_already_done;
         synchronized (lock) {
-            this.callback = callback;
+            was_already_done = done;
+            if (!done) {
+                this.callback = callback;
+            }
         }
-        if (done) {
+        if (was_already_done) {
             session.getEventLoop().getWorkerExecutor().submit(callback);
         }
     }
@@ -55,10 +60,25 @@ class FutureImpl {
     }
 
     void join(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
+        long end_time = System.currentTimeMillis() + unit.toMillis(timeout);
+        boolean run_callback = false;
         synchronized (lock) {
             while (done == false) {
-                lock.wait(unit.toMillis(timeout));
+                long timeout_remaining = end_time - System.currentTimeMillis();
+                if (timeout_remaining <= 0) break;
+                lock.wait(timeout_remaining);
             }
+            if (!done) {
+                this.error = ValueFactory.createRawValue("timedout");
+                done = true;
+                lock.notifyAll();
+                run_callback = true;
+            }
+        }
+        if (run_callback && callback != null) {
+            // FIXME #SF submit?
+            // session.getEventLoop().getWorkerExecutor().submit(callback);
+            callback.run();
         }
     }
 
@@ -76,6 +96,9 @@ class FutureImpl {
 
     public void setResult(Value result, Value error) {
         synchronized (lock) {
+            if (done) {
+                return;
+            }
             this.result = result;
             this.error = error;
             this.done = true;
