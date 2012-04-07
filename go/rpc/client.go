@@ -131,9 +131,9 @@ func ReceiveResponse(reader io.Reader) (int, reflect.Value, error) {
 		return 0, reflect.Value{}, errors.New("Error occurred while receiving a response")
 	}
 
-	msgId, result, _err := HandleRPCResponse(data)
-	if _err != nil {
-		return 0, reflect.Value{}, _err
+	msgId, result, err := HandleRPCResponse(data)
+	if err != nil {
+		return 0, reflect.Value{}, err
 	}
 	return msgId, result, nil
 }
