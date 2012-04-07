@@ -106,32 +106,32 @@ func (self *Server) Run() *Server {
 							arguments = _arguments
 						}
 						retvals := f.Call(arguments)
-						if funcType.NumOut() == 2 {
-							var errMsg fmt.Stringer = nil
-							var ok bool
-							_errMsg := retvals[1].Interface()
-							if _errMsg != nil {
-								errMsg, ok = _errMsg.(fmt.Stringer)
-								if !ok {
-									self.log.Println("The second argument must have an interface { String() string }")
-									SendErrorResponseMessage(conn, msgId, "Internal server error")
-									continue
-								}
-							}
-							if errMsg == nil {
-								if self.autoCoercing {
-									_retval := retvals[0]
-									if _retval.Kind() == reflect.String {
-										retvals[0] = reflect.ValueOf([]byte(_retval.String()))
-									}
-								}
-								SendResponseMessage(conn, msgId, retvals[0])
-							} else {
-								SendErrorResponseMessage(conn, msgId, errMsg.String())
-							}
-						} else {
+						if funcType.NumOut() == 1 {
 							SendResponseMessage(conn, msgId, retvals[0])
+							continue
 						}
+						var errMsg fmt.Stringer = nil
+						_errMsg := retvals[1].Interface()
+						if _errMsg != nil {
+							var ok bool
+							errMsg, ok = _errMsg.(fmt.Stringer)
+							if !ok {
+								self.log.Println("The second argument must have an interface { String() string }")
+								SendErrorResponseMessage(conn, msgId, "Internal server error")
+								continue
+							}
+						}
+						if errMsg != nil {
+							SendErrorResponseMessage(conn, msgId, errMsg.String())
+							continue
+						}
+						if self.autoCoercing {
+							_retval := retvals[0]
+							if _retval.Kind() == reflect.String {
+								retvals[0] = reflect.ValueOf([]byte(_retval.String()))
+							}
+						}
+						SendResponseMessage(conn, msgId, retvals[0])
 					}
 					conn.Close()
 				})()
