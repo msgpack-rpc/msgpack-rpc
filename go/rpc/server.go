@@ -68,44 +68,25 @@ func (self *Server) Run() *Server {
 							SendErrorResponseMessage(conn, msgId, "Internal server error")
 							continue NextRequest
 						}
-						var arguments []reflect.Value
-						if self.autoCoercing {
-							arguments = make([]reflect.Value, funcType.NumIn())
-							for i, v := range _arguments {
-								ft := funcType.In(i)
-								vt := v.Type()
-								if ft == vt {
-									arguments[i] = v
-								} else {
-									if ft != nil {
-										_vt := v.Type()
-										if _vt.Kind() == reflect.Array || _vt.Kind() == reflect.Slice {
-											et := _vt.Elem()
-											if et != nil && et.Kind() == reflect.Uint8 {
-												arguments[i] = reflect.ValueOf(string(v.Interface().([]byte)))
-												continue
-											}
-										}
-									}
-									msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", i, ft.String(), vt.String())
-									self.log.Println(msg)
-									SendErrorResponseMessage(conn, msgId, msg)
-									continue
-								}
+
+						arguments := make([]reflect.Value, funcType.NumIn())
+						for i, v := range _arguments {
+							ft := funcType.In(i)
+							vt := v.Type()
+							if vt.AssignableTo(ft) {
+								arguments[i] = v
+							} else if pv, ok := integerPromote(ft, v); ok {
+								arguments[i] = pv
+							} else if self.autoCoercing && ft != nil && ft.Kind() == reflect.String && (v.Type().Kind() == reflect.Array || v.Type().Kind() == reflect.Slice) && v.Type().Elem().Kind() == reflect.Uint8 {
+								arguments[i] = reflect.ValueOf(string(v.Interface().([]byte)))
+							} else {
+								msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", i, ft.String(), vt.String())
+								self.log.Println(msg)
+								SendErrorResponseMessage(conn, msgId, msg)
+								continue NextRequest
 							}
-						} else {
-							for i, v := range _arguments {
-								ft := funcType.In(i)
-								vt := v.Type()
-								if ft != vt {
-									msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", i, ft.String(), vt.String())
-									self.log.Println(msg)
-									SendErrorResponseMessage(conn, msgId, msg)
-									continue
-								}
-							}
-							arguments = _arguments
 						}
+
 						retvals := f.Call(arguments)
 						if funcType.NumOut() == 1 {
 							SendResponseMessage(conn, msgId, retvals[0])
@@ -145,6 +126,61 @@ func (self *Server) Run() *Server {
 		listener.Close()
 	}
 	return self
+}
+
+// integerPromote determines if we can promote v to dType, and if so, return the promoted value.
+// This is needed because msgpack always encodes values as the minimum sized int that can hold them.
+func integerPromote(dType reflect.Type, v reflect.Value) (reflect.Value, bool) {
+
+	vt := v.Type()
+	dsz := dType.Size()
+	vtsz := vt.Size()
+
+	if isIntType(dType) && isIntType(vt) && vtsz <= dsz {
+		pv := reflect.New(dType).Elem()
+		pv.SetInt(v.Int())
+		return pv, true
+	}
+
+	if isUintType(dType) && isUintType(vt) && vtsz <= dsz {
+		pv := reflect.New(dType).Elem()
+		pv.SetUint(v.Uint())
+		return pv, true
+	}
+
+	if isIntType(dType) && isUintType(vt) && vtsz <= dsz {
+		pv := reflect.New(dType).Elem()
+		pv.SetInt(int64(v.Uint()))
+		return pv, true
+	}
+
+	if isUintType(dType) && isIntType(vt) && vtsz <= dsz {
+		pv := reflect.New(dType).Elem()
+		pv.SetUint(uint64(v.Int()))
+		return pv, true
+	}
+
+	return v, false
+}
+
+type kinder interface {
+	Kind() reflect.Kind
+}
+
+func isIntType(t kinder) bool {
+	return t.Kind() == reflect.Int ||
+		t.Kind() == reflect.Int8 ||
+		t.Kind() == reflect.Int16 ||
+		t.Kind() == reflect.Int32 ||
+		t.Kind() == reflect.Int64
+}
+
+func isUintType(t kinder) bool {
+	return t.Kind() == reflect.Uint ||
+		t.Kind() == reflect.Uint8 ||
+		t.Kind() == reflect.Uint16 ||
+		t.Kind() == reflect.Uint32 ||
+		t.Kind() == reflect.Uint64
 }
 
 // Lets the server quit the event loop
