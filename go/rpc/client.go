@@ -50,8 +50,7 @@ func (self *Session) SendV(funcName string, arguments []interface{}) (reflect.Va
 		_result := result
 		if _result.Kind() == reflect.Array || _result.Kind() == reflect.Slice {
 			elemType := _result.Type().Elem()
-			if (elemType.Kind() == reflect.Uint || elemType.Kind() == reflect.Uint8 || elemType.Kind() == reflect.Uint16 || elemType.Kind() == reflect.Uint32 || elemType.Kind() == reflect.Uint64 || elemType.Kind() == reflect.Uintptr) &&
-				elemType.Kind() == reflect.Uint8 {
+			if elemType.Kind() == reflect.Uint8 {
 				result = reflect.ValueOf(string(_result.Interface().([]byte)))
 			}
 		}
