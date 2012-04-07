@@ -39,9 +39,9 @@ func (self *Session) SendV(funcName string, arguments []interface{}) (reflect.Va
 	if err != nil {
 		return reflect.Value{}, errors.New("Failed to send a request message: " + err.Error())
 	}
-	_msgId, result, _err := ReceiveResponse(self.conn.(io.Reader))
+	_msgId, result, err := ReceiveResponse(self.conn.(io.Reader))
 	if err != nil {
-		return reflect.Value{}, _err
+		return reflect.Value{}, err
 	}
 	if msgId != _msgId {
 		return reflect.Value{}, errors.New(fmt.Sprintf("Message IDs don't match (%d != %d)", msgId, _msgId))
