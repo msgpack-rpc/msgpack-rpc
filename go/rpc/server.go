@@ -1,7 +1,6 @@
 package rpc
 
 import (
-	"container/list"
 	"fmt"
 	"io"
 	"log"
@@ -16,25 +15,18 @@ import (
 type Server struct {
 	resolver     FunctionResolver
 	log          *log.Logger
-	listeners    list.List
+	listeners    []net.Listener
 	autoCoercing bool
 	lchan        chan int
-}
-
-func onList(l list.List, on func(interface{})) {
-	for e := l.Front(); e != nil; e = e.Next() {
-		on(e.Value)
-	}
 }
 
 // Goes into the event loop to get ready to serve.
 func (self *Server) Run() *Server {
 	lchan := make(chan int)
-	onList(self.listeners, func(listener interface{}) {
-		_listener := listener.(net.Listener)
-		go (func() {
+	for _, listener := range self.listeners {
+		go (func(listener net.Listener) {
 			for {
-				conn, err := _listener.Accept()
+				conn, err := listener.Accept()
 				if err != nil {
 					self.log.Println(err)
 					continue
@@ -144,13 +136,13 @@ func (self *Server) Run() *Server {
 					conn.Close()
 				})()
 			}
-		})()
-	})
+		})(listener)
+	}
 	self.lchan = lchan
 	<-lchan
-	onList(self.listeners, func(listener interface{}) {
-		listener.(net.Listener).Close()
-	})
+	for _, listener := range self.listeners {
+		listener.Close()
+	}
 	return self
 }
 
@@ -167,7 +159,7 @@ func (self *Server) Stop() *Server {
 // Listenes on the specified transport.  A single server can listen on the
 // multiple ports.
 func (self *Server) Listen(listener net.Listener) *Server {
-	self.listeners.PushBack(listener)
+	self.listeners = append(self.listeners, listener)
 	return self
 }
 
@@ -177,7 +169,7 @@ func NewServer(resolver FunctionResolver, autoCoercing bool, _log *log.Logger) *
 	if _log == nil {
 		_log = log.New(os.Stderr, "msgpack: ", log.Ldate|log.Ltime)
 	}
-	return &Server{resolver, _log, list.List{}, autoCoercing, nil}
+	return &Server{resolver, _log, make([]net.Listener, 0), autoCoercing, nil}
 }
 
 // This is a low-level function that is not supposed to be called directly
