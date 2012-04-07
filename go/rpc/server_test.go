@@ -1,7 +1,6 @@
-package rpc_test
+package rpc
 
 import (
-	. "msgpack/rpc"
 	"net"
 	"reflect"
 	"testing"
@@ -9,7 +8,7 @@ import (
 
 type Resolver map[string]reflect.Value
 
-func (self Resolver) Resolve(name string, arguments []reflect.Value) (reflect.Value, *Error) {
+func (self Resolver) Resolve(name string, arguments []reflect.Value) (reflect.Value, error) {
 	return self[name], nil
 }
 
@@ -38,7 +37,7 @@ func TestRun(t *testing.T) {
 	for _, v := range []string{"world", "test", "hey"} {
 		retval, xerr := client.Send("echo", v)
 		if xerr != nil {
-			t.Error(xerr.String())
+			t.Error(xerr)
 			return
 		}
 		_retval := retval
