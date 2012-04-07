@@ -39,7 +39,7 @@ func (self *Server) Run() *Server {
 			for {
 				conn, err := _listener.Accept()
 				if err != nil {
-					self.log.Println(err.Error())
+					self.log.Println(err)
 					continue
 				}
 				if self.lchan == nil {
@@ -52,19 +52,18 @@ func (self *Server) Run() *Server {
 						if err == io.EOF {
 							break
 						} else if err != nil {
-							self.log.Println(err.Error())
+							self.log.Println(err)
 							break
 						}
 						msgId, funcName, _arguments, xerr := HandleRPCRequest(data)
 						if xerr != nil {
-							self.log.Println(xerr.Error())
+							self.log.Println(xerr)
 							break
 						}
 						f, xerr := self.resolver.Resolve(funcName, _arguments)
 						if xerr != nil {
-							msg := xerr.Error()
-							self.log.Println(msg)
-							SendErrorResponseMessage(conn, msgId, msg)
+							self.log.Println(xerr)
+							SendErrorResponseMessage(conn, msgId, xerr.Error())
 						}
 						funcType := f.Type()
 						if funcType.NumIn() != len(_arguments) {
