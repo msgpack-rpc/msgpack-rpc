@@ -55,12 +55,13 @@ func (self *Server) Run() *Server {
 						msgId, funcName, _arguments, xerr := HandleRPCRequest(data)
 						if xerr != nil {
 							self.log.Println(xerr)
-							break
+							continue
 						}
 						f, xerr := self.resolver.Resolve(funcName, _arguments)
 						if xerr != nil {
 							self.log.Println(xerr)
 							SendErrorResponseMessage(conn, msgId, xerr.Error())
+							continue
 						}
 						funcType := f.Type()
 						if funcType.NumIn() != len(_arguments) {
