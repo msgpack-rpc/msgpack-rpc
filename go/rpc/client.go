@@ -141,7 +141,7 @@ func HandleRPCResponse(req reflect.Value) (int, reflect.Value, error) {
                                 break;
                         }
                         if errorMsg != nil {
-                                break;
+				return int(msgId.Int()), reflect.Value{}, errors.New(string(errorMsg))
 			}
 		}
 		return int(msgId.Int()), _req[3], nil
