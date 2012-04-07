@@ -36,6 +36,7 @@ func (self *Server) Run() *Server {
 					break
 				}
 				go (func() {
+				NextRequest:
 					for {
 						data, _, err := msgpack.UnpackReflected(conn)
 						if err == io.EOF {
@@ -47,25 +48,25 @@ func (self *Server) Run() *Server {
 						msgId, funcName, _arguments, xerr := HandleRPCRequest(data)
 						if xerr != nil {
 							self.log.Println(xerr)
-							continue
+							continue NextRequest
 						}
 						f, xerr := self.resolver.Resolve(funcName, _arguments)
 						if xerr != nil {
 							self.log.Println(xerr)
 							SendErrorResponseMessage(conn, msgId, xerr.Error())
-							continue
+							continue NextRequest
 						}
 						funcType := f.Type()
 						if funcType.NumIn() != len(_arguments) {
 							msg := fmt.Sprintf("The number of the given arguments (%d) doesn't match the arity (%d)", len(_arguments), funcType.NumIn())
 							self.log.Println(msg)
 							SendErrorResponseMessage(conn, msgId, msg)
-							continue
+							continue NextRequest
 						}
 						if funcType.NumOut() != 1 && funcType.NumOut() != 2 {
 							self.log.Println("The number of return values must be 1 or 2")
 							SendErrorResponseMessage(conn, msgId, "Internal server error")
-							continue
+							continue NextRequest
 						}
 						var arguments []reflect.Value
 						if self.autoCoercing {
@@ -108,7 +109,7 @@ func (self *Server) Run() *Server {
 						retvals := f.Call(arguments)
 						if funcType.NumOut() == 1 {
 							SendResponseMessage(conn, msgId, retvals[0])
-							continue
+							continue NextRequest
 						}
 						var errMsg fmt.Stringer = nil
 						_errMsg := retvals[1].Interface()
@@ -118,12 +119,12 @@ func (self *Server) Run() *Server {
 							if !ok {
 								self.log.Println("The second argument must have an interface { String() string }")
 								SendErrorResponseMessage(conn, msgId, "Internal server error")
-								continue
+								continue NextRequest
 							}
 						}
 						if errMsg != nil {
 							SendErrorResponseMessage(conn, msgId, errMsg.String())
-							continue
+							continue NextRequest
 						}
 						if self.autoCoercing {
 							_retval := retvals[0]
