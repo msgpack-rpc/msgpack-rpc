@@ -177,7 +177,7 @@ func (self *Server) Listen(listener net.Listener) *Server {
 // strings if autoCoercing is enabled.
 func NewServer(resolver FunctionResolver, autoCoercing bool, _log *log.Logger) *Server {
 	if _log == nil {
-		_log = log.New(os.Stderr, "msgpack", log.Ldate|log.Ltime)
+		_log = log.New(os.Stderr, "msgpack: ", log.Ldate|log.Ltime)
 	}
 	return &Server{resolver, _log, list.List{}, autoCoercing, nil}
 }
