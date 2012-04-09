@@ -3,6 +3,7 @@ require_once dirname(__FILE__) . '/Back.php';
 
 class MessagePackRPC_Server
 {
+  public $addr = 0;
   public $port = null;
   public $back = null;
   public $hand = null;
@@ -29,12 +30,15 @@ class MessagePackRPC_Server
   public function recv()
   {
     try {
-      $this->_listen_socket = socket_create_listen($this->port);
-      $sockList = array($this->_listen_socket);
-
-      if ($this->_listen_socket === FALSE) {
+      $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+      if (!($socket
+       	&& socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1)
+	&& socket_bind($socket, $this->addr, $this->port)
+	&& socket_listen($socket))) {
         throw new MessagePackRPC_Error_NetworkError(error_get_last());
       }
+      $this->_listen_socket = $socket;
+      $sockList = array($this->_listen_socket);
 
       // TODO : Server connection check
       // TODO : Server connection outer
