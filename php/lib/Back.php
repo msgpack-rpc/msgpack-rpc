@@ -5,6 +5,7 @@ class MessagePackRPC_Back
 {
   public $size;
   public static $shared_client_socket = null;
+  public static $allow_persistent = false;
   public $client_socket = null;
   public $use_shared_connection = true;
   public $reuse_connection = true;
@@ -20,10 +21,12 @@ class MessagePackRPC_Back
 
   public function __destruct()
   {
-    if (self::$shared_client_socket)
-      fclose(self::$shared_client_socket);
-    if ($this->client_socket)
-      fclose($this->client_socket);
+    if (!self::$allow_persistent) {
+      if (self::$shared_client_socket)
+	fclose(self::$shared_client_socket);
+      if ($this->client_socket)
+	fclose($this->client_socket);
+    }
   }
 
   public function clientCallObject($code, $func, $args)
@@ -55,14 +58,14 @@ class MessagePackRPC_Back
 
   public function connect($host, $port) {
     if (!$this->reuse_connection)
-      return fsockopen($host, $port);
+      return $this->sockopen($host, $port);
     $sock = $this->use_shared_connection ? self::$shared_client_socket : $this->client_socket;
     if ($sock && !feof($sock))
       return $sock;
     if (!$sock) {
-        $sock = fsockopen($host, $port);
+        $sock = $this->sockopen($host, $port);
     } elseif (feof($sock)) {
-        $sock = fsockopen($host, $port);
+        $sock = $this->sockopen($host, $port);
     }
     if ($this->use_shared_connection) {
       self::$shared_client_socket = $sock;
@@ -70,6 +73,11 @@ class MessagePackRPC_Back
       $this->client_socket = $sock;
     }
     return $sock;
+  }
+
+  protected function sockopen($host, $port) {
+    $method = self::$allow_persistent ? 'pfsockopen' : 'fsockopen';
+    return call_user_func($method, $host, $port);
   }
 
   public function clientRecvObject($recv)
