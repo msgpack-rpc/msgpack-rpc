@@ -1,0 +1,4 @@
+As go1 suggests, you should run go command to build packages, try:
+	go build && go test
+
+See more: http://golang.org/doc/code.html
