@@ -9,6 +9,8 @@ class MessagePackRPC_Back
   public $client_socket = null;
   public $use_shared_connection = true;
   public $reuse_connection = true;
+  protected static $shared_unpacker = null;
+  protected $unpacker = null;
 
   public function __construct($size = 1024, $opts = array())
   {
@@ -17,6 +19,19 @@ class MessagePackRPC_Back
       $this->reuse_connection = $opts['reuse_connection'];
     if (array_key_exists('use_shared_connection', $opts))
       $this->use_shared_connection = $opts['use_shared_connection'];
+
+    if (self::$allow_persistent) {
+      $this->use_shared_connection = true;
+      $this->reuse_connection = true;
+    }
+
+    if ($this->use_shared_connection) {
+      if (!self::$shared_unpacker)
+	self::$shared_unpacker = new MessagePackUnpacker();
+      $this->unpacker = self::$shared_unpacker;
+    } else {
+      $this->unpacker = new MessagePackUnpacker();
+    }
   }
 
   public function __destruct()
@@ -48,12 +63,23 @@ class MessagePackRPC_Back
     if ($sock === FALSE) throw new MessagePackRPC_Error_NetworkError(error_get_last());
     $puts = fputs($sock, $send);
     if ($puts === FALSE) throw new MessagePackRPC_Error_NetworkError(error_get_last());
-    $read = fread($sock, $size);
-    if ($read === FALSE) throw new MessagePackRPC_Error_NetworkError(error_get_last());
+    $msg = $this->readMsg($sock, $size);
     if (!$this->reuse_connection)
       fclose($sock);
 
-    return $read;
+    return $msg;
+  }
+
+  public function readMsg($io) {
+    stream_set_blocking($io, 0);
+    while (true) {
+      $read = fread($io, $this->size);
+      if ($read === FALSE) throw new MessagePackRPC_Error_NetworkError(error_get_last());
+      $this->unpacker->feed($read);
+      if ($this->unpacker->execute()) {
+        return $this->unpacker->data();
+      }
+    }
   }
 
   public function connect($host, $port) {
@@ -80,10 +106,8 @@ class MessagePackRPC_Back
     return call_user_func($method, $host, $port);
   }
 
-  public function clientRecvObject($recv)
+  public function clientRecvObject($data)
   {
-    $data = $this->msgpackDecode($recv);
-
     $type = $data[0];
     $code = $data[1];
     $errs = $data[2];
@@ -115,7 +139,7 @@ class MessagePackRPC_Back
 
   public function serverRecvObject($recv)
   {
-    $data = $this->msgpackDecode($recv);
+    $send = $this->msgpackDecode($recv);
 
     if (count($data) != 4) {
       throw new MessagePackRPC_Error_ProtocolError("Invalid message structure.");
