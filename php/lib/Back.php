@@ -3,7 +3,7 @@ require_once dirname(__FILE__) . '/Future.php';
 
 class MessagePackRPC_Back
 {
-  public $size;
+  public $size = 1024;
   public static $shared_client_socket = null;
   public static $allow_persistent = false;
   public $client_socket = null;
@@ -12,9 +12,12 @@ class MessagePackRPC_Back
   protected static $shared_unpacker = null;
   protected $unpacker = null;
 
-  public function __construct($size = 1024, $opts = array())
+  public function __construct($opts = array(), $opts_compat = array())
   {
-    $this->size = $size;
+    if (!is_array($opts)) $opts = array('size' => $opts);
+    $opts = array_merge($opts, $opts_compat);
+    if (array_key_exists('size', $opts))
+      $this->size = $opts['size'];
     if (array_key_exists('reuse_connection', $opts))
       $this->reuse_connection = $opts['reuse_connection'];
     if (array_key_exists('use_shared_connection', $opts))
