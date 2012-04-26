@@ -1,7 +1,7 @@
-package rpc_test
+package rpc
 
 import (
-	. "msgpack/rpc"
+	"fmt"
 	"net"
 	"reflect"
 	"testing"
@@ -9,18 +9,20 @@ import (
 
 type Resolver map[string]reflect.Value
 
-func (self Resolver) Resolve(name string, arguments []reflect.Value) (reflect.Value, *Error) {
+func (self Resolver) Resolve(name string, arguments []reflect.Value) (reflect.Value, error) {
 	return self[name], nil
 }
 
-func echo(test string) (string, interface {
-	String() string
-},) {
+func echo(test string) (string, fmt.Stringer) {
 	return "Hello, " + test, nil
 }
 
+func add(a, b uint) (uint, fmt.Stringer) {
+	return a + b, nil
+}
+
 func TestRun(t *testing.T) {
-	res := Resolver{"echo": reflect.ValueOf(echo)}
+	res := Resolver{"echo": reflect.ValueOf(echo), "add": reflect.ValueOf(add)}
 	serv := NewServer(res, true, nil)
 	l, err := net.Listen("tcp", "127.0.0.1:50000")
 	if err != nil {
@@ -38,7 +40,7 @@ func TestRun(t *testing.T) {
 	for _, v := range []string{"world", "test", "hey"} {
 		retval, xerr := client.Send("echo", v)
 		if xerr != nil {
-			t.Error(xerr.String())
+			t.Error(xerr)
 			return
 		}
 		_retval := retval
@@ -47,6 +49,18 @@ func TestRun(t *testing.T) {
 		}
 		if _retval.String() != "Hello, "+v {
 			t.Error("retval != \"Hello, " + v + "\"")
+		}
+	}
+
+	for _, v := range []struct{ a, b, c int }{{0, 0, 0}, {1, 1, 2}, {2, 3, 5}, {31337, 0x0eadbeef, 31337 + 0x0eadbeef}} {
+		retval, xerr := client.Send("add", v.a, v.b)
+		if xerr != nil {
+			t.Error(xerr)
+			continue
+		}
+		i := CoerceInt(retval)
+		if i != int64(v.c) {
+			t.Errorf("add: got %d expected %d\n", i, int64(v.c))
 		}
 	}
 }

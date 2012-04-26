@@ -1,45 +1,34 @@
 package rpc
 
 import (
-	"container/list"
 	"fmt"
 	"io"
 	"log"
-	"msgpack"
+	msgpack "github.com/msgpack/msgpack/go"
 	"net"
 	"os"
 	"reflect"
 	"errors"
 )
 
-type stringizable interface {
-	String() string
-}
 
 type Server struct {
 	resolver     FunctionResolver
 	log          *log.Logger
-	listeners    list.List
+	listeners    []net.Listener
 	autoCoercing bool
 	lchan        chan int
-}
-
-func onList(l list.List, on func(interface{})) {
-	for e := l.Front(); e != nil; e = e.Next() {
-		on(e.Value)
-	}
 }
 
 // Goes into the event loop to get ready to serve.
 func (self *Server) Run() *Server {
 	lchan := make(chan int)
-	onList(self.listeners, func(listener interface{}) {
-		_listener := listener.(net.Listener)
-		go (func() {
+	for _, listener := range self.listeners {
+		go (func(listener net.Listener) {
 			for {
-				conn, err := _listener.Accept()
+				conn, err := listener.Accept()
 				if err != nil {
-					self.log.Println(err.Error())
+					self.log.Println(err)
 					continue
 				}
 				if self.lchan == nil {
@@ -47,114 +36,151 @@ func (self *Server) Run() *Server {
 					break
 				}
 				go (func() {
+				NextRequest:
 					for {
 						data, _, err := msgpack.UnpackReflected(conn)
 						if err == io.EOF {
 							break
 						} else if err != nil {
-							self.log.Println(err.Error())
+							self.log.Println(err)
 							break
 						}
 						msgId, funcName, _arguments, xerr := HandleRPCRequest(data)
 						if xerr != nil {
-							self.log.Println(xerr.Error())
-							break
+							self.log.Println(xerr)
+							continue NextRequest
 						}
 						f, xerr := self.resolver.Resolve(funcName, _arguments)
 						if xerr != nil {
-							msg := xerr.Error()
-							self.log.Println(msg)
-							SendErrorResponseMessage(conn, msgId, msg)
+							self.log.Println(xerr)
+							SendErrorResponseMessage(conn, msgId, xerr.Error())
+							continue NextRequest
 						}
 						funcType := f.Type()
 						if funcType.NumIn() != len(_arguments) {
 							msg := fmt.Sprintf("The number of the given arguments (%d) doesn't match the arity (%d)", len(_arguments), funcType.NumIn())
 							self.log.Println(msg)
 							SendErrorResponseMessage(conn, msgId, msg)
-							continue
+							continue NextRequest
 						}
 						if funcType.NumOut() != 1 && funcType.NumOut() != 2 {
 							self.log.Println("The number of return values must be 1 or 2")
 							SendErrorResponseMessage(conn, msgId, "Internal server error")
-							continue
+							continue NextRequest
 						}
-						var arguments []reflect.Value
-						if self.autoCoercing {
-							arguments = make([]reflect.Value, funcType.NumIn())
-							for i, v := range _arguments {
-								ft := funcType.In(i)
-								vt := v.Type()
-								if ft == vt {
-									arguments[i] = v
-								} else {
-									if ft != nil {
-										_vt := v.Type()
-										if _vt.Kind() == reflect.Array || _vt.Kind() == reflect.Slice {
-											et := _vt.Elem()
-											if et != nil && et.Kind() == reflect.Uint8 {
-												arguments[i] = reflect.ValueOf(string(v.Interface().([]byte)))
-												continue
-											}
-										}
-									}
-									msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", i, ft.String(), vt.String())
-									self.log.Println(msg)
-									SendErrorResponseMessage(conn, msgId, msg)
-									continue
-								}
-							}
-						} else {
-							for i, v := range _arguments {
-								ft := funcType.In(i)
-								vt := v.Type()
-								if ft != vt {
-									msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", i, ft.String(), vt.String())
-									self.log.Println(msg)
-									SendErrorResponseMessage(conn, msgId, msg)
-									continue
-								}
-							}
-							arguments = _arguments
-						}
-						retvals := f.Call(arguments)
-						if funcType.NumOut() == 2 {
-							var errMsg stringizable = nil
-							var ok bool
-							_errMsg := retvals[1].Interface()
-							if _errMsg != nil {
-								errMsg, ok = _errMsg.(stringizable)
-								if !ok {
-									self.log.Println("The second argument must have an interface { String() string }")
-									SendErrorResponseMessage(conn, msgId, "Internal server error")
-									continue
-								}
-							}
-							if errMsg == nil {
-								if self.autoCoercing {
-									_retval := retvals[0]
-									if _retval.Kind() == reflect.String {
-										retvals[0] = reflect.ValueOf([]byte(_retval.String()))
-									}
-								}
-								SendResponseMessage(conn, msgId, retvals[0])
+
+						arguments := make([]reflect.Value, funcType.NumIn())
+						for i, v := range _arguments {
+							ft := funcType.In(i)
+							vt := v.Type()
+							if vt.AssignableTo(ft) {
+								arguments[i] = v
+							} else if pv, ok := integerPromote(ft, v); ok {
+								arguments[i] = pv
+							} else if self.autoCoercing && ft != nil && ft.Kind() == reflect.String && (v.Type().Kind() == reflect.Array || v.Type().Kind() == reflect.Slice) && v.Type().Elem().Kind() == reflect.Uint8 {
+								arguments[i] = reflect.ValueOf(string(v.Interface().([]byte)))
 							} else {
-								SendErrorResponseMessage(conn, msgId, errMsg.String())
+								msg := fmt.Sprintf("The type of argument #%d doesn't match (%s expected, got %s)", i, ft.String(), vt.String())
+								self.log.Println(msg)
+								SendErrorResponseMessage(conn, msgId, msg)
+								continue NextRequest
 							}
-						} else {
-							SendResponseMessage(conn, msgId, retvals[0])
 						}
+
+						retvals := f.Call(arguments)
+						if funcType.NumOut() == 1 {
+							SendResponseMessage(conn, msgId, retvals[0])
+							continue NextRequest
+						}
+						var errMsg fmt.Stringer = nil
+						_errMsg := retvals[1].Interface()
+						if _errMsg != nil {
+							var ok bool
+							errMsg, ok = _errMsg.(fmt.Stringer)
+							if !ok {
+								self.log.Println("The second argument must have an interface { String() string }")
+								SendErrorResponseMessage(conn, msgId, "Internal server error")
+								continue NextRequest
+							}
+						}
+						if errMsg != nil {
+							SendErrorResponseMessage(conn, msgId, errMsg.String())
+							continue NextRequest
+						}
+						if self.autoCoercing {
+							_retval := retvals[0]
+							if _retval.Kind() == reflect.String {
+								retvals[0] = reflect.ValueOf([]byte(_retval.String()))
+							}
+						}
+						SendResponseMessage(conn, msgId, retvals[0])
 					}
 					conn.Close()
 				})()
 			}
-		})()
-	})
+		})(listener)
+	}
 	self.lchan = lchan
 	<-lchan
-	onList(self.listeners, func(listener interface{}) {
-		listener.(net.Listener).Close()
-	})
+	for _, listener := range self.listeners {
+		listener.Close()
+	}
 	return self
+}
+
+// integerPromote determines if we can promote v to dType, and if so, return the promoted value.
+// This is needed because msgpack always encodes values as the minimum sized int that can hold them.
+func integerPromote(dType reflect.Type, v reflect.Value) (reflect.Value, bool) {
+
+	vt := v.Type()
+	dsz := dType.Size()
+	vtsz := vt.Size()
+
+	if isIntType(dType) && isIntType(vt) && vtsz <= dsz {
+		pv := reflect.New(dType).Elem()
+		pv.SetInt(v.Int())
+		return pv, true
+	}
+
+	if isUintType(dType) && isUintType(vt) && vtsz <= dsz {
+		pv := reflect.New(dType).Elem()
+		pv.SetUint(v.Uint())
+		return pv, true
+	}
+
+	if isIntType(dType) && isUintType(vt) && vtsz <= dsz {
+		pv := reflect.New(dType).Elem()
+		pv.SetInt(int64(v.Uint()))
+		return pv, true
+	}
+
+	if isUintType(dType) && isIntType(vt) && vtsz <= dsz {
+		pv := reflect.New(dType).Elem()
+		pv.SetUint(uint64(v.Int()))
+		return pv, true
+	}
+
+	return v, false
+}
+
+type kinder interface {
+	Kind() reflect.Kind
+}
+
+func isIntType(t kinder) bool {
+	return t.Kind() == reflect.Int ||
+		t.Kind() == reflect.Int8 ||
+		t.Kind() == reflect.Int16 ||
+		t.Kind() == reflect.Int32 ||
+		t.Kind() == reflect.Int64
+}
+
+func isUintType(t kinder) bool {
+	return t.Kind() == reflect.Uint ||
+		t.Kind() == reflect.Uint8 ||
+		t.Kind() == reflect.Uint16 ||
+		t.Kind() == reflect.Uint32 ||
+		t.Kind() == reflect.Uint64
 }
 
 // Lets the server quit the event loop
@@ -170,7 +196,7 @@ func (self *Server) Stop() *Server {
 // Listenes on the specified transport.  A single server can listen on the
 // multiple ports.
 func (self *Server) Listen(listener net.Listener) *Server {
-	self.listeners.PushBack(listener)
+	self.listeners = append(self.listeners, listener)
 	return self
 }
 
@@ -178,9 +204,9 @@ func (self *Server) Listen(listener net.Listener) *Server {
 // strings if autoCoercing is enabled.
 func NewServer(resolver FunctionResolver, autoCoercing bool, _log *log.Logger) *Server {
 	if _log == nil {
-		_log = log.New(os.Stderr, "msgpack", log.Ldate|log.Ltime)
+		_log = log.New(os.Stderr, "msgpack: ", log.Ldate|log.Ltime)
 	}
-	return &Server{resolver, _log, list.List{}, autoCoercing, nil}
+	return &Server{resolver, _log, make([]net.Listener, 0), autoCoercing, nil}
 }
 
 // This is a low-level function that is not supposed to be called directly
