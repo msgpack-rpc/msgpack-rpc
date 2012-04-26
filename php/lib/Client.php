@@ -20,8 +20,8 @@ class MessagePackRPC_Client
     $port    = $this->port;
     $code    = 0;
     $call    = $this->back->clientCallObject($code, $func, $args);
-    $send    = $this->back->clientConnection($host, $port, $call);
-    $feature = $this->back->clientRecvObject($send);
+    $msg     = $this->back->clientConnection($host, $port, $call);
+    $feature = $this->back->clientRecvObject($msg);
 
     $result  = $feature->getResult();
     $errors  = $feature->getErrors();

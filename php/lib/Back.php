@@ -3,27 +3,48 @@ require_once dirname(__FILE__) . '/Future.php';
 
 class MessagePackRPC_Back
 {
-  public $size;
+  public $size = 1024;
   public static $shared_client_socket = null;
+  public static $allow_persistent = false;
   public $client_socket = null;
   public $use_shared_connection = true;
   public $reuse_connection = true;
+  protected static $shared_unpacker = null;
+  protected $unpacker = null;
 
-  public function __construct($size = 1024, $opts = array())
+  public function __construct($opts = array(), $opts_compat = array())
   {
-    $this->size = $size;
+    if (!is_array($opts)) $opts = array('size' => $opts);
+    $opts = array_merge($opts, $opts_compat);
+    if (array_key_exists('size', $opts))
+      $this->size = $opts['size'];
     if (array_key_exists('reuse_connection', $opts))
       $this->reuse_connection = $opts['reuse_connection'];
     if (array_key_exists('use_shared_connection', $opts))
       $this->use_shared_connection = $opts['use_shared_connection'];
+
+    if (self::$allow_persistent) {
+      $this->use_shared_connection = true;
+      $this->reuse_connection = true;
+    }
+
+    if ($this->use_shared_connection) {
+      if (!self::$shared_unpacker)
+	self::$shared_unpacker = new MessagePackUnpacker();
+      $this->unpacker = self::$shared_unpacker;
+    } else {
+      $this->unpacker = new MessagePackUnpacker();
+    }
   }
 
   public function __destruct()
   {
-    if (self::$shared_client_socket)
-      fclose(self::$shared_client_socket);
-    if ($this->client_socket)
-      fclose($this->client_socket);
+    if (!self::$allow_persistent) {
+      if (self::$shared_client_socket)
+	fclose(self::$shared_client_socket);
+      if ($this->client_socket)
+	fclose($this->client_socket);
+    }
   }
 
   public function clientCallObject($code, $func, $args)
@@ -45,24 +66,35 @@ class MessagePackRPC_Back
     if ($sock === FALSE) throw new MessagePackRPC_Error_NetworkError(error_get_last());
     $puts = fputs($sock, $send);
     if ($puts === FALSE) throw new MessagePackRPC_Error_NetworkError(error_get_last());
-    $read = fread($sock, $size);
-    if ($read === FALSE) throw new MessagePackRPC_Error_NetworkError(error_get_last());
+    $msg = $this->readMsg($sock, $size);
     if (!$this->reuse_connection)
       fclose($sock);
 
-    return $read;
+    return $msg;
+  }
+
+  public function readMsg($io) {
+    stream_set_blocking($io, 0);
+    while (true) {
+      $read = fread($io, $this->size);
+      if ($read === FALSE) throw new MessagePackRPC_Error_NetworkError(error_get_last());
+      $this->unpacker->feed($read);
+      if ($this->unpacker->execute()) {
+        return $this->unpacker->data();
+      }
+    }
   }
 
   public function connect($host, $port) {
     if (!$this->reuse_connection)
-      return fsockopen($host, $port);
+      return $this->sockopen($host, $port);
     $sock = $this->use_shared_connection ? self::$shared_client_socket : $this->client_socket;
     if ($sock && !feof($sock))
       return $sock;
     if (!$sock) {
-        $sock = fsockopen($host, $port);
+        $sock = $this->sockopen($host, $port);
     } elseif (feof($sock)) {
-        $sock = fsockopen($host, $port);
+        $sock = $this->sockopen($host, $port);
     }
     if ($this->use_shared_connection) {
       self::$shared_client_socket = $sock;
@@ -72,10 +104,13 @@ class MessagePackRPC_Back
     return $sock;
   }
 
-  public function clientRecvObject($recv)
-  {
-    $data = $this->msgpackDecode($recv);
+  protected function sockopen($host, $port) {
+    $method = self::$allow_persistent ? 'pfsockopen' : 'fsockopen';
+    return call_user_func($method, $host, $port);
+  }
 
+  public function clientRecvObject($data)
+  {
     $type = $data[0];
     $code = $data[1];
     $errs = $data[2];
@@ -107,7 +142,7 @@ class MessagePackRPC_Back
 
   public function serverRecvObject($recv)
   {
-    $data = $this->msgpackDecode($recv);
+    $send = $this->msgpackDecode($recv);
 
     if (count($data) != 4) {
       throw new MessagePackRPC_Error_ProtocolError("Invalid message structure.");
