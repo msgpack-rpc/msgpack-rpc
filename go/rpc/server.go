@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-	msgpack "github.com/msgpack/msgpack/go"
+	msgpack "github.com/msgpack/msgpack-go"
 	"net"
 	"os"
 	"reflect"
