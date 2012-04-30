@@ -3,7 +3,7 @@ package rpc
 import (
 	"fmt"
 	"io"
-	"msgpack"
+	msgpack "github.com/msgpack/msgpack-go"
 	"net"
 	"reflect"
 	"errors"
@@ -28,6 +28,36 @@ func coerce(arguments []interface{}) []interface{} {
 	return _arguments
 }
 
+
+// CoerceInt takes a reflected value and returns it as an int64
+// panics if not an integer type
+func CoerceInt(v reflect.Value) int64 {
+	if isIntType(v) {
+		return v.Int()
+	}
+
+	if isUintType(v) {
+		return int64(v.Uint())
+	}
+
+	panic("not integer type")
+}
+
+// CoerceUint takes a reflected value and returns it as an uint64
+// panics if not an integer type
+func CoerceUint(v reflect.Value) uint64 {
+
+	if isUintType(v) {
+		return v.Uint()
+	}
+
+	if isIntType(v) {
+		return uint64(v.Int())
+	}
+
+	panic("not integer type")
+}
+
 // Sends a RPC request to the server.
 func (self *Session) SendV(funcName string, arguments []interface{}) (reflect.Value, error) {
 	var msgId = self.nextId
@@ -39,9 +69,9 @@ func (self *Session) SendV(funcName string, arguments []interface{}) (reflect.Va
 	if err != nil {
 		return reflect.Value{}, errors.New("Failed to send a request message: " + err.Error())
 	}
-	_msgId, result, _err := ReceiveResponse(self.conn.(io.Reader))
+	_msgId, result, err := ReceiveResponse(self.conn.(io.Reader))
 	if err != nil {
-		return reflect.Value{}, _err
+		return reflect.Value{}, err
 	}
 	if msgId != _msgId {
 		return reflect.Value{}, errors.New(fmt.Sprintf("Message IDs don't match (%d != %d)", msgId, _msgId))
@@ -50,8 +80,7 @@ func (self *Session) SendV(funcName string, arguments []interface{}) (reflect.Va
 		_result := result
 		if _result.Kind() == reflect.Array || _result.Kind() == reflect.Slice {
 			elemType := _result.Type().Elem()
-			if (elemType.Kind() == reflect.Uint || elemType.Kind() == reflect.Uint8 || elemType.Kind() == reflect.Uint16 || elemType.Kind() == reflect.Uint32 || elemType.Kind() == reflect.Uint64 || elemType.Kind() == reflect.Uintptr) &&
-				elemType.Kind() == reflect.Uint8 {
+			if elemType.Kind() == reflect.Uint8 {
 				result = reflect.ValueOf(string(_result.Interface().([]byte)))
 			}
 		}
@@ -102,9 +131,9 @@ func ReceiveResponse(reader io.Reader) (int, reflect.Value, error) {
 		return 0, reflect.Value{}, errors.New("Error occurred while receiving a response")
 	}
 
-	msgId, result, _err := HandleRPCResponse(data)
-	if _err != nil {
-		return 0, reflect.Value{}, _err
+	msgId, result, err := HandleRPCResponse(data)
+	if err != nil {
+		return 0, reflect.Value{}, err
 	}
 	return msgId, result, nil
 }
@@ -131,19 +160,18 @@ func HandleRPCResponse(req reflect.Value) (int, reflect.Value, error) {
 		}
 		if _req[2].IsValid() {
 			_errorMsg := _req[2]
-			if _errorMsg.Kind() == reflect.Array || _errorMsg.Kind() == reflect.Slice {
-				errorMsg, ok := _errorMsg.Interface().([]uint8)
-				if !ok {
-					break;
-				}
-				if msgType.Int() != RESPONSE {
-					break;
-				}
-				if errorMsg != nil {
-					break;
-				}
-			} else {
-				break;
+			if _errorMsg.Kind() != reflect.Array && _errorMsg.Kind() != reflect.Slice {
+                            break;
+                        }
+                        errorMsg, ok := _errorMsg.Interface().([]uint8)
+                        if !ok {
+                                break;
+                        }
+                        if msgType.Int() != RESPONSE {
+                                break;
+                        }
+                        if errorMsg != nil {
+				return int(msgId.Int()), reflect.Value{}, errors.New(string(errorMsg))
 			}
 		}
 		return int(msgId.Int()), _req[3], nil
