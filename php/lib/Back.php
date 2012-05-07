@@ -75,7 +75,10 @@ class MessagePackRPC_Back
 
   public function readMsg($io) {
     stream_set_blocking($io, 0);
-    while (true) {
+    while (!feof($io)) {
+      $r = array($io);
+      $n = null;
+      stream_select($r, $n, $n, null);
       $read = fread($io, $this->size);
       if ($read === FALSE) throw new MessagePackRPC_Error_NetworkError(error_get_last());
       $this->unpacker->feed($read);
