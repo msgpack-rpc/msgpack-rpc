@@ -44,11 +44,15 @@ public class Session {
     private Map<Integer, FutureImpl> reqtable = new HashMap<Integer, FutureImpl>();
 
     Session(Address address, ClientConfig config, EventLoop loop) {
+        this(address,config,loop,new Reflect(loop.getMessagePack()));
+    }
+
+    Session(Address address, ClientConfig config, EventLoop loop,Reflect reflect) {
         this.address = address;
         this.loop = loop;
         this.requestTimeout = config.getRequestTimeout();
         this.transport = loop.openTransport(config, this);
-        reflect = new Reflect(loop.getMessagePack());
+        this.reflect = reflect;
     }
 
     public <T> T proxy(Class<T> iface) {

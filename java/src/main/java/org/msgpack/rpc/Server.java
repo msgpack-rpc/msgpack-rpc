@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
+import org.msgpack.rpc.builder.DefaultDispatcherBuilder;
+import org.msgpack.rpc.builder.DispatcherBuilder;
 import org.msgpack.rpc.reflect.Reflect;
 import org.msgpack.type.Value;
 import org.msgpack.rpc.address.IPAddress;
@@ -42,6 +44,7 @@ public class Server extends SessionPool {
 
     private Dispatcher dp;
     private ServerTransport stran;
+    private DispatcherBuilder dispatcherBuilder = new DefaultDispatcherBuilder();
 
     public Server() {
         super();
@@ -59,13 +62,20 @@ public class Server extends SessionPool {
         super(config, loop);
     }
 
+    public DispatcherBuilder getDispatcherBuilder() {
+        return dispatcherBuilder;
+    }
+
+    public void setDispatcherBuilder(DispatcherBuilder dispatcherBuilder) {
+        this.dispatcherBuilder = dispatcherBuilder;
+    }
+
     public void serve(Dispatcher dp) {
         this.dp = dp;
     }
 
     public void serve(Object handler) {
-        this.dp = new MethodDispatcher(
-                new Reflect(getEventLoop().getMessagePack()), handler);
+        this.dp = dispatcherBuilder.build(handler,this.getEventLoop().getMessagePack());
     }
 
     public void listen(String host, int port) throws UnknownHostException, IOException {
