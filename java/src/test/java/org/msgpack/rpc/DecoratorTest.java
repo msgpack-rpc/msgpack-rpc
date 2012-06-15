@@ -51,14 +51,12 @@ public class DecoratorTest extends TestCase {
 
             assertNotNull(result);
 
-            /* In current version, this test never pass.
             try{
                 c.callApply("throwError", new Object[]{"StopWatchTest"});
-                System.out.println("########");
                 fail("Exception must be thrown.");
             }catch(Exception e){
 
-            }*/
+            }
 
         } finally {
             svr.close();

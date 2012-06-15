@@ -219,7 +219,16 @@ public class ReflectionInvokerBuilder extends InvokerBuilder {
                 e.printStackTrace();
 			}
 
-			Object result = method.invoke(target, params);
+			Object result = null;
+            try{
+                result = method.invoke(target, params);
+            }catch(InvocationTargetException e ){
+                if(e.getCause() != null && e.getCause() instanceof Exception){
+                    throw (Exception)e.getCause();
+                }else{
+                    throw e;
+                }
+            }
 			if(!async) {
 				request.sendResult(result);
 			}

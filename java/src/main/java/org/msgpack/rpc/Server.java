@@ -24,6 +24,7 @@ import java.net.UnknownHostException;
 import org.msgpack.rpc.builder.DefaultDispatcherBuilder;
 import org.msgpack.rpc.builder.DispatcherBuilder;
 import org.msgpack.rpc.reflect.Reflect;
+import org.msgpack.type.NilValue;
 import org.msgpack.type.Value;
 import org.msgpack.rpc.address.IPAddress;
 import org.msgpack.rpc.dispatcher.Dispatcher;
@@ -111,7 +112,12 @@ public class Server extends SessionPool {
         } catch (Exception e) {
             logger.error("Unexpected error occured while calling " + method, e);
             // FIXME request.sendError("RemoteError", e.getMessage());
-            request.sendError(e.getMessage());
+            if(e.getMessage() == null)
+            {
+                request.sendError("");
+            }else{
+                request.sendError(e.getMessage());
+            }
         }
     }
 
