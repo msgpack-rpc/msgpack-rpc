@@ -24,8 +24,12 @@ import org.msgpack.template.*;
 import org.msgpack.rpc.*;
 import org.msgpack.type.Value;
 import org.msgpack.unpacker.Converter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ReflectionInvokerBuilder extends InvokerBuilder {
+
+    private static final Logger logger = LoggerFactory.getLogger(ReflectionInvokerBuilder.class);
     protected  MessagePack messagePack;
     public ReflectionInvokerBuilder(MessagePack messagePack){
         this.messagePack = messagePack;
@@ -169,7 +173,7 @@ public class ReflectionInvokerBuilder extends InvokerBuilder {
 				Value[] array = args.asArrayValue().getElementArray();
 				int length = array.length;
 				if(length < minimumArrayLength) {
-					throw new MessageTypeException();
+					throw new MessageTypeException(String.format("Method needs at least %s args.But only %s args are passed",minimumArrayLength,length));
 				}
 
 				int i;
@@ -191,7 +195,14 @@ public class ReflectionInvokerBuilder extends InvokerBuilder {
 							e.setNull(params);
 						}
 					} else {
-						e.convert(params,  obj);
+                        try{
+						    e.convert(params,  obj);
+                        }catch(MessageTypeException mte){
+                            logger.error(String.format("Expect Method:%s ArgIndex:%s Type:%s. But passed:%s",request.getMethodName(),i,e.getGenericType(),obj));
+                            throw new MessageTypeException(String.format(
+                                    "%sth argument type is %s.But wrong type is sent.",i+1,e.getJavaTypeName())
+                                    );
+                        }
 					}
 				}
 
@@ -207,16 +218,25 @@ public class ReflectionInvokerBuilder extends InvokerBuilder {
 						// this is Optional field becaue i >= minimumArrayLength
 						// Optional + nil => keep default value
 					} else {
-						e.convert(params, obj);
+
+                        try{
+						    e.convert(params, obj);
+                        }catch(MessageTypeException mte){
+                            logger.error(String.format("Expect Method:%s ArgIndex:%s Type:%s. But passed:%s",request.getMethodName(),i,e.getGenericType(),obj));
+                            throw new MessageTypeException(String.format(
+                                    "%sth argument type is %s.But wrong type is sent.",i+1,e.getJavaTypeName())
+                            );
+                        }
 					}
 				}
 
 				// latter entries are all Optional + nil => keep default value
 
 			} catch (MessageTypeException e) {
-                e.printStackTrace();
+                throw e;
 			} catch (Exception e) {
-                e.printStackTrace();
+                //e.printStackTrace();
+                throw e;
 			}
 
 			Object result = null;

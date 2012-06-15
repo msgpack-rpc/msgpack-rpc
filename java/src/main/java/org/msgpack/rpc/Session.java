@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.msgpack.rpc.address.Address;
 import org.msgpack.rpc.message.RequestMessage;
@@ -69,6 +71,10 @@ public class Session {
         return loop;
     }
 
+    /**
+     * Timeout seconds
+     * @return
+     */
     public int getRequestTimeout() {
         return requestTimeout;
     }
@@ -81,9 +87,17 @@ public class Session {
         Future<Value> f = sendRequest(method, args);
         while (true) {
             try {
-                return f.get();
+                if(requestTimeout <= 0){
+                    return f.get();
+                }else{
+                    return f.get(requestTimeout, TimeUnit.SECONDS);
+                }
             } catch (InterruptedException e) {
                 // FIXME
+            } catch (TimeoutException e) {
+                // FIXME
+                throw new RuntimeException("Time out to call method:" + method,e);
+
             }
         }
     }
