@@ -27,6 +27,7 @@ import org.msgpack.rpc.address.Address;
 import org.msgpack.rpc.address.IPAddress;
 import org.msgpack.rpc.config.ClientConfig;
 import org.msgpack.rpc.config.TcpClientConfig;
+import org.msgpack.rpc.reflect.Reflect;
 
 public class Client extends Session implements Closeable {
     private ScheduledFuture<?> timer;
@@ -43,6 +44,10 @@ public class Client extends Session implements Closeable {
     public Client(String host, int port, EventLoop loop)
             throws UnknownHostException {
         this(new IPAddress(host, port), new TcpClientConfig(), loop);
+    }
+    public Client(String host, int port, EventLoop loop,Reflect reflect)
+            throws UnknownHostException {
+        this(new IPAddress(host, port), new TcpClientConfig(), loop,reflect);
     }
 
     public Client(String host, int port, ClientConfig config, EventLoop loop)
@@ -65,9 +70,16 @@ public class Client extends Session implements Closeable {
     public Client(InetSocketAddress address, ClientConfig config, EventLoop loop) {
         this(new IPAddress(address), config, loop);
     }
+    public Client(InetSocketAddress address, ClientConfig config, EventLoop loop,Reflect reflect) {
+        this(new IPAddress(address), config, loop,reflect);
+    }
 
     Client(Address address, ClientConfig config, EventLoop loop) {
         super(address, config, loop);
+        startTimer();
+    }
+    Client(Address address, ClientConfig config, EventLoop loop, Reflect reflect) {
+        super(address, config, loop,reflect);
         startTimer();
     }
 

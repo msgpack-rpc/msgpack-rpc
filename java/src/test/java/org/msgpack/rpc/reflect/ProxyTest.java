@@ -26,7 +26,6 @@ import org.msgpack.rpc.loop.netty.*;
 import java.util.*;
 
 import junit.framework.*;
-import org.apache.log4j.BasicConfigurator;
 
 import org.junit.BeforeClass;
 import org.junit.Test;

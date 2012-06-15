@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.msgpack.rpc.address.Address;
 import org.msgpack.rpc.message.RequestMessage;
@@ -44,11 +46,15 @@ public class Session {
     private Map<Integer, FutureImpl> reqtable = new HashMap<Integer, FutureImpl>();
 
     Session(Address address, ClientConfig config, EventLoop loop) {
+        this(address,config,loop,new Reflect(loop.getMessagePack()));
+    }
+
+    Session(Address address, ClientConfig config, EventLoop loop,Reflect reflect) {
         this.address = address;
         this.loop = loop;
         this.requestTimeout = config.getRequestTimeout();
         this.transport = loop.openTransport(config, this);
-        reflect = new Reflect(loop.getMessagePack());
+        this.reflect = reflect;
     }
 
     public <T> T proxy(Class<T> iface) {
@@ -65,6 +71,10 @@ public class Session {
         return loop;
     }
 
+    /**
+     * Timeout seconds
+     * @return
+     */
     public int getRequestTimeout() {
         return requestTimeout;
     }
@@ -77,9 +87,17 @@ public class Session {
         Future<Value> f = sendRequest(method, args);
         while (true) {
             try {
-                return f.get();
+                if(requestTimeout <= 0){
+                    return f.get();
+                }else{
+                    return f.get(requestTimeout, TimeUnit.SECONDS);
+                }
             } catch (InterruptedException e) {
                 // FIXME
+            } catch (TimeoutException e) {
+                // FIXME
+                throw new RuntimeException("Time out to call method:" + method,e);
+
             }
         }
     }

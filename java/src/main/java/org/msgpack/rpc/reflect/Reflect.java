@@ -42,9 +42,13 @@ public class Reflect {
     private ProxyBuilder proxyBuilder;
 
     public Reflect(MessagePack messagePack) {
-
         invokerBuilder = new ReflectionInvokerBuilder(messagePack);
         proxyBuilder = new ReflectionProxyBuilder(messagePack);
+    }
+
+    public Reflect( InvokerBuilder invokerBuilder,ProxyBuilder proxyBuilder) {
+        this.invokerBuilder = invokerBuilder;
+        this.proxyBuilder = proxyBuilder;
     }
 
     public synchronized <T> Proxy<T> getProxy(Class<T> iface) {

@@ -17,8 +17,10 @@
 //
 package org.msgpack.rpc;
 
+import org.apache.log4j.BasicConfigurator;
 import org.msgpack.*;
 import org.msgpack.rpc.*;
+import org.msgpack.rpc.builder.StopWatchDispatcherBuilder;
 import org.msgpack.rpc.dispatcher.*;
 import org.msgpack.rpc.config.*;
 import org.msgpack.rpc.loop.*;
@@ -99,6 +101,7 @@ public class ServerTest extends TestCase {
 			loop.shutdown();
 		}
 	}
+
 
 }
 
