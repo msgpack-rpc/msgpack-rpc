@@ -1,3 +1,6 @@
+Release 0.6.1 - 20XX/XX/XX
+  NEW FEATURES
+    Adds DispatcherBuilder, which allows switching Dispatchers
 
 Release 0.6.0 - 2010/12/09
   NEW FEATURES
