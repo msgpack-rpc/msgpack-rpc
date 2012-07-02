@@ -73,12 +73,4 @@ public class Request implements Callback<Object> {
         channel.sendMessage(msg);
         channel = null;
     }
-
-    public void onError(Object result, Object error) {
-        sendResponse(result, error);
-    }
-
-    public void run(Object result) {
-        sendResult(result);
-    }
 }
