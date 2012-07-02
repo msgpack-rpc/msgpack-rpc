@@ -43,16 +43,16 @@ public interface Callback<T> {
      * @param result
      *            the methods result
      */
-    public void run(T result);
+    public void sendResult(T result);
 
     /**
      * Passes the result and an object representing the error back to the caller
      * in the case of an exception.
      * 
-     * @param result
-     *            the result if any
      * @param error
      *            the error
+     * @param result
+     *            the result if any
      */
-    public void onError(T result, Object error);
+    public void sendError(Object error, T result);
 }
