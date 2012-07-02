@@ -29,59 +29,63 @@ import junit.framework.*;
 import org.junit.Test;
 
 public class FutureTest extends TestCase {
-	public static class TestHandler {
-		public TestHandler() { }
-		public String m1(String a1) {
-			return "ok"+a1;
-		}
-		public String m2(Integer time_millis) throws InterruptedException {
-			Thread.sleep(time_millis);
-			return "ok" + time_millis;
-		}
-	}
+    public static class TestHandler {
+        public TestHandler() {
+        }
 
-	public interface TestInterface {
-		public Future<String> m1(String a1);
-		public Future<String> m1Async(String a1);  // /Async$/ will be removed
-		public Future<String> m2(Integer time_millis);
-	}
+        public String m1(String a1) {
+            return "ok" + a1;
+        }
 
-	@Test
-	public void testFuture() throws Exception {
-		EventLoop loop = EventLoop.start();
+        public String m2(Integer time_millis) throws InterruptedException {
+            Thread.sleep(time_millis);
+            return "ok" + time_millis;
+        }
+    }
 
-		Server svr = new Server(loop);
-		svr.serve(new TestHandler());
-		svr.listen(19860);
+    public interface TestInterface {
+        public Future<String> m1(String a1);
 
-		Client cli = new Client("127.0.0.1", 19860, loop);
-		TestInterface c = cli.proxy(TestInterface.class);
+        public Future<String> m1Async(String a1); // /Async$/ will be removed
 
-		try {
-			Future<String> f1 = c.m1("a1");
-			Future<String> f2 = c.m1("a2");
-			Future<String> f3 = c.m1Async("a3");
-			Future<String> f4 = c.m2(5);
-			Future<String> f5 = c.m2(60000);
+        public Future<String> m2(Integer time_millis);
+    }
 
-			f3.join();
-			f1.join();
-			f2.join();
-			f4.join(500, TimeUnit.MILLISECONDS);
-			f5.join(500, TimeUnit.MILLISECONDS);
+    @Test
+    public void testFuture() throws Exception {
+        EventLoop loop = EventLoop.start();
 
-			assertEquals(f1.get(), "ok"+"a1");
-			assertEquals(f2.get(), "ok"+"a2");
-			assertEquals(f3.get(), "ok"+"a3");
-			assertEquals(f4.get(), "ok"+"5");
-			assertTrue(f4.getError().isNilValue());
-			assertEquals(f5.getError().asRawValue().getString(), "timedout");
+        Server svr = new Server(loop);
+        svr.serve(new TestHandler());
+        svr.listen(19860);
 
-		} finally {
-			svr.close();
-			cli.close();
-			loop.shutdown();
-		}
-	}
+        Client cli = new Client("127.0.0.1", 19860, loop);
+        TestInterface c = cli.proxy(TestInterface.class);
+
+        try {
+            Future<String> f1 = c.m1("a1");
+            Future<String> f2 = c.m1("a2");
+            Future<String> f3 = c.m1Async("a3");
+            Future<String> f4 = c.m2(5);
+            Future<String> f5 = c.m2(60000);
+
+            f3.join();
+            f1.join();
+            f2.join();
+            f4.join(500, TimeUnit.MILLISECONDS);
+            f5.join(500, TimeUnit.MILLISECONDS);
+
+            assertEquals(f1.get(), "ok" + "a1");
+            assertEquals(f2.get(), "ok" + "a2");
+            assertEquals(f3.get(), "ok" + "a3");
+            assertEquals(f4.get(), "ok" + "5");
+            assertTrue(f4.getError().isNilValue());
+            assertEquals(f5.getError().asRawValue().getString(), "timedout");
+
+        } finally {
+            svr.close();
+            cli.close();
+            loop.shutdown();
+        }
+    }
 }
-
