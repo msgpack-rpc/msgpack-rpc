@@ -2,6 +2,10 @@ Release 0.6.1 - 20XX/XX/XX
   NEW FEATURES
     Adds DispatcherBuilder, which allows switching Dispatchers
 
+  IMPROVEMENTS
+    Renames Callback API: run(T) to sendResult(T)
+    Renames Callback API: onError(T, Object) to sendError(Object, T)
+
 Release 0.6.0 - 2010/12/09
   NEW FEATURES
     I/O event loop uses Netty instead of XNIO.
