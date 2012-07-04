@@ -229,6 +229,7 @@ class TCPServerTransport
 
 		# MessageReceiver interface
 		def on_request(msgid, method, param)
+			schedule_write
 			@server.on_request(self, msgid, method, param)
 		end
 
