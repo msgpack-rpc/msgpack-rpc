@@ -145,7 +145,7 @@ class MessagePackRPC_Back
 
   public function serverRecvObject($recv)
   {
-    $send = $this->msgpackDecode($recv);
+    $data = $this->msgpackDecode($recv);
 
     if (count($data) != 4) {
       throw new MessagePackRPC_Error_ProtocolError("Invalid message structure.");
