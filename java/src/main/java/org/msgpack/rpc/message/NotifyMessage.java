@@ -45,10 +45,11 @@ public class NotifyMessage implements MessagePackable {
         pk.writeArrayBegin(3);
         pk.write(Messages.NOTIFY);
         pk.write(method);
-        pk.write(args.length);
+        pk.writeArrayBegin(args.length);
         for (Object arg : args) {
             pk.write(arg);
         }
+        pk.writeArrayEnd();
         pk.writeArrayEnd();
     }
 

@@ -57,6 +57,7 @@ public class RequestMessage implements MessagePackable {
             pk.write(arg);
         }
         pk.writeArrayEnd();
+        pk.writeArrayEnd();
     }
 
     public void readFrom(Unpacker u) throws IOException {
