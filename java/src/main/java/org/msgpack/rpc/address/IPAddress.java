@@ -21,6 +21,7 @@ import java.net.SocketAddress;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 
 public class IPAddress extends Address {
     private byte[] address;
@@ -57,5 +58,25 @@ public class IPAddress extends Address {
 
     public SocketAddress getSocketAddress() {
         return getInetSocketAddress();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        IPAddress ipAddress = (IPAddress) o;
+
+        if (port != ipAddress.port) return false;
+        if (!Arrays.equals(address, ipAddress.address)) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = address != null ? Arrays.hashCode(address) : 0;
+        result = 31 * result + port;
+        return result;
     }
 }
