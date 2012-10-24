@@ -44,7 +44,9 @@ class MessagePackRPC_Server
       // TODO : Server connection outer
       while (TRUE) {
         $moveList = $sockList;
-        $moveNums = socket_select($moveList, $w = null, $e = null, null);
+        $w = null;
+        $e = null;
+        $moveNums = socket_select($moveList, $w, $e, null);
         foreach ($moveList as $moveItem) {
           if ($moveItem == $this->_listen_socket) {
             $acptItem   = socket_accept($this->_listen_socket);
