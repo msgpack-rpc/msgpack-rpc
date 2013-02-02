@@ -6,7 +6,7 @@
 class Server(object):
     # OVERRIDE THESE METHODS.
     %functions.each do |m|
-    def {{m.function_name}}(self[%", "+xjoin(m.fields){|a|"#{a.field_name}"} if m.fields%]):
+    def {{m.function_name}}(self[%", "+xjoin(m.fields){|a|"#{a.field_name}"} if m.fields.size>0%]):
             raise NotImplementedError("{{m.function_name}} not implemented")
 
     %end

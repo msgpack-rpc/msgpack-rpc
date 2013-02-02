@@ -104,7 +104,7 @@ __END__
 
     %end
 
-    def __init__(self[%", "+fields.values.map{|d|default_field d}.join(", ") if fields%]):
+    def __init__(self[%", "+fields.values.map{|d|default_field d}.join(", ") if fields.size>0%]):
         %fields.each_value do |f|
         self._{{f.field_name}} = {{f.field_name}}
         %end
