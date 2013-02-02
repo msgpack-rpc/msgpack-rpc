@@ -23,6 +23,15 @@ RUBY_DIST = \
 		lang/ruby/types.mpl \
 		lang/ruby.rb
 
+PYTHON_DIST = \
+		lang/python/common.mpl \
+		lang/python/requires.mpl \
+		lang/python/service.mpl \
+		lang/python/service_client.mpl \
+		lang/python/service_server.mpl \
+		lang/python/types.mpl \
+		lang/python.rb
+
 JAVA_DIST = \
 		lang/java/common.mpl \
 		lang/java/const.mpl \
@@ -33,6 +42,7 @@ JAVA_DIST = \
 LANG_DIST = \
 		$(CPP_DIST) \
 		$(RUBY_DIST) \
+		$(PYTHON_DIST) \
 		$(JAVA_DIST)
 
 msgpack-idl:
