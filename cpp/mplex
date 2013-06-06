@@ -141,7 +141,7 @@ begin
 
 	finputs = ARGV
 
-	raise "multiple stdin" if (finputs + [fctx]).count("-") >= 2
+	raise "multiple stdin" if (finputs + [fctx]).select {|e| e == "-"}.size >= 2
 
 rescue
 	usage
