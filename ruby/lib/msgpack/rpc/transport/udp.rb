@@ -164,6 +164,7 @@ class UDPServerTransport
 
 		# MessageReceiver interface
 		def on_request(msgid, method, param, addr)
+			schedule_write
 			sender = ResponseSender.new(@io, addr[3], addr[1])
 			@server.on_request(sender, msgid, method, param)
 		end
