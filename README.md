@@ -36,6 +36,7 @@ Usage and other documents about implementations in each language are found at [t
 ## Implementations
 
 - [C++](https://github.com/msgpack-rpc/msgpack-rpc-cpp)
+- [Go](https://github.com/msgpack-rpc/msgpack-rpc-go)
 - [Python](https://github.com/msgpack-rpc/msgpack-rpc-python)
 - [Ruby](https://github.com/msgpack-rpc/msgpack-rpc-ruby)
 - [Erlang/OTP](https://github.com/msgpack-rpc/msgpack-rpc-erlang)

@@ -1,7 +1,0 @@
-As go1 suggests, you should run go command to build packages, try:
-	go build && go test
-
-It is installable with:
-	go get github.com/msgpack/msgpack-rpc/go/rpc
-
-See more: http://golang.org/doc/code.html
