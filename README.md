@@ -1,5 +1,6 @@
 MessagePack
 ===========
+
 Extremely efficient object serialization library. It's like JSON, but very fast and small.
 
 
@@ -32,11 +33,14 @@ Typical small integer (like flags or error code) is saved only in 1 byte, and ty
 
 Usage and other documents about implementations in each language are found at [the web site.](http://msgpack.org/)
 
+## Implementations
+
+- [Python](https://github.com/msgpack-rpc/msgpack-rpc-python)
+- [Erlang/OTP](https://github.com/msgpack-rpc/msgpack-rpc-erlang)
+- [Java](https://github.com/msgpack-rpc/msgpack-rpc-java)
+- [D](https://github.com/msgpack-rpc/msgpack-rpc-d)
 
 ## Learn More
 
-  - [Web Site](http://msgpack.org/)
-  - [Wiki](http://wiki.msgpack.org/display/MSGPACK/Home)
-  - [Issues](http://jira.msgpack.org/browse/MSGPACK)
-  - [Sources](https://github.com/msgpack)
-
+- [Web Site](http://msgpack.org/)
+- [Sources](https://github.com/msgpack-rpc/msgpack-rpc)
