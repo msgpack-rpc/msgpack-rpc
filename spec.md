@@ -30,9 +30,9 @@ The protocol consists of "Request" message and the corresponding "Response" mess
 
 The request message is a four elements array shown below, packed by MessagePack format.
 
-{code}
+```
 [type, msgid, method, params]
-{code}
+```
 
 ### type
 
@@ -54,9 +54,9 @@ The array of the function arguments. The elements of this array is arbitrary obj
 
 The response message is a four elements array shown below, packed by MessagePack format.
 
-{code}
+```
 [type, msgid, error, result]
-{code}
+```
 
 ### type
 
@@ -78,9 +78,9 @@ An arbitrary object, which represents the returned result of the function. If er
 
 The notification message is a three elements array shown below, packed by MessagePack format.
 
-{code}
+```
 [type, method, params]
-{code}
+```
 
 ### type
 
@@ -100,7 +100,7 @@ The server implementations don't need to send the reply, in the order of the rec
 
 This is required for the pipelining. At the server side, some functions are fast, and some are not. If the server must reply with in order, the slow functions delay the other replies even if it's execution is already completed.
 
-!feature-pipeline.png|border=1!
+![feature-pipeline.png](feature-pipeline.png)
 
 # Client Implementation Details
 
@@ -110,35 +110,35 @@ There're some client features which client library should implement.
 
 The first step is to implement the synchronous call. The client is blocked until the RPC is finished.
 
-{code}
+```java
 Client client = new Client("localhost", 1985);
 Object result = client.call("method_name", arg1, arg2, arg3);
-{code}
+```
 
 ## Step 2: Asynchronous Call
 
 The second step is to support the asynchronous call. The following figure shows how asynchronous call works.
 
-!feature-async.png|border=1!
+![feature-async.png](feature-async.png)
 
 The call function finished immediately, and returns the Future object. Then, the user waits the completion of the call by calling join() function. Finally, it gets the results by calling getResult() function.
 
-{code}
+```java
 Client client = new Client("localhost", 1985);
 Future future = client.asyncCall("method_name", arg1, arg2, arg3);
 future.join();
 Object result = future.getResult();
-{code}
+```
 
 This feature is useful when you call multiple functions at the same time. The example code below overlaps the two resquests, by using async calls.
 
-{code}
+```java
 Client client = new Client(...);
 Future f1 = client.asyncCall("method1");
 Future f2 = client.asyncCall("method2");
 f1.join();
 f2.join();
-{code}
+```
 
 Implementing the asynchronous call may require the event loop library. Currently, following libraries are used.
 
