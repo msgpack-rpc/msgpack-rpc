@@ -16,17 +16,17 @@ end
 
 class AST::Type
 	@@typemap = {
-		'int8'   => 'byte',
-		'int16'  => 'short',
-		'int32'  => 'int',
-		'int64'  => 'long',
-		'uint8'  => 'byte',
-		'uint16' => 'short',
-		'uint32' => 'int',
-		'uint64' => 'long',
-		'bool'   => 'boolean',
-		'double' => 'double',
-		'bytes'  => 'byte[]',
+		'int8'   => 'Byte',
+		'int16'  => 'Short',
+		'int32'  => 'Int',
+		'int64'  => 'Long',
+		'uint8'  => 'Byte',
+		'uint16' => 'Short',
+		'uint32' => 'Int',
+		'uint64' => 'Long',
+		'bool'   => 'Boolean',
+		'double' => 'Double',
+		'bytes'  => 'Byte[]',
 		'string' => 'String',
 		'list'   => 'List',
 		'set'    => 'Set',
@@ -61,21 +61,21 @@ class AST::Type
 	}
 
 	@@convertmap = {
-		'int8'   => 'ByteSchema.convertByte',
-		'int16'  => 'ShortSchema.convertShort',
-		'int32'  => 'IntSchema.convertInt',
-		'int64'  => 'LongSchema.convertLong',
-		'uint8'  => 'ByteSchema.convertByte',
-		'uint16' => 'ShortSchema.convertShort',
-		'uint32' => 'IntSchema.convertInt',
-		'uint64' => 'LongSchema.convertLong',
-		'bool'   => 'BooleanSchema.convertBoolean',
-		'double' => 'DoubleSchema.convertDouble',
-		'bytes'  => 'ByteArraySchema.convertByteArray',
-		'string' => 'StringSchema.convertString',
-		'list'   => 'ArraySchema.convertList',
-		'set'    => 'ArraySchema.convertSet',
-		'map'    => 'MapSchema.convertMap',
+		'int8'   => 'Byte',
+		'int16'  => 'Short',
+		'int32'  => 'Int',
+		'int64'  => 'Long',
+		'uint8'  => 'Byte',
+		'uint16' => 'Short',
+		'uint32' => 'Int',
+		'uint64' => 'Long',
+		'bool'   => 'Boolean',
+		'double' => 'Double',
+		'bytes'  => 'ByteArray',
+		'string' => 'String',
+		'list'   => 'List',
+		'set'    => 'List',
+		'map'    => 'Map',
 	}
 
 	def new_schema
@@ -100,7 +100,7 @@ class AST::Type
 		elsif map_type?
 			"this.#{f.name} = MapSchema.convertMap(#{obj}, #{key_type.new_schema}, #{value_type.new_schema}, null);"
 		elsif schema = @@schemamap[@name]
-			"this.#{f.name} = #{@@convertmap[@name]}(#{obj});"
+			"this.#{f.name} = #{obj}.as#{@@convertmap[@name]}();"
 		else
 			"this.#{f.name} = new #{f.type}();\n"+
 			"this.#{f.name}.messageConvert(#{obj});"
@@ -228,6 +228,9 @@ def gen_unpack(type, name = nil)
 		end
 
 	elsif type.external_type?
+		mputs %[#{decl};]
+		mputs %[if ( #{type}.class.isEnum() ) { #{name} = #{type}.messageUnpack(_Pac); }]
+		mputs %[else { #{name} = #{type}.class.newInstance();#{name}.messageUnpack(_Pac); }]
 		mputs %[#{decl} = new #{type}();]
 		mputs %[#{name}.messageUnpack(_Pac);]
 
