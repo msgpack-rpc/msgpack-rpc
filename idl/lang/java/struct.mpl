@@ -14,9 +14,11 @@ import org.msgpack.Unpacker;
 import org.msgpack.MessagePackable;
 import org.msgpack.MessageUnpackable;
 import org.msgpack.MessageConvertable;
+import org.msgpack.MessagePackObject;
 import org.msgpack.MessageTypeException;
-import org.msgpack.Schema;
-import org.msgpack.schema.*;
+//import org.msgpack.Schema;
+//import org.msgpack.schema.*;
+import org.msgpack.template.*;
 
 public class {{type_name}} implements MessagePackable, MessageUnpackable, MessageConvertable {
 	%if exception?
@@ -50,7 +52,7 @@ public class {{type_name}} implements MessagePackable, MessageUnpackable, Messag
 		return obj;
 	}
 
-	public static {{type_name}} convert(Object deserialized) {
+	public static {{type_name}} convert(MessagePackObject deserialized) {
 		{{type_name}} obj = new {{type_name}}();
 		obj.messageConvert(deserialized);
 		return obj;
@@ -98,11 +100,11 @@ public class {{type_name}} implements MessagePackable, MessageUnpackable, Messag
 		}
 	}
 
-	public void messageConvert(Object _Obj) throws MessageTypeException {
-		if(!(_Obj instanceof List)) {
-			throw new MessageTypeException();
+	public void messageConvert(MessagePackObject _Obj) throws MessageTypeException {
+		if(_Obj.isNil()) {
+			return;
 		}
-		List _Array = (List)_Obj;
+		List _Array = (List)_Obj.asList();
 		int _Length = _Array.size();
 
 		if(_Length < {{fields.max_required_id}}) {
@@ -113,7 +115,8 @@ public class {{type_name}} implements MessagePackable, MessageUnpackable, Messag
 		%if f = fields[i]
 
 		%if f.required?
-			{{f.type.convert_schema(f, "_Array.get(#{i})")}}
+			
+			{{f.type.convert_schema(f, "(MessagePackObject)_Array.get(#{i})")}}
 		%else
 			if(_Length <= {{i-1}}) { return; }  %>if i > fields.max_required_id
 			%anon = next_anon
