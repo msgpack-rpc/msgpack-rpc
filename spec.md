@@ -36,7 +36,7 @@ The request message is a four elements array shown below, packed in MessagePack 
 
 ### type
 
-The message type, must be zero (integer) for "Request" messages.
+The message type, must be the integer zero (0) for "Request" messages.
 
 ### msgid
 
