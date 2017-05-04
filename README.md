@@ -44,6 +44,7 @@ Usage and other documents about implementations in each language are found at [t
 - [Erlang/OTP](https://github.com/msgpack-rpc/msgpack-rpc-erlang)
 - [Java](https://github.com/msgpack-rpc/msgpack-rpc-java)
 - [D](https://github.com/msgpack-rpc/msgpack-rpc-d)
+- [Perl](https://metacpan.org/release/MsgPack-RPC)
 
 ## Learn More
 
