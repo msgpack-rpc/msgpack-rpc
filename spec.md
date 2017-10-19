@@ -145,6 +145,7 @@ Implementing the asynchronous call may require an event loop library. Currently,
 * C++: [mpio|http://github.com/frsyuki/mpio]
 * Ruby: [Rev|http://rev.rubyforge.org/rdoc/]
 * Java: [JBoss netty|http://www.jboss.org/netty]
+* Python: [gevent|http://www.gevent.org/]
 
 ## Step 3: Multiple Transports
 
