@@ -130,7 +130,7 @@ future.join();
 Object result = future.getResult();
 ```
 
-This feature is useful when you call multiple functions at the same time. The example code below overlaps the two resquests, by using async calls.
+This feature is useful when you call multiple functions at the same time. The example code below overlaps the two requests, by using async calls.
 
 ```java
 Client client = new Client(...);
