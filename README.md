@@ -35,7 +35,7 @@ Usage and other documents about implementations in each language are found at [t
 
 ## Implementations
 
-- [C++](https://github.com/msgpack-rpc/msgpack-rpc-cpp)
+- C++: [Jubatus](https://github.com/jubatus/jubatus-msgpack-rpc/), [rpclib](http://rpclib.net/)
 - [C#](https://github.com/yfakariya/msgpack-rpc-cli)
 - [Go](https://github.com/msgpack-rpc/msgpack-rpc-go)
 - [PHP](https://github.com/msgpack-rpc/msgpack-rpc-php)
