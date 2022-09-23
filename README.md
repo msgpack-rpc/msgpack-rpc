@@ -45,6 +45,7 @@ Usage and other documents about implementations in each language are found at [t
 - [Java](https://github.com/msgpack-rpc/msgpack-rpc-java)
 - [D](https://github.com/msgpack-rpc/msgpack-rpc-d)
 - [Perl](https://metacpan.org/release/MsgPack-RPC)
+- [Common Lisp](https://github.com/adolenc/cl-messagepack-rpc)
 
 ## Learn More
 
